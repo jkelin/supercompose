@@ -2,278 +2,372 @@ import { Client, ClientChannel, ConnectConfig, Connection } from "ssh2";
 import { interpret, Machine, sendParent, assign } from "xstate";
 import { fromEvent, Observable } from "rxjs";
 import { map, mergeMap, take } from "rxjs/operators";
+import EventEmitter from "events";
 
-function runCommand(
-  client: Client,
-  command: string
-): Promise<{
-  code: number;
-  signal: string;
-  stdout: Buffer[];
-  stderr: Buffer[];
-}> {
-  return new Promise((resolve, reject) => {
-    client.exec(command, (err, channel) => {
-      if (err) {
-        return reject(err);
-      }
+type NodeConnectionState =
+  | "pending"
+  | "connecting"
+  | "closed"
+  | "ready"
+  | "executing";
 
-      const stdout: Buffer[] = [];
-      const stderr: Buffer[] = [];
+class NodeConnection extends EventEmitter {
+  public state: NodeConnectionState = "pending";
+  private client?: Client;
 
-      channel
-        .on("close", function (code: any, signal: any) {
-          resolve({
-            code,
-            signal,
-            stdout,
-            stderr,
-          });
-        })
-        .on("data", function (data: any) {
-          stdout.push(data);
-        })
-        .stderr.on("data", function (data) {
-          stderr.push(data);
-        });
-    });
-  });
-}
+  constructor(private id: string, private credentials: ConnectConfig) {
+    super({});
+  }
 
-// const connectionMachine = Machine({
-//   context: {
-//     client: new Client(),
-//   },
-//   invoke: [
-//     {
-//       src: (context, event) =>
-//         fromEvent(context.client, "error").pipe(
-//           map((error) => ({ type: "ERROR", error }))
-//         ),
-//     },
-//     {
-//       src: (context, event) =>
-//         fromEvent(context.client, "ready").pipe(map(() => "READY")),
-//     },
-//   ],
-//   on: {
-//     ERROR: "failed",
-//   },
-//   initial: "created",
-//   states: {
-//     created: {
-//       on: {
-//         CONNECT: {
-//           target: "connecting",
-//           actions: (ctx: any, event: any) =>
-//             (ctx.client as Client).connect(event.config),
-//         },
-//       },
-//     },
-//     connecting: {
-//       on: {
-//         READY: "connected",
-//       },
-//     },
-//     connected: {
-//       initial: "ready",
-//       states: {
-//         ready: {
-//           on: {
-//             EXECUTE: {
-//               target: "executing",
-//             },
-//           },
-//         },
-//         executing: {
-//           invoke: {
-//             src: (ctx: any, event: any) =>
-//               runCommand(ctx.client, event.command),
-//             onDone: {
-//               actions: (ctx: any, event: any) =>
-//                 sendParent({ type: "COMMAND_COMPLETED", data: event.data }),
-//               target: "ready",
-//             },
-//             onError: {
-//               actions: (ctx: any, event: any) =>
-//                 sendParent({ type: "COMMAND_ERROR", error: event.data }),
-//               target: "ready",
-//             },
-//           },
-//         },
-//       },
-//     },
-//     failed: {
-//       entry: [
-//         (ctx: any, event: any) =>
-//           sendParent({ type: "CONNECTION_FAILED", data: event.data }),
-//         assign({ client: new Client() }),
-//       ],
-//       always: "created",
-//     },
-//   },
-// });
+  private setState(state: NodeConnectionState) {
+    this.state = state;
+    console.debug("NodeConnection", this.id, "is updating state to", state);
+    this.emit("stateChange", state);
+  }
 
-// // class Connection {
-// //   private state = interpret(connectionMachine)
+  public async connect() {
+    if (this.state !== "pending" && this.state !== "closed") {
+      throw new Error(`Cannot connect while in state ${this.state}`);
+    }
 
-// //   constructor() {
-// //     this.state.state.context.client.on()
-// //   }
+    console.info(
+      "NodeConnection",
+      this.id,
+      "connecting to",
+      `${this.credentials.username}@${this.credentials.host}:${this.credentials.port}`
+    );
 
-// //   public async connect(cfg: ConnectConfig): Promise<unknown> {
+    this.setState("connecting");
+    this.client = new Client();
 
-// // {
-// //     host: "localhost",
-// //     port: 2222,
-// //     username: "username",
-// //     password: "password",
-// //     // privateKey: require("fs").readFileSync("/here/is/my/key"),
-// //   }
-// //   }
-// // }
-
-// class NodeConnection {
-//   private state:
-//     | "starting"
-//     | "connecting"
-//     | "ready"
-//     | "awaitingStream"
-//     | "executing" = "starting";
-//   private client?: Client;
-//   private nodeMeta?: any;
-
-//   constructor(private id: string, private db: any) {}
-
-//   private async readNodeMetadata() {}
-
-//   private onClientReady = () => {
-//     this.tick()
-//   };
-
-//   private onClientError = (err: Error) => {};
-
-//   private onClientClose = () => {};
-//   private onStream = (err: Error | undefined, stream: ClientChannel) => {};
-//   private onStreamStdOut = (data: Buffer) => {};
-//   private onStreamErr = (data: Buffer) => {};
-//   private onStreamClose = () => {};
-
-//   private async connect() {
-//     this.client = new Client();
-
-//     this.client.on("ready", this.onClientReady);
-//     this.client.on("error", this.onClientReady);
-//     this.client.on("close", this.onClientReady);
-
-//     this.client.connect({
-//       host: this.nodeMeta!.credentials.host,
-//       port: this.nodeMeta!.credentials.port,
-//       username: this.nodeMeta!.credentials.username,
-//       password: this.nodeMeta!.credentials.password,
-//       // privateKey: require("fs").readFileSync("/here/is/my/key"),
-//     });
-//   }
-
-//   private async runCommand(command: string) {
-//     this.client?.exec(command, this.onStream)
-
-//     const stream = await new Promise((resolve, reject) => {
-//       conn.exec("uptime", function (err, stream) {
-//         if (err) return reject(err);
-
-//         resolve(stream);
-//       });
-//     });
-
-//     stream
-//       .on("close", function (code: any, signal: any) {
-//         console.log("Stream :: close :: code: " + code + ", signal: " + signal);
-//         conn.end();
-//       })
-//       .on("data", function (data: any) {
-//         console.log("STDOUT: " + data);
-//       })
-//       .stderr.on("data", function (data) {
-//         console.log("STDERR: " + data);
-//       });
-//   }
-
-//   private tick() {}
-
-//   public async run() {
-//     while (true) {
-//       if (this.state === "starting") {
-//         await this.readNodeMetadata();
-//         this.state = "connecting";
-//       } else if (this.state === "connecting") {
-//         await this.connect();
-//       }
-//     }
-//   }
-// }
-
-function run($commands: Observable<string>) {
-  const conn = new Client();
-  const $connReady = fromEvent(conn, "ready");
-  const $connError = fromEvent(conn, "error");
-
-  const $commandExecutions = $connReady.pipe(
-    mergeMap(() => {
-      return $commands.pipe(
-        map((cmd) => {
-          return new Observable((subscriber) => {
-            conn.exec(cmd, function (err, chan) {
-              if (err) return subscriber.error(err);
-
-              chan
-                .on("close", function (code: any, signal: any) {
-                  subscriber.complete();
-                })
-                .on("data", function (data: any) {
-                  subscriber.next({ type: "stdout", data });
-                })
-                .stderr.on("data", function (data) {
-                  subscriber.next({ type: "stderr", data });
-                });
-            });
-          });
-        })
+    this.client.on("close", (withError) => {
+      console.info(
+        "NodeConnection",
+        this.id,
+        "closed",
+        withError ? "with error" : ""
       );
-    })
-  );
+      this.setState("closed");
+    });
 
-  conn.connect();
+    await new Promise<void>((resolve, reject) => {
+      const errorListener = (err: Error) => {
+        console.error(
+          "Error in NodeConnection",
+          this.id,
+          "while connecting",
+          err
+        );
+
+        return reject(err);
+      };
+
+      this.client?.once("error", errorListener);
+      this.client?.once("ready", () => {
+        resolve();
+        this.client?.removeListener("error", errorListener);
+      });
+
+      this.client?.once("close", () =>
+        errorListener(new Error("Closed while connecting"))
+      );
+
+      this.client!.connect(this.credentials);
+    });
+
+    this.client.on("error", (err) => {
+      console.error("NodeConnection", this.id, "error", err);
+    });
+
+    this.setState("ready");
+  }
+
+  public async runCommand(
+    cmd: string
+  ): Promise<{
+    code: number;
+    signal: string;
+    stdout: string;
+    stderr: string;
+  }> {
+    if (this.state !== "ready") {
+      throw new Error(
+        `NodeConnection ${this.id} cannot run command while in state ${this.state}`
+      );
+    }
+
+    this.setState("executing");
+    console.info("NodeConnection", this.id, "running command", cmd);
+
+    try {
+      return await new Promise(async (resolve, reject) => {
+        const run = () =>
+          this.client!.exec(cmd, (err, channel) => {
+            if (err) {
+              return reject(err);
+            }
+
+            const stdout: Buffer[] = [];
+            const stderr: Buffer[] = [];
+
+            channel
+              .on("close", function (code: any, signal: any) {
+                resolve({
+                  code,
+                  signal,
+                  stdout: stdout.map((x) => x.toString("utf-8")).join(""),
+                  stderr: stderr.map((x) => x.toString("utf-8")).join(""),
+                });
+              })
+              .on("data", function (data: any) {
+                stdout.push(data);
+              })
+              .stderr.on("data", function (data) {
+                stderr.push(data);
+              });
+          });
+
+        while (!run()) {
+          console.info(
+            "NodeConnection",
+            this.id,
+            "waiting for continue to run command",
+            cmd
+          );
+          await new Promise((resolve) =>
+            this.client?.once("continue", resolve)
+          );
+        }
+      });
+    } catch (ex) {
+      console.error("Error while executing command", ex);
+      throw ex;
+    } finally {
+      this.setState("ready");
+    }
+  }
+
+  public async close() {
+    if (
+      this.state === "connecting" ||
+      this.state === "executing" ||
+      this.state === "ready"
+    ) {
+      console.info("Disconnecting", this.id);
+      this.client?.end();
+    }
+  }
 }
 
-const conn = new Client();
-conn
-  .on("ready", function () {
-    console.log("Client :: ready");
-    conn.exec("uptime", function (err, stream) {
-      if (err) throw err;
-      stream
-        .on("close", function (code: any, signal: any) {
-          console.log(
-            "Stream :: close :: code: " + code + ", signal: " + signal
-          );
-          conn.end();
-        })
-        .on("data", function (data: any) {
-          console.log("STDOUT: " + data);
-        })
-        .stderr.on("data", function (data) {
-          console.log("STDERR: " + data);
-        });
-    });
+class DB {
+  async getEnabledNodes() {
+    return [
+      {
+        id: "e35e3427-a80c-475c-9011-8cf606d5d636",
+        auth: {
+          host: "localhost",
+          port: 2222,
+          username: "username",
+          password: "password",
+          // privateKey: require("fs").readFileSync("/here/is/my/key"),
+        },
+      },
+    ];
+  }
+
+  async getNode(id: string) {
+    return {
+      id: "e35e3427-a80c-475c-9011-8cf606d5d636",
+      auth: {
+        host: "localhost",
+        port: 2222,
+        username: "username",
+        password: "password",
+        // privateKey: require("fs").readFileSync("/here/is/my/key"),
+      },
+    };
+  }
+}
+
+type Unwrap<T> = T extends Promise<infer U>
+  ? U
+  : T extends (...args: any) => Promise<infer U>
+  ? U
+  : T extends (...args: any) => infer U
+  ? U
+  : T;
+
+class NodeConnectionManager {
+  private node?: Unwrap<ReturnType<DB["getEnabledNodes"]>>[0];
+  private connection?: NodeConnection;
+  private shouldBeRunning = true;
+  private nodeEvents = new EventEmitter();
+  private maintainingPromise?: Promise<void>;
+
+  constructor(private id: string, private db: DB) {}
+
+  private async maintainConnection() {
+    try {
+      while (this.shouldBeRunning) {
+        console.warn("Connecting");
+        let connectionDelay = 100;
+
+        if (this.connection) {
+          this.connection.close();
+          this.connection.removeAllListeners("stateChange");
+        }
+
+        this.connection = new NodeConnection(this.id, this.node!.auth);
+        this.connection.on("stateChange", (state) =>
+          this.nodeEvents.emit(state)
+        );
+
+        while (this.shouldBeRunning) {
+          try {
+            await this.connection!.connect();
+
+            break;
+          } catch (ex) {
+            console.info(
+              "Could not connect to node",
+              this.id,
+              "because",
+              ex.message,
+              "waiting for",
+              connectionDelay
+            );
+            await new Promise((resolve) =>
+              setTimeout(resolve, connectionDelay)
+            );
+            connectionDelay = Math.min(connectionDelay * 2, 10 * 60 * 1000);
+          }
+        }
+
+        if (!this.shouldBeRunning) {
+          break;
+        }
+
+        await new Promise((resolve) => this.nodeEvents.once("closed", resolve));
+        console.info(
+          "Underlying connection for",
+          this.id,
+          "closed, reconnecting"
+        );
+      }
+    } catch (ex) {
+      console.error("Error while maintaining", this.id, ex);
+    }
+  }
+
+  public async start() {
+    this.node = await this.db.getNode(this.id);
+    this.maintainingPromise = this.maintainConnection();
+  }
+
+  public async stop() {
+    this.shouldBeRunning = false;
+  }
+
+  public async runCommand(cmd: string) {
+    if (!this.connection) {
+      throw new Error(
+        `Connection ${this.id} not running while attempting to run command ${cmd}`
+      );
+    }
+
+    if (this.connection.state !== "ready") {
+      console.info(
+        "Connection",
+        this.id,
+        "is waiting for internal ready state before running command"
+      );
+      await new Promise((resolve) => this.nodeEvents.once("ready", resolve));
+    }
+
+    try {
+      return this.connection.runCommand(cmd);
+    } catch (ex) {
+      console.error("Error while executing command", ex);
+      throw ex;
+    }
+  }
+}
+
+class NodeManager {
+  private nodes?: Unwrap<ReturnType<DB["getEnabledNodes"]>>;
+  private connections: Record<string, NodeConnectionManager> = {};
+
+  constructor(private db: DB) {}
+
+  public async start() {
+    this.nodes = await this.db.getEnabledNodes();
+
+    for (const node of this.nodes) {
+      const conn = (this.connections[node.id] = new NodeConnectionManager(
+        node.id,
+        this.db
+      ));
+
+      await conn.start();
+    }
+  }
+
+  public async stop() {
+    for (const conn of Object.values(this.connections)) {
+      await conn.stop();
+    }
+  }
+
+  public async runCommandOn(nodeId: string, cmd: string) {
+    return this.connections[nodeId].runCommand(cmd);
+  }
+}
+
+async function main() {
+  const db = new DB();
+  const mgr = new NodeManager(db);
+  await mgr.start();
+
+  process.once("SIGINT", async () => {
+    return mgr.stop();
+  });
+
+  while (true) {
+    try {
+      const resp = await mgr.runCommandOn(
+        "e35e3427-a80c-475c-9011-8cf606d5d636",
+        "uptime"
+      );
+      console.warn(resp.stdout);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (ex) {
+      console.error("Exception in main loop", ex);
+    }
+  }
+}
+
+process.on("SIGINT", function () {
+  console.log("SIGINT");
+});
+
+process.on("SIGKILL", function () {
+  console.log("SIGKILL");
+});
+
+process
+  .on("unhandledRejection", (reason, p) => {
+    console.error(reason, "Unhandled Rejection at Promise", p);
   })
-  .on("error", (err) => {
-    console.warn("Client failed with", err);
+  .on("uncaughtException", (err) => {
+    console.error(err, "Uncaught Exception thrown");
+    process.exit(1);
+  });
+
+main()
+  .then(() => {
+    console.info("All done");
   })
-  .connect({
-    host: "localhost",
-    port: 2222,
-    username: "username",
-    password: "password",
-    // privateKey: require("fs").readFileSync("/here/is/my/key"),
+  .catch((ex) => {
+    console.error("Fatal", ex);
+    process.exit(1);
   });
