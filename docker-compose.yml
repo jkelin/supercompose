@@ -3,8 +3,18 @@ services:
   redis:
     image: "redis:alpine"
     network_mode: host
+  # test-server:
+  #   image: ghcr.io/linuxserver/openssh-server
+  #   ports:
+  #   - 2222:2222
+  #   environment:
+  #     - SUDO_ACCESS=true #optional
+  #     - PASSWORD_ACCESS=true #optional
+  #     - USER_PASSWORD=password #optional
+  #     - USER_NAME=username #optional
   test-server:
-    image: ghcr.io/linuxserver/openssh-server
+    build: ./testimage
+    privileged: true
     ports:
     - 2222:2222
     environment:
@@ -12,3 +22,6 @@ services:
       - PASSWORD_ACCESS=true #optional
       - USER_PASSWORD=password #optional
       - USER_NAME=username #optional
+    # volumes:
+      # - /var/run/docker.sock:/var/run/docker.sock
+    
