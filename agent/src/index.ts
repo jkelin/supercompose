@@ -1,29 +1,22 @@
 import { DB } from "./db";
+import { Director } from "./director";
 import { NodeManager } from "./nodeManager";
-
-require("dotenv").config();
 
 async function main() {
   const db = new DB();
   const mgr = new NodeManager(db);
+  const director = new Director(db, mgr);
+
   await mgr.start();
+  await director.start();
 
-  process.once("SIGINT", async () => {
-    return mgr.stop();
-  });
+  await Promise.race([
+    new Promise((resolve) => process.once("SIGINT", resolve)),
+    new Promise((resolve) => process.once("SIGKILL", resolve)),
+  ]);
 
-  while (true) {
-    try {
-      const resp = await mgr.runCommandOn(
-        "e35e3427-a80c-475c-9011-8cf606d5d636",
-        "uptime"
-      );
-      console.warn(resp.stdout);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } catch (ex) {
-      console.error("Exception in main loop", ex);
-    }
-  }
+  await director.stop();
+  await mgr.stop();
 }
 
 process.on("SIGINT", function () {

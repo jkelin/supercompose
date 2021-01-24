@@ -1,14 +1,16 @@
-import { DB } from "./db";
+import { DB, NodeConfig } from "./db";
 import { NodeConnection } from "./nodeConnection";
 import { Unwrap } from "./types";
 import EventEmitter from "events";
+import AsyncLock from "async-lock";
 
 export class NodeConnectionManager {
-  private node?: Unwrap<ReturnType<DB["getEnabledNodes"]>>[0];
+  private node?: NodeConfig;
   private connection?: NodeConnection;
   private shouldBeRunning = true;
   private nodeEvents = new EventEmitter();
   private maintainingPromise?: Promise<void>;
+  private lock = new AsyncLock();
 
   constructor(private id: string, private db: DB) {}
 
@@ -66,7 +68,7 @@ export class NodeConnectionManager {
   }
 
   public async start() {
-    this.node = await this.db.getNode(this.id);
+    this.node = await this.db.getNodeById(this.id);
     this.maintainingPromise = this.maintainConnection();
   }
 
@@ -75,26 +77,82 @@ export class NodeConnectionManager {
   }
 
   public async runCommand(cmd: string) {
-    if (!this.connection) {
-      throw new Error(
-        `Connection ${this.id} not running while attempting to run command ${cmd}`
-      );
-    }
+    return await this.lockConnection(async (connection) => {
+      try {
+        return connection.runCommand(cmd);
+      } catch (ex) {
+        console.error("Error while executing command", ex);
+        throw ex;
+      }
+    });
+  }
 
-    if (this.connection.state !== "ready") {
-      console.info(
-        "Connection",
-        this.id,
-        "is waiting for internal ready state before running command"
-      );
-      await new Promise((resolve) => this.nodeEvents.once("ready", resolve));
-    }
+  public async fileExists(path: string) {
+    return await this.lockConnection(async (connection) => {
+      try {
+        return connection.fileExists(path);
+      } catch (ex) {
+        console.error("Error while determining if file exists", ex);
+        throw ex;
+      }
+    });
+  }
 
-    try {
-      return this.connection.runCommand(cmd);
-    } catch (ex) {
-      console.error("Error while executing command", ex);
-      throw ex;
-    }
+  public async readFile(path: string) {
+    return await this.lockConnection(async (connection) => {
+      try {
+        return connection.readFile(path);
+      } catch (ex) {
+        console.error("Error while reading file", ex);
+        throw ex;
+      }
+    });
+  }
+
+  public async writeFile(
+    path: string,
+    content: string,
+    opts: { recursive?: boolean }
+  ) {
+    return await this.lockConnection(async (connection) => {
+      try {
+        return connection.writeFile(path, content, opts);
+      } catch (ex) {
+        console.error("Error while writing file", ex);
+        throw ex;
+      }
+    });
+  }
+
+  private async lockConnection<TRet>(
+    action: (con: NodeConnection) => Promise<TRet>
+  ): Promise<TRet> {
+    let data: TRet;
+    await this.lock.acquire(
+      this.id,
+      async () => {
+        if (!this.connection) {
+          throw new Error(
+            `Connection ${this.id} not running while attempting to lock connection`
+          );
+        }
+
+        if (this.connection.state !== "ready") {
+          console.info(
+            "Connection",
+            this.id,
+            "is waiting for internal ready state before locking connection"
+          );
+          await new Promise((resolve) =>
+            this.nodeEvents.once("ready", resolve)
+          );
+        }
+
+        data = await action(this.connection);
+      },
+      {}
+    );
+
+    return data!;
   }
 }

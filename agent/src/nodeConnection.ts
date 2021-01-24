@@ -1,5 +1,7 @@
-import { Client, ConnectConfig } from "ssh2";
+import { Client, ConnectConfig, SFTPWrapper } from "ssh2";
 import EventEmitter from "events";
+import { promisify } from "util";
+import { dirname } from "path";
 
 type NodeConnectionState =
   | "pending"
@@ -144,6 +146,80 @@ export class NodeConnection extends EventEmitter {
     }
   }
 
+  public async fileExists(path: string) {
+    return await this.sftp(async (sftp) => {
+      const stat = promisify(sftp.stat.bind(sftp));
+      console.debug(
+        "NodeConnection",
+        this.id,
+        "determining file exists on",
+        path
+      );
+      try {
+        return (await stat(path))?.isFile() || false;
+      } catch (ex) {
+        if (ex.code === 2) {
+          return false;
+        }
+
+        throw ex;
+      }
+    });
+  }
+
+  public async readFile(path: string) {
+    return await this.sftp(async (sftp) => {
+      const readFile = promisify(sftp.readFile.bind(sftp));
+      console.debug("NodeConnection", this.id, "reading file", path);
+      return await readFile(path);
+    });
+  }
+
+  private async ensureDirectoryExists(sftp: SFTPWrapper, dir: string) {
+    const stat = promisify(sftp.stat.bind(sftp));
+    const mkdir = promisify(sftp.mkdir.bind(sftp));
+
+    try {
+      const dirStat = await stat(dir);
+
+      if (!dirStat.isDirectory()) {
+        throw new Error(`Existing path ${dir} is not a directory`);
+      }
+    } catch (ex) {
+      if (ex.code === 2) {
+        const parentDir = dirname(dir);
+
+        await this.ensureDirectoryExists(sftp, parentDir);
+
+        console.debug("NodeConnection", this.id, "writing folder", dir);
+        await mkdir(dir);
+      } else {
+        throw ex;
+      }
+    }
+  }
+
+  public async writeFile(
+    path: string,
+    content: string,
+    opts: { recursive?: boolean }
+  ) {
+    return await this.sftp(async (sftp) => {
+      const writeFile = promisify(sftp.writeFile.bind(sftp));
+
+      if (opts.recursive) {
+        await this.ensureDirectoryExists(sftp, dirname(path));
+      }
+
+      console.debug("NodeConnection", this.id, "writing file", path);
+
+      return await (writeFile as any)(path, content, {
+        encoding: "utf-8",
+        flag: "w",
+      });
+    });
+  }
+
   public async close() {
     if (
       this.state === "connecting" ||
@@ -152,6 +228,48 @@ export class NodeConnection extends EventEmitter {
     ) {
       console.info("Disconnecting", this.id);
       this.client?.end();
+    }
+  }
+
+  private async sftp<TResp>(
+    action: (sftp: SFTPWrapper) => Promise<TResp>
+  ): Promise<TResp> {
+    if (this.state !== "ready") {
+      throw new Error(
+        `NodeConnection ${this.id} cannot open sftp while in state ${this.state}`
+      );
+    }
+
+    this.setState("executing");
+    console.info("NodeConnection", this.id, "opening sftp");
+
+    try {
+      return await new Promise(async (resolve, reject) => {
+        const run = () =>
+          this.client!.sftp((err, sftp) => {
+            if (err) {
+              return reject(err);
+            }
+
+            return resolve(action(sftp));
+          });
+
+        while (!run()) {
+          console.info(
+            "NodeConnection",
+            this.id,
+            "waiting for continue to open sftp"
+          );
+          await new Promise((resolve) =>
+            this.client?.once("continue", resolve)
+          );
+        }
+      });
+    } catch (ex) {
+      console.error("Error while running sftp", ex);
+      throw ex;
+    } finally {
+      this.setState("ready");
     }
   }
 }
