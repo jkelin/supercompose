@@ -12,16 +12,16 @@ services:
   #     - PASSWORD_ACCESS=true #optional
   #     - USER_PASSWORD=password #optional
   #     - USER_NAME=username #optional
-  test-server:
-    build: ./testimage
-    privileged: true
-    ports:
-    - 2222:2222
-    environment:
-      - SUDO_ACCESS=true #optional
-      - PASSWORD_ACCESS=true #optional
-      - USER_PASSWORD=password #optional
-      - USER_NAME=username #optional
+  # test-server:
+  #   build: ./testimage
+  #   privileged: true
+  #   ports:
+  #   - 2222:2222
+  #   environment:
+  #     - SUDO_ACCESS=true #optional
+  #     - PASSWORD_ACCESS=true #optional
+  #     - USER_PASSWORD=password #optional
+  #     - USER_NAME=username #optional
     # volumes:
       # - /var/run/docker.sock:/var/run/docker.sock
     
