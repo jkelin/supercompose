@@ -1,4 +1,5 @@
-import { ConnectConfig } from "ssh2";
+import { Injectable, Scope } from '@nestjs/common';
+import { ConnectConfig } from 'ssh2';
 
 export interface NodeConfig {
   id: string;
@@ -27,8 +28,8 @@ services:
     network_mode: host
 `;
 
-const testNode: NodeConfig = {
-  id: "e35e3427-a80c-475c-9011-8cf606d5d636",
+const testNode = (): NodeConfig => ({
+  id: 'e35e3427-a80c-475c-9011-8cf606d5d636',
   auth: {
     host: process.env.SERVER_HOST,
     port: parseInt(process.env.SERVER_PORT!),
@@ -39,26 +40,27 @@ const testNode: NodeConfig = {
   },
   composes: [
     {
-      id: "2827a9e8-a5ac-4ba9-9fb8-47bb7826a8d3",
-      directory: "/etc/docker/compose/testicek",
-      name: "Testicek",
+      id: '2827a9e8-a5ac-4ba9-9fb8-47bb7826a8d3',
+      directory: '/etc/docker/compose/testicek',
+      name: 'Testicek',
       content: testCompose,
       serviceConfig: {
         enabled: true,
-        serviceName: "compose-testicek",
+        serviceName: 'compose-testicek',
       },
     },
   ],
-};
+});
 
+@Injectable({ scope: Scope.DEFAULT })
 export class DB {
   async getNodes(): Promise<NodeConfig[]> {
-    return [testNode];
+    return [testNode()];
   }
 
   async getNodeById(id: string): Promise<NodeConfig> {
-    if (id === testNode.id) {
-      return testNode;
+    if (id === testNode().id) {
+      return testNode();
     } else {
       throw new Error(`Node by id ${id} not found`);
     }

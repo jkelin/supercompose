@@ -1,8 +1,8 @@
-import { DB, NodeConfig } from "./db";
-import { NodeConnection } from "./nodeConnection";
-import { Unwrap } from "./types";
-import EventEmitter from "events";
-import AsyncLock from "async-lock";
+import { NodeConnection } from './nodeConnection';
+import { Unwrap } from './types';
+import EventEmitter from 'events';
+import AsyncLock from 'async-lock';
+import { NodeConfig, DB } from './db.service';
 
 export class NodeConnectionManager {
   private node?: NodeConfig;
@@ -17,18 +17,16 @@ export class NodeConnectionManager {
   private async maintainConnection() {
     try {
       while (this.shouldBeRunning) {
-        console.warn("Connecting");
+        console.warn('Connecting');
         let connectionDelay = 100;
 
         if (this.connection) {
           this.connection.close();
-          this.connection.removeAllListeners("stateChange");
+          this.connection.removeAllListeners('stateChange');
         }
 
         this.connection = new NodeConnection(this.id, this.node!.auth);
-        this.connection.on("stateChange", (state) =>
-          this.nodeEvents.emit(state)
-        );
+        this.connection.on('stateChange', state => this.nodeEvents.emit(state));
 
         while (this.shouldBeRunning) {
           try {
@@ -37,16 +35,14 @@ export class NodeConnectionManager {
             break;
           } catch (ex) {
             console.info(
-              "Could not connect to node",
+              'Could not connect to node',
               this.id,
-              "because",
+              'because',
               ex.message,
-              "waiting for",
-              connectionDelay
+              'waiting for',
+              connectionDelay,
             );
-            await new Promise((resolve) =>
-              setTimeout(resolve, connectionDelay)
-            );
+            await new Promise(resolve => setTimeout(resolve, connectionDelay));
             connectionDelay = Math.min(connectionDelay * 2, 10 * 60 * 1000);
           }
         }
@@ -55,15 +51,15 @@ export class NodeConnectionManager {
           break;
         }
 
-        await new Promise((resolve) => this.nodeEvents.once("closed", resolve));
+        await new Promise(resolve => this.nodeEvents.once('closed', resolve));
         console.info(
-          "Underlying connection for",
+          'Underlying connection for',
           this.id,
-          "closed, reconnecting"
+          'closed, reconnecting',
         );
       }
     } catch (ex) {
-      console.error("Error while maintaining", this.id, ex);
+      console.error('Error while maintaining', this.id, ex);
     }
   }
 
@@ -77,33 +73,33 @@ export class NodeConnectionManager {
   }
 
   public async runCommand(cmd: string) {
-    return await this.lockConnection(async (connection) => {
+    return await this.lockConnection(async connection => {
       try {
         return connection.runCommand(cmd);
       } catch (ex) {
-        console.error("Error while executing command", ex);
+        console.error('Error while executing command', ex);
         throw ex;
       }
     });
   }
 
   public async fileExists(path: string) {
-    return await this.lockConnection(async (connection) => {
+    return await this.lockConnection(async connection => {
       try {
         return connection.fileExists(path);
       } catch (ex) {
-        console.error("Error while determining if file exists", ex);
+        console.error('Error while determining if file exists', ex);
         throw ex;
       }
     });
   }
 
   public async readFile(path: string) {
-    return await this.lockConnection(async (connection) => {
+    return await this.lockConnection(async connection => {
       try {
         return connection.readFile(path);
       } catch (ex) {
-        console.error("Error while reading file", ex);
+        console.error('Error while reading file', ex);
         throw ex;
       }
     });
@@ -112,20 +108,20 @@ export class NodeConnectionManager {
   public async writeFile(
     path: string,
     content: string,
-    opts: { recursive?: boolean }
+    opts: { recursive?: boolean },
   ) {
-    return await this.lockConnection(async (connection) => {
+    return await this.lockConnection(async connection => {
       try {
         return connection.writeFile(path, content, opts);
       } catch (ex) {
-        console.error("Error while writing file", ex);
+        console.error('Error while writing file', ex);
         throw ex;
       }
     });
   }
 
   private async lockConnection<TRet>(
-    action: (con: NodeConnection) => Promise<TRet>
+    action: (con: NodeConnection) => Promise<TRet>,
   ): Promise<TRet> {
     let data: TRet;
     await this.lock.acquire(
@@ -133,24 +129,22 @@ export class NodeConnectionManager {
       async () => {
         if (!this.connection) {
           throw new Error(
-            `Connection ${this.id} not running while attempting to lock connection`
+            `Connection ${this.id} not running while attempting to lock connection`,
           );
         }
 
-        if (this.connection.state !== "ready") {
+        if (this.connection.state !== 'ready') {
           console.info(
-            "Connection",
+            'Connection',
             this.id,
-            "is waiting for internal ready state before locking connection"
+            'is waiting for internal ready state before locking connection',
           );
-          await new Promise((resolve) =>
-            this.nodeEvents.once("ready", resolve)
-          );
+          await new Promise(resolve => this.nodeEvents.once('ready', resolve));
         }
 
         data = await action(this.connection);
       },
-      {}
+      {},
     );
 
     return data!;

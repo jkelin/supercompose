@@ -1,27 +1,34 @@
-import { DB, NodeConfig } from "./db";
-import { NodeConnectionManager } from "./nodeConnectionManager";
-import { Unwrap } from "./types";
+import {
+  Injectable,
+  OnModuleDestroy,
+  OnModuleInit,
+  Scope,
+} from '@nestjs/common';
+import { DB, NodeConfig } from './db.service';
+import { NodeConnectionManager } from './nodeConnectionManager';
+import { Unwrap } from './types';
 
-export class NodeManager {
+@Injectable({ scope: Scope.DEFAULT })
+export class SSHPoolService implements OnModuleInit, OnModuleDestroy {
   private nodes?: Unwrap<NodeConfig[]>;
   private connections: Record<string, NodeConnectionManager> = {};
 
   constructor(private db: DB) {}
 
-  public async start() {
+  public async onModuleInit() {
     this.nodes = await this.db.getNodes();
 
     for (const node of this.nodes) {
       const conn = (this.connections[node.id] = new NodeConnectionManager(
         node.id,
-        this.db
+        this.db,
       ));
 
       await conn.start();
     }
   }
 
-  public async stop() {
+  public async onModuleDestroy() {
     for (const conn of Object.values(this.connections)) {
       await conn.stop();
     }
@@ -43,7 +50,7 @@ export class NodeManager {
     nodeId: string,
     path: string,
     content: string,
-    opts: { recursive?: boolean } = {}
+    opts: { recursive?: boolean } = {},
   ) {
     return this.connections[nodeId].writeFile(path, content, opts);
   }

@@ -1,7 +1,12 @@
-import { ComposeConfig, DB, NodeConfig } from "./db";
-import { NodeManager } from "./nodeManager";
-import isUtf8 from "is-utf8";
-import YAML from "yaml";
+import isUtf8 from 'is-utf8';
+import YAML from 'yaml';
+import { Injectable, OnModuleInit, Scope } from '@nestjs/common';
+import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
+import {
+  ComposeConfig,
+  DB,
+  NodeConfig,
+} from 'src/sshConnectionPool/db.service';
 
 function isJson(what: string) {
   try {
@@ -27,16 +32,16 @@ function isYamlOrJson(file: Buffer) {
       return false;
     }
 
-    const str = file.toString("utf8");
+    const str = file.toString('utf8');
 
     return isYaml(str) || isJson(str);
   } catch (ex) {
-    console.debug("Error in isCompose", ex);
+    console.debug('Error in isCompose', ex);
   }
 }
 
 function parseSystemctlShow(output: string): Record<string, string> {
-  return Object.fromEntries(output.split("\n").map((x) => x.split("=")));
+  return Object.fromEntries(output.split('\n').map(x => x.split('=')));
 }
 
 function generateServiceFile(compose: ComposeConfig) {
@@ -57,14 +62,14 @@ WantedBy=multi-user.target
   `;
 }
 
-export class Director {
-  constructor(private db: DB, private nm: NodeManager) {}
+@Injectable({ scope: Scope.DEFAULT })
+export class DirectorService implements OnModuleInit {
+  constructor(private db: DB, private pool: SSHPoolService) {}
 
-  public async start() {
-    this.init();
+  public async onModuleInit() {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await this.init();
   }
-
-  public async stop() {}
 
   private async init() {
     const nodes = await this.db.getNodes();
@@ -101,51 +106,51 @@ export class Director {
       }
     } catch (ex) {
       console.error(
-        "Exception initCompose for node",
+        'Exception initCompose for node',
         node.id,
-        "compose",
+        'compose',
         compose.id,
-        ex
+        ex,
       );
     }
   }
 
   private async ensureServiceHasCorrectState(
     node: NodeConfig,
-    compose: ComposeConfig
+    compose: ComposeConfig,
   ) {
-    const systemctlVersion = await this.nm.runCommandOn(
+    const systemctlVersion = await this.pool.runCommandOn(
       node.id,
-      "systemctl --version"
+      'systemctl --version',
     );
     if (systemctlVersion.code !== 0) {
-      console.debug("Systemd unavailable, skipping service configuration");
+      console.debug('Systemd unavailable, skipping service configuration');
     }
 
-    const serviceStatusOutput = await this.nm.runCommandOn(
+    const serviceStatusOutput = await this.pool.runCommandOn(
       node.id,
-      `systemctl show ${compose.serviceConfig.serviceName} --no-page`
+      `systemctl show ${compose.serviceConfig.serviceName} --no-page`,
     );
     const serviceStatus = parseSystemctlShow(serviceStatusOutput.stdout);
     if (
-      (serviceStatus["UnitFileState"] === "enabled") !==
+      (serviceStatus['UnitFileState'] === 'enabled') !==
       compose.serviceConfig.enabled
     ) {
       console.info(
-        "Systemd service has incorrect state, setting to",
-        compose.serviceConfig.enabled ? "enabled" : "disabled"
+        'Systemd service has incorrect state, setting to',
+        compose.serviceConfig.enabled ? 'enabled' : 'disabled',
       );
 
-      const enablingRes = await this.nm.runCommandOn(
+      const enablingRes = await this.pool.runCommandOn(
         node.id,
-        `systemctl ${compose.serviceConfig.enabled ? "enable" : "disable"} ${
+        `systemctl ${compose.serviceConfig.enabled ? 'enable' : 'disable'} ${
           compose.serviceConfig.serviceName
-        }`
+        }`,
       );
 
       if (enablingRes.code !== 0) {
         throw new Error(
-          `Could not update status for service ${compose.serviceConfig.serviceName}`
+          `Could not update status for service ${compose.serviceConfig.serviceName}`,
         );
       }
     }
@@ -153,79 +158,82 @@ export class Director {
 
   private async ensureServiceIsUpToDate(
     node: NodeConfig,
-    compose: ComposeConfig
+    compose: ComposeConfig,
   ) {
-    const systemctlVersion = await this.nm.runCommandOn(
+    const systemctlVersion = await this.pool.runCommandOn(
       node.id,
-      "systemctl --version"
+      'systemctl --version',
     );
     if (systemctlVersion.code !== 0) {
-      throw new Error("Systemctl not available");
+      throw new Error('Systemctl not available');
     }
 
     const servicePath =
-      "/etc/systemd/system/" + compose.serviceConfig.serviceName + ".service";
+      '/etc/systemd/system/' + compose.serviceConfig.serviceName + '.service';
     const targetServiceContents = generateServiceFile(compose);
-    const serviceFileExists = await this.nm.fileExistsOn(node.id, servicePath);
+    const serviceFileExists = await this.pool.fileExistsOn(
+      node.id,
+      servicePath,
+    );
 
     if (serviceFileExists) {
       console.debug(
-        "Service file at",
+        'Service file at',
         servicePath,
-        "exists, reading and determining update"
+        'exists, reading and determining update',
       );
 
-      const contents = await this.nm.readFileOn(node.id, servicePath);
+      const contents = await this.pool.readFileOn(node.id, servicePath);
 
-      if (contents.toString("utf8") === targetServiceContents) {
-        console.debug("Service file at", servicePath, "is already up-to-date");
+      if (contents.toString('utf8') === targetServiceContents) {
+        console.debug('Service file at', servicePath, 'is already up-to-date');
         return;
       }
     }
 
-    console.info("Updating service file at", servicePath);
+    console.info('Updating service file at', servicePath);
 
-    await this.nm.writeFileOn(node.id, servicePath, targetServiceContents);
+    await this.pool.writeFileOn(node.id, servicePath, targetServiceContents);
 
-    console.info("Reloading systemd");
+    console.info('Reloading systemd');
 
-    await this.nm.runCommandOn(node.id, `systemctl daemon-reload`);
+    await this.pool.runCommandOn(node.id, `systemctl daemon-reload`);
   }
 
   private async ensureComposeFileIsUpToDate(
     node: NodeConfig,
-    compose: ComposeConfig
+    compose: ComposeConfig,
   ) {
-    const composePath = compose.directory + "docker-compose.yml";
-    const composeExists = await this.nm.fileExistsOn(node.id, composePath);
+    const composePath = compose.directory + 'docker-compose.yml';
+    const composeExists = await this.pool.fileExistsOn(node.id, composePath);
 
     if (!composeExists) {
-      console.info("Compose file at", composePath, "does not exist, writing");
-      await this.nm.writeFileOn(node.id, composePath, compose.content);
+      console.info('Compose file at', composePath, 'does not exist, writing');
+      await this.pool.writeFileOn(node.id, composePath, compose.content);
     } else {
       console.debug(
-        "Compose file at",
+        'Compose file at',
         composePath,
-        "exists, reading and determining update"
+        'exists, reading and determining update',
       );
 
-      const contents = await this.nm.readFileOn(node.id, composePath);
+      const contents = await this.pool.readFileOn(node.id, composePath);
 
       if (isYamlOrJson(contents)) {
-        if (contents.toString("utf-8") !== compose.content) {
-          console.debug("Compose file at", composePath, "outdated, updating");
+        if (contents.toString('utf-8') !== compose.content) {
+          console.debug('Compose file at', composePath, 'outdated, updating');
 
-          await this.nm.writeFileOn(node.id, composePath, compose.content, {
+          await this.pool.writeFileOn(node.id, composePath, compose.content, {
             recursive: true,
           });
         } else {
-          console.debug("Compose file at", composePath, "is up-to-date");
+          console.debug('Compose file at', composePath, 'is up-to-date');
         }
       } else {
         console.info(
-          "File at",
+          'File at',
           composePath,
-          "is neither yaml nor json. Skipping for safety reasons"
+          'is neither yaml nor json. Skipping for safety reasons',
         );
       }
     }
