@@ -1,14 +1,22 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
+import { DirectorController } from './director/director.controller';
 import { DirectorService } from './director/director.service';
-import { DB } from './sshConnectionPool/db.service';
 import { SSHPoolService } from './sshConnectionPool/sshpool.service';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true })],
-  controllers: [AppController],
-  providers: [AppService, SSHPoolService, DB, DirectorService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      url: process.env.POSTGRES_CONNECTION_STRING,
+      synchronize: true,
+      autoLoadEntities: true,
+    }),
+  ],
+  controllers: [DirectorController],
+  providers: [SSHPoolService, DirectorService],
 })
 export class AppModule {}

@@ -1,12 +1,12 @@
 import isUtf8 from 'is-utf8';
 import YAML from 'yaml';
-import { Injectable, OnModuleInit, Scope } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit, Scope } from '@nestjs/common';
 import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
-import {
-  ComposeConfig,
-  DB,
-  NodeConfig,
-} from 'src/sshConnectionPool/db.service';
+import { IsNull, Not, Repository } from 'typeorm';
+import { NodeComposeConfig } from 'src/node/nodeComposeConfig.entity';
+import { NodeConfig } from 'src/node/nodeConfig.entity';
+import { SuperComposeNode } from 'src/node/SuperComposeNode.entity';
+import { InjectRepository } from '@nestjs/typeorm';
 
 function isJson(what: string) {
   try {
@@ -44,7 +44,7 @@ function parseSystemctlShow(output: string): Record<string, string> {
   return Object.fromEntries(output.split('\n').map(x => x.split('=')));
 }
 
-function generateServiceFile(compose: ComposeConfig) {
+function generateServiceFile(compose: NodeComposeConfig) {
   return `[Unit]
 Description=${compose.name} service with docker compose managed by supercompose
 Requires=docker.service
@@ -64,19 +64,30 @@ WantedBy=multi-user.target
 
 @Injectable({ scope: Scope.DEFAULT })
 export class DirectorService implements OnModuleInit {
-  constructor(private db: DB, private pool: SSHPoolService) {}
+  constructor(
+    @InjectRepository(SuperComposeNode)
+    private nodeRepo: Repository<SuperComposeNode>,
+    private pool: SSHPoolService,
+  ) {}
 
   public async onModuleInit() {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    await this.init();
+    await this.reconciliate();
   }
 
-  private async init() {
-    const nodes = await this.db.getNodes();
+  public async reconciliate() {
+    const nodes = await this.nodeRepo.find({
+      where: { targetConfig: Not(IsNull()) },
+      relations: [
+        'targetConfig',
+        'targetConfig.composes',
+        'targetConfig.composes.service',
+      ],
+    });
 
     for (const node of nodes) {
-      for (const compose of node.composes) {
-        this.initCompose(node, compose);
+      for (const compose of node.targetConfig.composes) {
+        this.initCompose(node.targetConfig, compose);
       }
     }
 
@@ -94,11 +105,11 @@ export class DirectorService implements OnModuleInit {
     // }
   }
 
-  private async initCompose(node: NodeConfig, compose: ComposeConfig) {
+  private async initCompose(node: NodeConfig, compose: NodeComposeConfig) {
     try {
       await this.ensureComposeFileIsUpToDate(node, compose);
-      if (compose.serviceConfig) {
-        if (compose.serviceConfig.enabled) {
+      if (compose.service) {
+        if (compose.service.enabled) {
           await this.ensureServiceIsUpToDate(node, compose);
         }
 
@@ -117,7 +128,7 @@ export class DirectorService implements OnModuleInit {
 
   private async ensureServiceHasCorrectState(
     node: NodeConfig,
-    compose: ComposeConfig,
+    compose: NodeComposeConfig,
   ) {
     const systemctlVersion = await this.pool.runCommandOn(
       node.id,
@@ -129,28 +140,28 @@ export class DirectorService implements OnModuleInit {
 
     const serviceStatusOutput = await this.pool.runCommandOn(
       node.id,
-      `systemctl show ${compose.serviceConfig.serviceName} --no-page`,
+      `systemctl show ${compose.service.serviceName} --no-page`,
     );
     const serviceStatus = parseSystemctlShow(serviceStatusOutput.stdout);
     if (
       (serviceStatus['UnitFileState'] === 'enabled') !==
-      compose.serviceConfig.enabled
+      compose.service.enabled
     ) {
       console.info(
         'Systemd service has incorrect state, setting to',
-        compose.serviceConfig.enabled ? 'enabled' : 'disabled',
+        compose.service.enabled ? 'enabled' : 'disabled',
       );
 
       const enablingRes = await this.pool.runCommandOn(
         node.id,
-        `systemctl ${compose.serviceConfig.enabled ? 'enable' : 'disable'} ${
-          compose.serviceConfig.serviceName
+        `systemctl ${compose.service.enabled ? 'enable' : 'disable'} ${
+          compose.service.serviceName
         }`,
       );
 
       if (enablingRes.code !== 0) {
         throw new Error(
-          `Could not update status for service ${compose.serviceConfig.serviceName}`,
+          `Could not update status for service ${compose.service.serviceName}`,
         );
       }
     }
@@ -158,7 +169,7 @@ export class DirectorService implements OnModuleInit {
 
   private async ensureServiceIsUpToDate(
     node: NodeConfig,
-    compose: ComposeConfig,
+    compose: NodeComposeConfig,
   ) {
     const systemctlVersion = await this.pool.runCommandOn(
       node.id,
@@ -169,7 +180,7 @@ export class DirectorService implements OnModuleInit {
     }
 
     const servicePath =
-      '/etc/systemd/system/' + compose.serviceConfig.serviceName + '.service';
+      '/etc/systemd/system/' + compose.service.serviceName + '.service';
     const targetServiceContents = generateServiceFile(compose);
     const serviceFileExists = await this.pool.fileExistsOn(
       node.id,
@@ -202,7 +213,7 @@ export class DirectorService implements OnModuleInit {
 
   private async ensureComposeFileIsUpToDate(
     node: NodeConfig,
-    compose: ComposeConfig,
+    compose: NodeComposeConfig,
   ) {
     const composePath = compose.directory + 'docker-compose.yml';
     const composeExists = await this.pool.fileExistsOn(node.id, composePath);

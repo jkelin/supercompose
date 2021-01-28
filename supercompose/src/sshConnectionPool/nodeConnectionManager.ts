@@ -1,8 +1,8 @@
 import { NodeConnection } from './nodeConnection';
-import { Unwrap } from './types';
 import EventEmitter from 'events';
 import AsyncLock from 'async-lock';
-import { NodeConfig, DB } from './db.service';
+import { Repository } from 'typeorm';
+import { NodeConfig } from 'src/node/nodeConfig.entity';
 
 export class NodeConnectionManager {
   private node?: NodeConfig;
@@ -12,7 +12,7 @@ export class NodeConnectionManager {
   private maintainingPromise?: Promise<void>;
   private lock = new AsyncLock();
 
-  constructor(private id: string, private db: DB) {}
+  constructor(private configId: string, private db: Repository<NodeConfig>) {}
 
   private async maintainConnection() {
     try {
@@ -25,18 +25,18 @@ export class NodeConnectionManager {
           this.connection.removeAllListeners('stateChange');
         }
 
-        this.connection = new NodeConnection(this.id, this.node!.auth);
+        this.connection = new NodeConnection(this.configId, this.node?.auth);
         this.connection.on('stateChange', state => this.nodeEvents.emit(state));
 
         while (this.shouldBeRunning) {
           try {
-            await this.connection!.connect();
+            await this.connection?.connect();
 
             break;
           } catch (ex) {
             console.info(
               'Could not connect to node',
-              this.id,
+              this.configId,
               'because',
               ex.message,
               'waiting for',
@@ -54,17 +54,17 @@ export class NodeConnectionManager {
         await new Promise(resolve => this.nodeEvents.once('closed', resolve));
         console.info(
           'Underlying connection for',
-          this.id,
+          this.configId,
           'closed, reconnecting',
         );
       }
     } catch (ex) {
-      console.error('Error while maintaining', this.id, ex);
+      console.error('Error while maintaining', this.configId, ex);
     }
   }
 
   public async start() {
-    this.node = await this.db.getNodeById(this.id);
+    this.node = await this.db.findOne({ id: this.configId });
     this.maintainingPromise = this.maintainConnection();
   }
 
@@ -125,18 +125,18 @@ export class NodeConnectionManager {
   ): Promise<TRet> {
     let data: TRet;
     await this.lock.acquire(
-      this.id,
+      this.configId,
       async () => {
         if (!this.connection) {
           throw new Error(
-            `Connection ${this.id} not running while attempting to lock connection`,
+            `Connection ${this.configId} not running while attempting to lock connection`,
           );
         }
 
         if (this.connection.state !== 'ready') {
           console.info(
             'Connection',
-            this.id,
+            this.configId,
             'is waiting for internal ready state before locking connection',
           );
           await new Promise(resolve => this.nodeEvents.once('ready', resolve));

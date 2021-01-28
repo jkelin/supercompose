@@ -4,24 +4,34 @@ import {
   OnModuleInit,
   Scope,
 } from '@nestjs/common';
-import { DB, NodeConfig } from './db.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { NodeConfig } from 'src/node/nodeConfig.entity';
+import { SuperComposeNode } from 'src/node/SuperComposeNode.entity';
+import { IsNull, Not, Repository } from 'typeorm';
 import { NodeConnectionManager } from './nodeConnectionManager';
-import { Unwrap } from './types';
 
 @Injectable({ scope: Scope.DEFAULT })
 export class SSHPoolService implements OnModuleInit, OnModuleDestroy {
-  private nodes?: Unwrap<NodeConfig[]>;
+  private nodes?: SuperComposeNode[];
   private connections: Record<string, NodeConnectionManager> = {};
 
-  constructor(private db: DB) {}
+  constructor(
+    @InjectRepository(NodeConfig)
+    private nodeConfigRepo: Repository<NodeConfig>,
+    @InjectRepository(SuperComposeNode)
+    private nodeRepo: Repository<SuperComposeNode>,
+  ) {}
 
   public async onModuleInit() {
-    this.nodes = await this.db.getNodes();
+    this.nodes = await this.nodeRepo.find({
+      where: { targetConfig: Not(IsNull()) },
+      relations: ['targetConfig'],
+    });
 
     for (const node of this.nodes) {
       const conn = (this.connections[node.id] = new NodeConnectionManager(
-        node.id,
-        this.db,
+        node.targetConfig.id,
+        this.nodeConfigRepo,
       ));
 
       await conn.start();
