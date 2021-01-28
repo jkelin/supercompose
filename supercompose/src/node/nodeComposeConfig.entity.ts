@@ -8,7 +8,7 @@ import {
 import { NodeConfig } from './nodeConfig.entity';
 import { NodeServiceConfig } from './nodeServiceConfig.entity';
 
-@Entity()
+@Entity('node_compose_config')
 export class NodeComposeConfig {
   @PrimaryGeneratedColumn('uuid')
   id: string;

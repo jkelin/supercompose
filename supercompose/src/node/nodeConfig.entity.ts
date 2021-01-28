@@ -1,15 +1,16 @@
 import {
-  Entity,
   Column,
   PrimaryGeneratedColumn,
   ManyToOne,
   OneToMany,
   ManyToMany,
+  Entity,
 } from 'typeorm';
-import { NodeAuthConfig } from './nodeAuthConfing.entity';
+import { NodeAuthConfigEntity } from './nodeAuthConfing.entity';
 import { NodeComposeConfig } from './nodeComposeConfig.entity';
+import { SuperComposeNodeEntity } from './SuperComposeNode.entity';
 
-@Entity()
+@Entity('node_config')
 export class NodeConfig {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -17,14 +18,14 @@ export class NodeConfig {
   @Column({ length: 255 })
   name: string;
 
-  @ManyToOne(() => Node)
-  nodes: Node[];
+  @ManyToOne(() => SuperComposeNodeEntity)
+  nodes: SuperComposeNodeEntity[];
 
   @OneToMany(
-    () => NodeAuthConfig,
+    () => NodeAuthConfigEntity,
     auth => auth.configs,
   )
-  auth: NodeAuthConfig;
+  auth: NodeAuthConfigEntity;
 
   @ManyToMany(
     () => NodeComposeConfig,

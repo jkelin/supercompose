@@ -4,6 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { DirectorController } from './director/director.controller';
 import { DirectorService } from './director/director.service';
+import { NodeAuthConfigEntity } from './node/nodeAuthConfing.entity';
+import { NodeComposeConfig } from './node/nodeComposeConfig.entity';
+import { NodeConfig } from './node/nodeConfig.entity';
+import { NodeServiceConfig } from './node/nodeServiceConfig.entity';
+import { SuperComposeNodeEntity } from './node/SuperComposeNode.entity';
 import { SSHPoolService } from './sshConnectionPool/sshpool.service';
 
 @Module({
@@ -13,8 +18,16 @@ import { SSHPoolService } from './sshConnectionPool/sshpool.service';
       type: 'postgres',
       url: process.env.POSTGRES_CONNECTION_STRING,
       synchronize: true,
+      entities: [join(__dirname, '/**/*.entity{.ts,.js}')],
       autoLoadEntities: true,
     }),
+    TypeOrmModule.forFeature([
+      NodeAuthConfigEntity,
+      NodeComposeConfig,
+      NodeConfig,
+      NodeServiceConfig,
+      SuperComposeNodeEntity,
+    ]),
   ],
   controllers: [DirectorController],
   providers: [SSHPoolService, DirectorService],

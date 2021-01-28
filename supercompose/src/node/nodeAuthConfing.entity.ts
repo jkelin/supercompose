@@ -1,8 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { NodeConfig } from './nodeConfig.entity';
 
-@Entity()
-export class NodeAuthConfig {
+@Entity('node_auth_config')
+export class NodeAuthConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

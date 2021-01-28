@@ -2,7 +2,7 @@ import { Client, SFTPWrapper } from 'ssh2';
 import EventEmitter from 'events';
 import { promisify } from 'util';
 import { dirname } from 'path';
-import { NodeAuthConfig } from 'src/node/nodeAuthConfing.entity';
+import { NodeAuthConfigEntity } from 'src/node/nodeAuthConfing.entity';
 
 type NodeConnectionState =
   | 'pending'
@@ -15,7 +15,7 @@ export class NodeConnection extends EventEmitter {
   public state: NodeConnectionState = 'pending';
   private client?: Client;
 
-  constructor(private id: string, private credentials: NodeAuthConfig) {
+  constructor(private id: string, private credentials: NodeAuthConfigEntity) {
     super({});
   }
 

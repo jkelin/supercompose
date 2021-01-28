@@ -9,13 +9,14 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
   postgres:
     image: bitnami/postgresql:13
-    network_mode: host
+    ports:
+      - 5432:5432
     volumes:
       - postgres-data:/bitnami/postgresql
     environment:
       - POSTGRESQL_USERNAME=postgres
       - POSTGRESQL_PASSWORD=postgres
-      - POSTGRESQL_database=postgres
+      - POSTGRESQL_database=supercompose
 
     
 volumes:

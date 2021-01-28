@@ -5,7 +5,7 @@ import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
 import { IsNull, Not, Repository } from 'typeorm';
 import { NodeComposeConfig } from 'src/node/nodeComposeConfig.entity';
 import { NodeConfig } from 'src/node/nodeConfig.entity';
-import { SuperComposeNode } from 'src/node/SuperComposeNode.entity';
+import { SuperComposeNodeEntity } from 'src/node/SuperComposeNode.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 
 function isJson(what: string) {
@@ -62,11 +62,13 @@ WantedBy=multi-user.target
   `;
 }
 
-@Injectable({ scope: Scope.DEFAULT })
+// @Injectable({ scope: Scope.DEFAULT })
+@Injectable()
 export class DirectorService implements OnModuleInit {
   constructor(
-    @InjectRepository(SuperComposeNode)
-    private nodeRepo: Repository<SuperComposeNode>,
+    @InjectRepository(SuperComposeNodeEntity)
+    private readonly nodeRepo: Repository<SuperComposeNodeEntity>,
+    @Inject('SSHPoolService')
     private pool: SSHPoolService,
   ) {}
 

@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { NodeComposeConfig } from './nodeComposeConfig.entity';
 
-@Entity()
+@Entity('node_service_config')
 export class NodeServiceConfig {
   @PrimaryGeneratedColumn('uuid')
   id: string;
