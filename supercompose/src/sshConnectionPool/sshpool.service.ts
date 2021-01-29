@@ -6,20 +6,20 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { NodeConfigEntity } from 'src/node/nodeConfig.entity';
-import { SuperComposeNodeEntity } from 'src/node/SuperComposeNode.entity';
+import { NodeEntity } from 'src/node/node.entity';
 import { IsNull, Not, Repository } from 'typeorm';
 import { NodeConnectionManager } from './nodeConnectionManager';
 
 @Injectable({ scope: Scope.DEFAULT })
 export class SSHPoolService implements OnModuleInit, OnModuleDestroy {
-  private nodes?: SuperComposeNodeEntity[];
+  private nodes?: NodeEntity[];
   private connections: Record<string, NodeConnectionManager> = {};
 
   constructor(
     @InjectRepository(NodeConfigEntity)
     private readonly nodeConfigRepo: Repository<NodeConfigEntity>,
-    @InjectRepository(SuperComposeNodeEntity)
-    private readonly nodeRepo: Repository<SuperComposeNodeEntity>,
+    @InjectRepository(NodeEntity)
+    private readonly nodeRepo: Repository<NodeEntity>,
   ) {}
 
   public async onModuleInit() {

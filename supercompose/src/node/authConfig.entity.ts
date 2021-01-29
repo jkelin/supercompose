@@ -9,8 +9,8 @@ export interface AuthDefinition {
   privateKey?: string;
 }
 
-@Entity()
-export class NodeAuthConfigEntity {
+@Entity('auth_config')
+export class AuthConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -23,10 +23,10 @@ export class NodeAuthConfigEntity {
   @Column({ type: 'text' })
   username: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', nullable: true })
   password?: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', nullable: true })
   privateKey?: string;
 
   @OneToMany(

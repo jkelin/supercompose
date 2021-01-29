@@ -1,16 +1,16 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { NodeComposeConfigEntity } from './nodeComposeConfig.entity';
+import { ComposeConfigEntity } from './composeConfig.entity';
 
-@Entity()
-export class NodeServiceConfigEntity {
+@Entity('service_config')
+export class ServiceConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @OneToMany(
-    () => NodeComposeConfigEntity,
+    () => ComposeConfigEntity,
     compose => compose.service,
   )
-  composes: NodeComposeConfigEntity[];
+  composes: ComposeConfigEntity[];
 
   @Column()
   enabled: boolean;

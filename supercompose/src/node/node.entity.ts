@@ -1,8 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { NodeConfigEntity } from './nodeConfig.entity';
 
-@Entity()
-export class SuperComposeNodeEntity {
+@Entity('node')
+export class NodeEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

@@ -7,37 +7,37 @@ import {
   Entity,
   JoinTable,
 } from 'typeorm';
-import { NodeAuthConfigEntity } from './nodeAuthConfing.entity';
-import { NodeComposeConfigEntity } from './nodeComposeConfig.entity';
-import { SuperComposeNodeEntity } from './SuperComposeNode.entity';
+import { AuthConfigEntity } from './authConfig.entity';
+import { ComposeConfigEntity } from './composeConfig.entity';
+import { NodeEntity } from './node.entity';
 
-@Entity()
+@Entity('node_config')
 export class NodeConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @OneToMany(
-    () => SuperComposeNodeEntity,
+    () => NodeEntity,
     x => x.targetConfig,
   )
-  targetNodes: SuperComposeNodeEntity[];
+  targetNodes: NodeEntity[];
 
   @OneToMany(
-    () => SuperComposeNodeEntity,
+    () => NodeEntity,
     x => x.lastAppliedConfig,
   )
-  lastAppliedConfigNodes: SuperComposeNodeEntity[];
+  lastAppliedConfigNodes: NodeEntity[];
 
   @ManyToOne(
-    () => NodeAuthConfigEntity,
+    () => AuthConfigEntity,
     auth => auth.configs,
   )
-  auth: NodeAuthConfigEntity;
+  auth: AuthConfigEntity;
 
   @ManyToMany(
-    () => NodeComposeConfigEntity,
+    () => ComposeConfigEntity,
     compose => compose.configs,
   )
   @JoinTable()
-  composes: NodeComposeConfigEntity[];
+  composes: ComposeConfigEntity[];
 }

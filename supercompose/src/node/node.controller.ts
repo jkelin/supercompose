@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { NodeService } from './node.service';
-import { AuthDefinition } from './nodeAuthConfing.entity';
+import { AuthDefinition } from './authConfig.entity';
 
 interface CreateNodeDTO {
   name: string;
@@ -13,7 +13,6 @@ export class NodeController {
 
   @Post('/')
   async create(@Body() body: CreateNodeDTO) {
-    console.warn(body.name, body.auth);
     const nodeId = await this.nodes.createNode(body.name, body.auth);
     return { nodeId };
   }

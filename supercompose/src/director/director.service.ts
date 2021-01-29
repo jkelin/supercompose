@@ -3,9 +3,9 @@ import YAML from 'yaml';
 import { Injectable, OnModuleInit, Scope } from '@nestjs/common';
 import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
 import { IsNull, Not, Repository } from 'typeorm';
-import { NodeComposeConfigEntity } from 'src/node/nodeComposeConfig.entity';
+import { ComposeConfigEntity } from 'src/node/composeConfig.entity';
 import { NodeConfigEntity } from 'src/node/nodeConfig.entity';
-import { SuperComposeNodeEntity } from 'src/node/SuperComposeNode.entity';
+import { NodeEntity } from 'src/node/node.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 
 function isJson(what: string) {
@@ -44,7 +44,7 @@ function parseSystemctlShow(output: string): Record<string, string> {
   return Object.fromEntries(output.split('\n').map(x => x.split('=')));
 }
 
-function generateServiceFile(compose: NodeComposeConfigEntity) {
+function generateServiceFile(compose: ComposeConfigEntity) {
   return `[Unit]
 Description=${compose.name} service with docker compose managed by supercompose
 Requires=docker.service
@@ -65,8 +65,8 @@ WantedBy=multi-user.target
 @Injectable({ scope: Scope.DEFAULT })
 export class DirectorService implements OnModuleInit {
   constructor(
-    @InjectRepository(SuperComposeNodeEntity)
-    private readonly nodeRepo: Repository<SuperComposeNodeEntity>,
+    @InjectRepository(NodeEntity)
+    private readonly nodeRepo: Repository<NodeEntity>,
     private readonly pool: SSHPoolService,
   ) {}
 
@@ -107,7 +107,7 @@ export class DirectorService implements OnModuleInit {
 
   private async initCompose(
     node: NodeConfigEntity,
-    compose: NodeComposeConfigEntity,
+    compose: ComposeConfigEntity,
   ) {
     try {
       await this.ensureComposeFileIsUpToDate(node, compose);
@@ -131,7 +131,7 @@ export class DirectorService implements OnModuleInit {
 
   private async ensureServiceHasCorrectState(
     node: NodeConfigEntity,
-    compose: NodeComposeConfigEntity,
+    compose: ComposeConfigEntity,
   ) {
     const systemctlVersion = await this.pool.runCommandOn(
       node.id,
@@ -172,7 +172,7 @@ export class DirectorService implements OnModuleInit {
 
   private async ensureServiceIsUpToDate(
     node: NodeConfigEntity,
-    compose: NodeComposeConfigEntity,
+    compose: ComposeConfigEntity,
   ) {
     const systemctlVersion = await this.pool.runCommandOn(
       node.id,
@@ -216,7 +216,7 @@ export class DirectorService implements OnModuleInit {
 
   private async ensureComposeFileIsUpToDate(
     node: NodeConfigEntity,
-    compose: NodeComposeConfigEntity,
+    compose: ComposeConfigEntity,
   ) {
     const composePath = compose.directory + 'docker-compose.yml';
     const composeExists = await this.pool.fileExistsOn(node.id, composePath);
