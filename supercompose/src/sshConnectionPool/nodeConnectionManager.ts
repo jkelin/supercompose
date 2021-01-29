@@ -2,17 +2,20 @@ import { NodeConnection } from './nodeConnection';
 import EventEmitter from 'events';
 import AsyncLock from 'async-lock';
 import { Repository } from 'typeorm';
-import { NodeConfig } from 'src/node/nodeConfig.entity';
+import { NodeConfigEntity } from 'src/node/nodeConfig.entity';
 
 export class NodeConnectionManager {
-  private node?: NodeConfig;
+  private node?: NodeConfigEntity;
   private connection?: NodeConnection;
   private shouldBeRunning = true;
   private nodeEvents = new EventEmitter();
   private maintainingPromise?: Promise<void>;
   private lock = new AsyncLock();
 
-  constructor(private configId: string, private db: Repository<NodeConfig>) {}
+  constructor(
+    private configId: string,
+    private db: Repository<NodeConfigEntity>,
+  ) {}
 
   private async maintainConnection() {
     try {

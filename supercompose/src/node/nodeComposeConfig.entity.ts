@@ -5,11 +5,11 @@ import {
   ManyToMany,
   ManyToOne,
 } from 'typeorm';
-import { NodeConfig } from './nodeConfig.entity';
-import { NodeServiceConfig } from './nodeServiceConfig.entity';
+import { NodeConfigEntity } from './nodeConfig.entity';
+import { NodeServiceConfigEntity } from './nodeServiceConfig.entity';
 
 @Entity()
-export class NodeComposeConfig {
+export class NodeComposeConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -23,14 +23,14 @@ export class NodeComposeConfig {
   content: string;
 
   @ManyToOne(
-    () => NodeServiceConfig,
+    () => NodeServiceConfigEntity,
     service => service.composes,
   )
-  service: NodeServiceConfig;
+  service: NodeServiceConfigEntity;
 
   @ManyToMany(
-    () => NodeConfig,
+    () => NodeConfigEntity,
     cfg => cfg.composes,
   )
-  configs: NodeConfig[];
+  configs: NodeConfigEntity[];
 }

@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
-import { NodeConfig } from './nodeConfig.entity';
+import { NodeConfigEntity } from './nodeConfig.entity';
 
 @Entity()
 export class SuperComposeNodeEntity {
@@ -10,14 +10,14 @@ export class SuperComposeNodeEntity {
   name: string;
 
   @ManyToOne(
-    () => NodeConfig,
+    () => NodeConfigEntity,
     cfg => cfg.targetNodes,
   )
-  targetConfig: NodeConfig;
+  targetConfig: NodeConfigEntity;
 
   @ManyToOne(
-    () => NodeConfig,
+    () => NodeConfigEntity,
     cfg => cfg.lastAppliedConfigNodes,
   )
-  lastAppliedConfig: NodeConfig;
+  lastAppliedConfig: NodeConfigEntity;
 }

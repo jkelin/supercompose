@@ -8,11 +8,11 @@ import {
   JoinTable,
 } from 'typeorm';
 import { NodeAuthConfigEntity } from './nodeAuthConfing.entity';
-import { NodeComposeConfig } from './nodeComposeConfig.entity';
+import { NodeComposeConfigEntity } from './nodeComposeConfig.entity';
 import { SuperComposeNodeEntity } from './SuperComposeNode.entity';
 
 @Entity()
-export class NodeConfig {
+export class NodeConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -38,9 +38,9 @@ export class NodeConfig {
   auth: NodeAuthConfigEntity;
 
   @ManyToMany(
-    () => NodeComposeConfig,
+    () => NodeComposeConfigEntity,
     compose => compose.configs,
   )
   @JoinTable()
-  composes: NodeComposeConfig[];
+  composes: NodeComposeConfigEntity[];
 }

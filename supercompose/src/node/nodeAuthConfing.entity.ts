@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { NodeConfig } from './nodeConfig.entity';
+import { NodeConfigEntity } from './nodeConfig.entity';
 
 @Entity()
 export class NodeAuthConfigEntity {
@@ -22,8 +22,8 @@ export class NodeAuthConfigEntity {
   privateKey?: string;
 
   @OneToMany(
-    () => NodeConfig,
+    () => NodeConfigEntity,
     cfg => cfg.auth,
   )
-  configs: NodeConfig[];
+  configs: NodeConfigEntity[];
 }

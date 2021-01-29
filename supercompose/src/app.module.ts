@@ -5,9 +5,9 @@ import { join } from 'path';
 import { DirectorController } from './director/director.controller';
 import { DirectorService } from './director/director.service';
 import { NodeAuthConfigEntity } from './node/nodeAuthConfing.entity';
-import { NodeComposeConfig } from './node/nodeComposeConfig.entity';
-import { NodeConfig } from './node/nodeConfig.entity';
-import { NodeServiceConfig } from './node/nodeServiceConfig.entity';
+import { NodeComposeConfigEntity } from './node/nodeComposeConfig.entity';
+import { NodeConfigEntity } from './node/nodeConfig.entity';
+import { NodeServiceConfigEntity } from './node/nodeServiceConfig.entity';
 import { SuperComposeNodeEntity } from './node/SuperComposeNode.entity';
 import { SSHPoolService } from './sshConnectionPool/sshpool.service';
 
@@ -23,9 +23,9 @@ import { SSHPoolService } from './sshConnectionPool/sshpool.service';
     }),
     TypeOrmModule.forFeature([
       NodeAuthConfigEntity,
-      NodeComposeConfig,
-      NodeConfig,
-      NodeServiceConfig,
+      NodeComposeConfigEntity,
+      NodeConfigEntity,
+      NodeServiceConfigEntity,
       SuperComposeNodeEntity,
     ]),
   ],
