@@ -1,6 +1,6 @@
 import isUtf8 from 'is-utf8';
 import YAML from 'yaml';
-import { Inject, Injectable, OnModuleInit, Scope } from '@nestjs/common';
+import { Injectable, OnModuleInit, Scope } from '@nestjs/common';
 import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
 import { IsNull, Not, Repository } from 'typeorm';
 import { NodeComposeConfig } from 'src/node/nodeComposeConfig.entity';
@@ -62,14 +62,12 @@ WantedBy=multi-user.target
   `;
 }
 
-// @Injectable({ scope: Scope.DEFAULT })
-@Injectable()
+@Injectable({ scope: Scope.DEFAULT })
 export class DirectorService implements OnModuleInit {
   constructor(
     @InjectRepository(SuperComposeNodeEntity)
     private readonly nodeRepo: Repository<SuperComposeNodeEntity>,
-    @Inject('SSHPoolService')
-    private pool: SSHPoolService,
+    private readonly pool: SSHPoolService,
   ) {}
 
   public async onModuleInit() {

@@ -1,7 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { NodeConfig } from './nodeConfig.entity';
 
-@Entity('super_compose_node')
+@Entity()
 export class SuperComposeNodeEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -9,15 +9,15 @@ export class SuperComposeNodeEntity {
   @Column({ length: 255 })
   name: string;
 
-  @OneToMany(
+  @ManyToOne(
     () => NodeConfig,
-    cfg => cfg.nodes,
+    cfg => cfg.targetNodes,
   )
   targetConfig: NodeConfig;
 
-  @OneToMany(
+  @ManyToOne(
     () => NodeConfig,
-    cfg => cfg.nodes,
+    cfg => cfg.lastAppliedConfigNodes,
   )
   lastAppliedConfig: NodeConfig;
 }

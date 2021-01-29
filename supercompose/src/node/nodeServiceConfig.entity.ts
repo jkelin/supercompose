@@ -1,12 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { NodeComposeConfig } from './nodeComposeConfig.entity';
 
-@Entity('node_service_config')
+@Entity()
 export class NodeServiceConfig {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(
+  @OneToMany(
     () => NodeComposeConfig,
     compose => compose.service,
   )

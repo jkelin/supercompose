@@ -10,8 +10,7 @@ import { SuperComposeNodeEntity } from 'src/node/SuperComposeNode.entity';
 import { IsNull, Not, Repository } from 'typeorm';
 import { NodeConnectionManager } from './nodeConnectionManager';
 
-// @Injectable({ scope: Scope.DEFAULT })
-@Injectable()
+@Injectable({ scope: Scope.DEFAULT })
 export class SSHPoolService implements OnModuleInit, OnModuleDestroy {
   private nodes?: SuperComposeNodeEntity[];
   private connections: Record<string, NodeConnectionManager> = {};

@@ -1,9 +1,9 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { DirectorService } from './director.service';
 
 @Controller()
 export class DirectorController {
-  constructor(@Inject() private readonly director: DirectorService) {}
+  constructor(private readonly director: DirectorService) {}
 
   @Get('/reconciliate')
   async reconciliate() {

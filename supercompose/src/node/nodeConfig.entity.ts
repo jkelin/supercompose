@@ -5,12 +5,13 @@ import {
   OneToMany,
   ManyToMany,
   Entity,
+  JoinTable,
 } from 'typeorm';
 import { NodeAuthConfigEntity } from './nodeAuthConfing.entity';
 import { NodeComposeConfig } from './nodeComposeConfig.entity';
 import { SuperComposeNodeEntity } from './SuperComposeNode.entity';
 
-@Entity('node_config')
+@Entity()
 export class NodeConfig {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -18,10 +19,19 @@ export class NodeConfig {
   @Column({ length: 255 })
   name: string;
 
-  @ManyToOne(() => SuperComposeNodeEntity)
-  nodes: SuperComposeNodeEntity[];
+  @OneToMany(
+    () => SuperComposeNodeEntity,
+    x => x.targetConfig,
+  )
+  targetNodes: SuperComposeNodeEntity[];
 
   @OneToMany(
+    () => SuperComposeNodeEntity,
+    x => x.lastAppliedConfig,
+  )
+  lastAppliedConfigNodes: SuperComposeNodeEntity[];
+
+  @ManyToOne(
     () => NodeAuthConfigEntity,
     auth => auth.configs,
   )
@@ -31,5 +41,6 @@ export class NodeConfig {
     () => NodeComposeConfig,
     compose => compose.configs,
   )
+  @JoinTable()
   composes: NodeComposeConfig[];
 }

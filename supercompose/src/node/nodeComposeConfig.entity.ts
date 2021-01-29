@@ -2,13 +2,13 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  OneToMany,
   ManyToMany,
+  ManyToOne,
 } from 'typeorm';
 import { NodeConfig } from './nodeConfig.entity';
 import { NodeServiceConfig } from './nodeServiceConfig.entity';
 
-@Entity('node_compose_config')
+@Entity()
 export class NodeComposeConfig {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -22,7 +22,7 @@ export class NodeComposeConfig {
   @Column({ type: 'text' })
   content: string;
 
-  @OneToMany(
+  @ManyToOne(
     () => NodeServiceConfig,
     service => service.composes,
   )

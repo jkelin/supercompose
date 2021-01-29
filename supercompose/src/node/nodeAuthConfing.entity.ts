@@ -1,7 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { NodeConfig } from './nodeConfig.entity';
 
-@Entity('node_auth_config')
+@Entity()
 export class NodeAuthConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,7 +21,7 @@ export class NodeAuthConfigEntity {
   @Column({ type: 'text' })
   privateKey?: string;
 
-  @ManyToOne(
+  @OneToMany(
     () => NodeConfig,
     cfg => cfg.auth,
   )
