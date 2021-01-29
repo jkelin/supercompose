@@ -16,9 +16,6 @@ export class NodeConfigEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 255 })
-  name: string;
-
   @OneToMany(
     () => SuperComposeNodeEntity,
     x => x.targetConfig,

@@ -1,6 +1,14 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { NodeConfigEntity } from './nodeConfig.entity';
 
+export interface AuthDefinition {
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  privateKey?: string;
+}
+
 @Entity()
 export class NodeAuthConfigEntity {
   @PrimaryGeneratedColumn('uuid')

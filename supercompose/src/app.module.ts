@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { DirectorController } from './director/director.controller';
 import { DirectorService } from './director/director.service';
+import { NodeController } from './node/node.controller';
+import { NodeService } from './node/node.service';
 import { NodeAuthConfigEntity } from './node/nodeAuthConfing.entity';
 import { NodeComposeConfigEntity } from './node/nodeComposeConfig.entity';
 import { NodeConfigEntity } from './node/nodeConfig.entity';
@@ -29,7 +31,7 @@ import { SSHPoolService } from './sshConnectionPool/sshpool.service';
       SuperComposeNodeEntity,
     ]),
   ],
-  controllers: [DirectorController],
-  providers: [SSHPoolService, DirectorService],
+  controllers: [DirectorController, NodeController],
+  providers: [SSHPoolService, DirectorService, NodeService],
 })
 export class AppModule {}

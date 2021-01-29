@@ -35,6 +35,7 @@
     "rxjs": "^6.5.4",
     "ssh2": "^0.8.9",
     "typeorm": "^0.2.30",
+    "uuidv4": "^6.2.6",
     "yaml": "^1.10.0"
   },
   "devDependencies": {
