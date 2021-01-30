@@ -45,11 +45,11 @@ export class NodeEntity {
   )
   versions: NodeVersionEntity[];
 
-  @OneToOne(() => NodeVersionEntity)
+  @OneToOne(() => NodeVersionEntity, { nullable: true })
   @JoinColumn()
   target: NodeVersionEntity;
 
-  @OneToOne(() => NodeVersionEntity)
+  @OneToOne(() => NodeVersionEntity, { nullable: true })
   @JoinColumn()
   last: NodeVersionEntity;
 }

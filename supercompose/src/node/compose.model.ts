@@ -1,9 +1,8 @@
-import { Post } from '@nestjs/common';
-import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 
 @ObjectType('Compose')
 export class ComposeModel {
-  @Field(type => ID)
+  @Field(() => ID)
   id: string;
 
   @Field()

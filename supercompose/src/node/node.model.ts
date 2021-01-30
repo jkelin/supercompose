@@ -18,12 +18,6 @@ export class NodeModel {
   @Field()
   username: string;
 
-  @Field({ nullable: true })
-  password: string;
-
-  @Field({ nullable: true })
-  privateKey?: string;
-
   @Field(() => [ComposeModel])
   composes: ComposeModel[];
 }

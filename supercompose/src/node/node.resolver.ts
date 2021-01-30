@@ -52,16 +52,6 @@ export class NodeResolver {
     return self.username;
   }
 
-  @ResolveField()
-  async password(@Parent() self: NodeEntity) {
-    return self.password;
-  }
-
-  @ResolveField()
-  async privateKey(@Parent() self: NodeEntity) {
-    return self.privateKey;
-  }
-
   @ResolveField(type => [ComposeModel])
   async composes(@Parent() self: NodeEntity) {
     return self.target.composes;

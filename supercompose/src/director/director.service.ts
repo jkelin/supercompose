@@ -65,7 +65,7 @@ WantedBy=multi-user.target
 @Injectable({ scope: Scope.DEFAULT })
 export class DirectorService {
   constructor(
-    @InjectRepository(NodeVersionEntity)
+    @InjectRepository(NodeEntity)
     private readonly nodeRepo: Repository<NodeEntity>,
     private readonly pool: SSHPoolService,
   ) {}
@@ -78,28 +78,17 @@ export class DirectorService {
 
     for (const node of nodes) {
       for (const compose of node.target.composes) {
-        this.initCompose(node.target, compose);
+        await this.reconciliateCompose(node.target, compose);
       }
     }
-
-    // while (true) {
-    //   try {
-    //     const resp = await this.nm.runCommandOn(
-    //       "e35e3427-a80c-475c-9011-8cf606d5d636",
-    //       "uptime"
-    //     );
-    //     console.warn(resp.stdout);
-    //     await new Promise((resolve) => setTimeout(resolve, 1000));
-    //   } catch (ex) {
-    //     console.error("Exception in main loop", ex);
-    //   }
-    // }
   }
 
-  private async initCompose(
+  private async reconciliateCompose(
     node: NodeVersionEntity,
     compose: ComposeVersionEntity,
   ) {
+    console.info('Reconciliating node', node.id, 'compose', compose.id);
+
     try {
       await this.ensureComposeFileIsUpToDate(node, compose);
       if (compose.serviceEnabled) {
