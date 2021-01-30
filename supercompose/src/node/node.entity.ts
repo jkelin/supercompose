@@ -1,5 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
-import { NodeConfigEntity } from './nodeConfig.entity';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  OneToMany,
+  OneToOne,
+  JoinColumn,
+} from 'typeorm';
+import { NodeVersionEntity } from './nodeVersion.entity';
+import { TenantEntity } from './tenant.entity';
 
 @Entity('node')
 export class NodeEntity {
@@ -9,15 +18,38 @@ export class NodeEntity {
   @Column({ length: 255 })
   name: string;
 
-  @ManyToOne(
-    () => NodeConfigEntity,
-    cfg => cfg.targetNodes,
-  )
-  targetConfig: NodeConfigEntity;
+  @Column({ length: 255 })
+  host: string;
+
+  @Column({ type: 'int' })
+  port: number;
+
+  @Column({ type: 'text' })
+  username: string;
+
+  @Column({ type: 'bytea', nullable: true })
+  password?: Buffer;
+
+  @Column({ type: 'bytea', nullable: true })
+  privateKey?: Buffer;
 
   @ManyToOne(
-    () => NodeConfigEntity,
-    cfg => cfg.lastAppliedConfigNodes,
+    () => TenantEntity,
+    x => x.nodes,
   )
-  lastAppliedConfig: NodeConfigEntity;
+  tenant: TenantEntity;
+
+  @OneToMany(
+    () => NodeVersionEntity,
+    x => x.node,
+  )
+  versions: NodeVersionEntity[];
+
+  @OneToOne(() => NodeVersionEntity)
+  @JoinColumn()
+  target: NodeVersionEntity;
+
+  @OneToOne(() => NodeVersionEntity)
+  @JoinColumn()
+  last: NodeVersionEntity;
 }

@@ -2,10 +2,11 @@ import { NodeConnection } from './nodeConnection';
 import EventEmitter from 'events';
 import AsyncLock from 'async-lock';
 import { Repository } from 'typeorm';
-import { NodeConfigEntity } from 'src/node/nodeConfig.entity';
+import { NodeEntity } from 'src/node/node.entity';
+import { CryptoService } from 'src/crypto/crypto.service';
 
 export class NodeConnectionManager {
-  private node?: NodeConfigEntity;
+  private node?: NodeEntity;
   private connection?: NodeConnection;
   private shouldBeRunning = true;
   private nodeEvents = new EventEmitter();
@@ -14,7 +15,8 @@ export class NodeConnectionManager {
 
   constructor(
     private configId: string,
-    private db: Repository<NodeConfigEntity>,
+    private db: Repository<NodeEntity>,
+    private readonly crypto: CryptoService,
   ) {}
 
   private async maintainConnection() {
@@ -28,7 +30,17 @@ export class NodeConnectionManager {
           this.connection.removeAllListeners('stateChange');
         }
 
-        this.connection = new NodeConnection(this.configId, this.node?.auth);
+        this.connection = new NodeConnection(this.configId, {
+          host: this.node.host,
+          password: this.node.password
+            ? await this.crypto.decryptSecret(this.node.password)
+            : undefined,
+          pkey: this.node.privateKey
+            ? await this.crypto.decryptSecret(this.node.privateKey)
+            : undefined,
+          port: this.node.port,
+          username: this.node.username,
+        });
         this.connection.on('stateChange', state => this.nodeEvents.emit(state));
 
         while (this.shouldBeRunning) {

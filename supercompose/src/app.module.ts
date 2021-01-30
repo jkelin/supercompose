@@ -7,21 +7,21 @@ import { DirectorController } from './director/director.controller';
 import { DirectorService } from './director/director.service';
 import { NodeController } from './node/node.controller';
 import { NodeService } from './node/node.service';
-import { AuthConfigEntity } from './node/authConfig.entity';
-import { ComposeConfigEntity } from './node/composeConfig.entity';
-import { NodeConfigEntity } from './node/nodeConfig.entity';
-import { ServiceConfigEntity } from './node/nodeServiceConfig.entity';
 import { NodeEntity } from './node/node.entity';
 import { SSHPoolService } from './sshConnectionPool/sshpool.service';
 import { ComposeResolver } from './node/compose.resolver';
 import { NodeResolver } from './node/node.resolver';
+import { ComposeEntity } from './node/compose.entity';
+import { ComposeVersionEntity } from './node/composeVersion.entity';
+import { NodeVersionEntity } from './node/nodeVersion.entity';
+import { TenantEntity } from './node/tenant.entity';
+import { CryptoService } from './crypto/crypto.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     GraphQLModule.forRoot({ autoSchemaFile: true }),
     TypeOrmModule.forRoot({
-      logging: 'all',
       type: 'postgres',
       url: process.env.POSTGRES_CONNECTION_STRING,
       synchronize: true,
@@ -29,11 +29,11 @@ import { NodeResolver } from './node/node.resolver';
       autoLoadEntities: true,
     }),
     TypeOrmModule.forFeature([
-      AuthConfigEntity,
-      ComposeConfigEntity,
-      NodeConfigEntity,
-      ServiceConfigEntity,
+      ComposeEntity,
+      ComposeVersionEntity,
       NodeEntity,
+      NodeVersionEntity,
+      TenantEntity,
     ]),
   ],
   controllers: [DirectorController, NodeController],
@@ -43,6 +43,7 @@ import { NodeResolver } from './node/node.resolver';
     NodeService,
     ComposeResolver,
     NodeResolver,
+    CryptoService,
   ],
 })
 export class AppModule {}

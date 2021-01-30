@@ -1,11 +1,9 @@
-import { Post } from '@nestjs/common';
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
 import { ComposeModel } from './compose.model';
-import { NodeEntity } from './node.entity';
 
 @ObjectType('Node')
 export class NodeModel {
-  @Field(type => ID)
+  @Field(() => ID)
   id: string;
 
   @Field()
@@ -14,7 +12,7 @@ export class NodeModel {
   @Field()
   host: string;
 
-  @Field(type => Int)
+  @Field(() => Int)
   port: number;
 
   @Field()
@@ -26,6 +24,6 @@ export class NodeModel {
   @Field({ nullable: true })
   privateKey?: string;
 
-  @Field(type => [ComposeModel])
+  @Field(() => [ComposeModel])
   composes: ComposeModel[];
 }

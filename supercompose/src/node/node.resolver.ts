@@ -21,14 +21,14 @@ export class NodeResolver {
   async node(@Args('id', { type: () => ID }) id: string) {
     return this.nodeRepo.findOne({
       where: { id },
-      relations: ['targetConfig', 'targetConfig.auth', 'targetConfig.composes'],
+      relations: ['target', 'target.composes'],
     });
   }
 
   @Query(returns => [NodeModel])
   async nodes() {
     return this.nodeRepo.find({
-      relations: ['targetConfig', 'targetConfig.auth', 'targetConfig.composes'],
+      relations: ['target', 'target.composes'],
     });
   }
 
@@ -39,31 +39,31 @@ export class NodeResolver {
 
   @ResolveField()
   async host(@Parent() self: NodeEntity) {
-    return self.targetConfig.auth.host;
+    return self.host;
   }
 
   @ResolveField()
   async port(@Parent() self: NodeEntity) {
-    return self.targetConfig.auth.port;
+    return self.port;
   }
 
   @ResolveField()
   async username(@Parent() self: NodeEntity) {
-    return self.targetConfig.auth.username;
+    return self.username;
   }
 
   @ResolveField()
   async password(@Parent() self: NodeEntity) {
-    return self.targetConfig.auth.password;
+    return self.password;
   }
 
   @ResolveField()
   async privateKey(@Parent() self: NodeEntity) {
-    return self.targetConfig.auth.privateKey;
+    return self.privateKey;
   }
 
   @ResolveField(type => [ComposeModel])
   async composes(@Parent() self: NodeEntity) {
-    return self.targetConfig.composes;
+    return self.target.composes;
   }
 }

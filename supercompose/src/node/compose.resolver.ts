@@ -9,41 +9,40 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ComposeModel } from './compose.model';
-import { NodeModel } from './node.model';
-import { ComposeConfigEntity } from './composeConfig.entity';
+import { ComposeVersionEntity } from './composeVersion.entity';
 
-@Resolver(of => ComposeModel)
+@Resolver(() => ComposeModel)
 export class ComposeResolver {
-  @InjectRepository(ComposeConfigEntity)
-  private readonly composeRepo: Repository<ComposeConfigEntity>;
+  @InjectRepository(ComposeVersionEntity)
+  private readonly composeRepo: Repository<ComposeVersionEntity>;
 
-  @Query(returns => ComposeModel)
+  @Query(() => ComposeModel)
   async compose(@Args('id', { type: () => ID }) id: string) {
     return this.composeRepo.findOne({ where: { id }, relations: ['service'] });
   }
 
-  @Query(returns => [ComposeModel])
+  @Query(() => [ComposeModel])
   async composes() {
     return this.composeRepo.find({ relations: ['service'] });
   }
 
-  @ResolveField(type => String)
-  async name(@Parent() self: ComposeConfigEntity) {
-    return self.name;
+  @ResolveField(() => String)
+  async name(@Parent() self: ComposeVersionEntity) {
+    return self.compose.name;
   }
 
-  @ResolveField(type => String)
-  async content(@Parent() self: ComposeConfigEntity) {
+  @ResolveField(() => String)
+  async content(@Parent() self: ComposeVersionEntity) {
     return self.content;
   }
 
-  @ResolveField(type => Boolean)
-  async serviceEnabled(@Parent() self: ComposeConfigEntity) {
-    return self.service.enabled;
+  @ResolveField(() => Boolean)
+  async serviceEnabled(@Parent() self: ComposeVersionEntity) {
+    return self.serviceEnabled;
   }
 
-  @ResolveField(type => String, { nullable: true })
-  async serviceName(@Parent() self: ComposeConfigEntity) {
-    return self.service.serviceName;
+  @ResolveField(() => String, { nullable: true })
+  async serviceName(@Parent() self: ComposeVersionEntity) {
+    return self.serviceName;
   }
 }

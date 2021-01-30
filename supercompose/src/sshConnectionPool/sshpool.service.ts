@@ -5,7 +5,7 @@ import {
   Scope,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { NodeConfigEntity } from 'src/node/nodeConfig.entity';
+import { CryptoService } from 'src/crypto/crypto.service';
 import { NodeEntity } from 'src/node/node.entity';
 import { IsNull, Not, Repository } from 'typeorm';
 import { NodeConnectionManager } from './nodeConnectionManager';
@@ -16,22 +16,22 @@ export class SSHPoolService implements OnModuleInit, OnModuleDestroy {
   private connections: Record<string, NodeConnectionManager> = {};
 
   constructor(
-    @InjectRepository(NodeConfigEntity)
-    private readonly nodeConfigRepo: Repository<NodeConfigEntity>,
     @InjectRepository(NodeEntity)
     private readonly nodeRepo: Repository<NodeEntity>,
+    private readonly crypto: CryptoService,
   ) {}
 
   public async onModuleInit() {
     this.nodes = await this.nodeRepo.find({
-      where: { targetConfig: Not(IsNull()) },
-      relations: ['targetConfig'],
+      where: { target: Not(IsNull()) },
+      relations: ['target'],
     });
 
     for (const node of this.nodes) {
       const conn = (this.connections[node.id] = new NodeConnectionManager(
-        node.targetConfig.id,
-        this.nodeConfigRepo,
+        node.id,
+        this.nodeRepo,
+        this.crypto,
       ));
 
       await conn.start();

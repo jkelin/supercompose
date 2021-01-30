@@ -1,10 +1,22 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+import { IsNotEmpty } from 'class-validator';
 import { NodeService } from './node.service';
-import { AuthDefinition } from './authConfig.entity';
 
-interface CreateNodeDTO {
+class CreateNodeDTO {
+  @IsNotEmpty()
   name: string;
-  auth: AuthDefinition;
+
+  @IsNotEmpty()
+  host: string;
+
+  @IsNotEmpty()
+  port: number;
+
+  @IsNotEmpty()
+  username: string;
+
+  password: string;
+  pkey: string;
 }
 
 @Controller('/nodes')
@@ -13,7 +25,14 @@ export class NodeController {
 
   @Post('/')
   async create(@Body() body: CreateNodeDTO) {
-    const nodeId = await this.nodes.createNode(body.name, body.auth);
+    const nodeId = await this.nodes.createNode({
+      name: body.name,
+      host: body.host,
+      port: body.port,
+      username: body.username,
+      password: body.password,
+      privateKey: body.pkey,
+    });
     return { nodeId };
   }
 }
