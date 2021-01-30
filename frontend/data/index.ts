@@ -1,9 +1,13 @@
 import { gql } from '@apollo/client';
 import * as Apollo from '@apollo/client';
 export type Maybe<T> = T | null;
-export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type Exact<T extends { [key: string]: unknown }> = {
+  [K in keyof T]: T[K];
+};
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> &
+  { [SubKey in K]?: Maybe<T[SubKey]> };
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> &
+  { [SubKey in K]: Maybe<T[SubKey]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string;
@@ -41,35 +45,27 @@ export type Query = {
   nodes: Array<Node>;
 };
 
-
 export type QueryComposeArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryNodeArgs = {
   id: Scalars['ID'];
 };
 
-export type GetNodesQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetNodesQueryVariables = Exact<{ [key: string]: never }>;
 
-
-export type GetNodesQuery = (
-  { __typename?: 'Query' }
-  & { nodes: Array<(
-    { __typename?: 'Node' }
-    & Pick<Node, 'id'>
-  )> }
-);
-
+export type GetNodesQuery = { __typename?: 'Query' } & {
+  nodes: Array<{ __typename?: 'Node' } & Pick<Node, 'id'>>;
+};
 
 export const GetNodesDocument = gql`
-    query getNodes {
-  nodes {
-    id
+  query getNodes {
+    nodes {
+      id
+    }
   }
-}
-    `;
+`;
 
 /**
  * __useGetNodesQuery__
@@ -86,12 +82,30 @@ export const GetNodesDocument = gql`
  *   },
  * });
  */
-export function useGetNodesQuery(baseOptions?: Apollo.QueryHookOptions<GetNodesQuery, GetNodesQueryVariables>) {
-        return Apollo.useQuery<GetNodesQuery, GetNodesQueryVariables>(GetNodesDocument, baseOptions);
-      }
-export function useGetNodesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetNodesQuery, GetNodesQueryVariables>) {
-          return Apollo.useLazyQuery<GetNodesQuery, GetNodesQueryVariables>(GetNodesDocument, baseOptions);
-        }
+export function useGetNodesQuery(
+  baseOptions?: Apollo.QueryHookOptions<GetNodesQuery, GetNodesQueryVariables>,
+) {
+  return Apollo.useQuery<GetNodesQuery, GetNodesQueryVariables>(
+    GetNodesDocument,
+    baseOptions,
+  );
+}
+export function useGetNodesLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    GetNodesQuery,
+    GetNodesQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<GetNodesQuery, GetNodesQueryVariables>(
+    GetNodesDocument,
+    baseOptions,
+  );
+}
 export type GetNodesQueryHookResult = ReturnType<typeof useGetNodesQuery>;
-export type GetNodesLazyQueryHookResult = ReturnType<typeof useGetNodesLazyQuery>;
-export type GetNodesQueryResult = Apollo.QueryResult<GetNodesQuery, GetNodesQueryVariables>;
+export type GetNodesLazyQueryHookResult = ReturnType<
+  typeof useGetNodesLazyQuery
+>;
+export type GetNodesQueryResult = Apollo.QueryResult<
+  GetNodesQuery,
+  GetNodesQueryVariables
+>;

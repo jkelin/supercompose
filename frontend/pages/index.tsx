@@ -1,5 +1,5 @@
-import { useGetNodesQuery } from "data";
-import Head from "next/head";
+import { useGetNodesQuery } from 'data';
+import Head from 'next/head';
 
 export default function Home() {
   const nodes = useGetNodesQuery();
