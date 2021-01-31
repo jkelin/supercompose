@@ -6,9 +6,9 @@ import {
   ManyToOne,
   OneToOne,
 } from 'typeorm';
-import { ComposeVersionEntity } from './composeVersion.entity';
-import { DeploymentEntity } from './deployment.entity';
-import { TenantEntity } from './tenant.entity';
+import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
+import { DeploymentEntity } from 'src/deployment/deployment.entity';
+import { TenantEntity } from 'src/tenant/tenant.entity';
 
 @Entity('compose')
 export class ComposeEntity {

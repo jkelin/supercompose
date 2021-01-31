@@ -9,13 +9,14 @@ import { NodeController } from './node/node.controller';
 import { NodeService } from './node/node.service';
 import { NodeEntity } from './node/node.entity';
 import { SSHPoolService } from './sshConnectionPool/sshpool.service';
-import { ComposeResolver } from './node/compose.resolver';
 import { NodeResolver } from './node/node.resolver';
-import { ComposeEntity } from './node/compose.entity';
-import { ComposeVersionEntity } from './node/composeVersion.entity';
-import { NodeVersionEntity } from './node/nodeVersion.entity';
-import { TenantEntity } from './node/tenant.entity';
 import { CryptoService } from './crypto/crypto.service';
+import { ComposeEntity } from './compose/compose.entity';
+import { ComposeResolver } from './compose/compose.resolver';
+import { ComposeVersionEntity } from './compose/composeVersion.entity';
+import { TenantEntity } from './tenant/tenant.entity';
+import { DeploymentEntity } from './deployment/deployment.entity';
+import { DeploymentResolver } from './deployment/deployment.resolver';
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { CryptoService } from './crypto/crypto.service';
       ComposeEntity,
       ComposeVersionEntity,
       NodeEntity,
-      NodeVersionEntity,
+      DeploymentEntity,
       TenantEntity,
     ]),
   ],
@@ -44,6 +45,7 @@ import { CryptoService } from './crypto/crypto.service';
     ComposeResolver,
     NodeResolver,
     CryptoService,
+    DeploymentResolver,
   ],
 })
 export class AppModule {}

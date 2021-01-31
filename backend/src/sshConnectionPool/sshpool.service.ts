@@ -23,8 +23,7 @@ export class SSHPoolService implements OnModuleInit, OnModuleDestroy {
 
   public async onModuleInit() {
     this.nodes = await this.nodeRepo.find({
-      where: { target: Not(IsNull()) },
-      relations: ['target'],
+      where: { enabled: true },
     });
 
     for (const node of this.nodes) {

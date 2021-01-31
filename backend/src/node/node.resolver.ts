@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NodeModel } from './node.model';
 import { NodeEntity } from './node.entity';
-import { DeploymentModel } from './deployment.model';
+import { DeploymentModel } from 'src/deployment/deployment.model';
 
 @Resolver(() => NodeModel)
 export class NodeResolver {

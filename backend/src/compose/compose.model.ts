@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { DeploymentModel } from './deployment.model';
+import { DeploymentModel } from 'src/deployment/deployment.model';
 
 @ObjectType('Compose')
 export class ComposeModel {

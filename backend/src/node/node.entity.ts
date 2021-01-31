@@ -5,13 +5,16 @@ import {
   ManyToOne,
   OneToMany,
 } from 'typeorm';
-import { DeploymentEntity } from './deployment.entity';
-import { TenantEntity } from './tenant.entity';
+import { DeploymentEntity } from 'src/deployment/deployment.entity';
+import { TenantEntity } from 'src/tenant/tenant.entity';
 
 @Entity('node')
 export class NodeEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column()
+  enabled: boolean;
 
   @Column({ length: 255 })
   name: string;

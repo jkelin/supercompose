@@ -1,6 +1,6 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { ComposeModel } from './compose.model';
-import { NodeModel } from './node.model';
+import { ComposeModel } from 'src/compose//compose.model';
+import { NodeModel } from 'src/node/node.model';
 
 @ObjectType('Deployment')
 export class DeploymentModel {

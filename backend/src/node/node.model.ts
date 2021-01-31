@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql';
-import { DeploymentModel } from './deployment.model';
+import { DeploymentModel } from 'src/deployment/deployment.model';
 
 @ObjectType('Node')
 export class NodeModel {

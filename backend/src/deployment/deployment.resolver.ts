@@ -1,8 +1,8 @@
 import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
-import { ComposeModel } from './compose.model';
+import { ComposeModel } from 'src/compose/compose.model';
 import { DeploymentEntity } from './deployment.entity';
 import { DeploymentModel } from './deployment.model';
-import { NodeModel } from './node.model';
+import { NodeModel } from 'src/node/node.model';
 
 @Resolver(() => DeploymentModel)
 export class DeploymentResolver {

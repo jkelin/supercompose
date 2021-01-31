@@ -1,7 +1,7 @@
 import { PrimaryGeneratedColumn, Entity, ManyToOne, Column } from 'typeorm';
-import { ComposeEntity } from './compose.entity';
-import { ComposeVersionEntity } from './composeVersion.entity';
-import { NodeEntity } from './node.entity';
+import { ComposeEntity } from 'src/compose/compose.entity';
+import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
+import { NodeEntity } from 'src/node/node.entity';
 
 @Entity('deployment')
 export class DeploymentEntity {

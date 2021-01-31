@@ -10,8 +10,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ComposeEntity } from './compose.entity';
 import { ComposeModel } from './compose.model';
-import { ComposeVersionEntity } from './composeVersion.entity';
-import { DeploymentModel } from './deployment.model';
+import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
+import { DeploymentModel } from 'src/deployment/deployment.model';
 
 @Resolver(() => ComposeModel)
 export class ComposeResolver {
