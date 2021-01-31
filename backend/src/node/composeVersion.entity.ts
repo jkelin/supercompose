@@ -1,13 +1,5 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinTable,
-  ManyToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { ComposeEntity } from './compose.entity';
-import { NodeVersionEntity } from './nodeVersion.entity';
 
 @Entity('compose_version')
 export class ComposeVersionEntity {
@@ -31,10 +23,4 @@ export class ComposeVersionEntity {
     x => x.versions,
   )
   compose: ComposeEntity;
-
-  @ManyToMany(
-    () => NodeVersionEntity,
-    x => x.composes,
-  )
-  nodes: NodeVersionEntity[];
 }

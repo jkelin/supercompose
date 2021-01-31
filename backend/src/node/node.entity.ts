@@ -4,10 +4,8 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   OneToMany,
-  OneToOne,
-  JoinColumn,
 } from 'typeorm';
-import { NodeVersionEntity } from './nodeVersion.entity';
+import { DeploymentEntity } from './deployment.entity';
 import { TenantEntity } from './tenant.entity';
 
 @Entity('node')
@@ -40,16 +38,8 @@ export class NodeEntity {
   tenant: TenantEntity;
 
   @OneToMany(
-    () => NodeVersionEntity,
+    () => DeploymentEntity,
     x => x.node,
   )
-  versions: NodeVersionEntity[];
-
-  @OneToOne(() => NodeVersionEntity, { nullable: true })
-  @JoinColumn()
-  target: NodeVersionEntity;
-
-  @OneToOne(() => NodeVersionEntity, { nullable: true })
-  @JoinColumn()
-  last: NodeVersionEntity;
+  deployments: DeploymentEntity[];
 }

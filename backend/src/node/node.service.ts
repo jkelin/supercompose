@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { NodeEntity } from './node.entity';
-import { NodeVersionEntity } from './nodeVersion.entity';
 import { v4 as uuid } from 'uuid';
 import { CryptoService } from 'src/crypto/crypto.service';
 
@@ -24,14 +23,9 @@ export class NodeService {
     password: string;
     privateKey: string;
   }) {
-    const nodeConfigEntity = new NodeVersionEntity();
-    nodeConfigEntity.id = uuid();
-    nodeConfigEntity.composes = [];
-
     const nodeEntity = new NodeEntity();
     nodeEntity.id = uuid();
     nodeEntity.name = args.name;
-    nodeEntity.target = nodeConfigEntity;
     nodeEntity.host = args.host;
     nodeEntity.username = args.username;
     nodeEntity.port = args.port;
@@ -42,10 +36,7 @@ export class NodeService {
       ? await this.crypto.encryptSecret(args.privateKey)
       : undefined;
 
-    await this.manager.transaction(async trx => {
-      await trx.save(nodeConfigEntity);
-      await trx.save(nodeEntity);
-    });
+    await this.nodeRepo.save(nodeEntity);
 
     return nodeEntity.id;
   }

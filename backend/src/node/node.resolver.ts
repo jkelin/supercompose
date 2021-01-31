@@ -10,25 +10,25 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NodeModel } from './node.model';
 import { NodeEntity } from './node.entity';
-import { ComposeModel } from './compose.model';
+import { DeploymentModel } from './deployment.model';
 
-@Resolver(of => NodeModel)
+@Resolver(() => NodeModel)
 export class NodeResolver {
   @InjectRepository(NodeEntity)
   private readonly nodeRepo: Repository<NodeEntity>;
 
-  @Query(returns => NodeModel)
+  @Query(() => NodeModel)
   async node(@Args('id', { type: () => ID }) id: string) {
     return this.nodeRepo.findOne({
       where: { id },
-      relations: ['target', 'target.composes'],
+      relations: ['deployments', 'deployments.compose'],
     });
   }
 
-  @Query(returns => [NodeModel])
+  @Query(() => [NodeModel])
   async nodes() {
     return this.nodeRepo.find({
-      relations: ['target', 'target.composes'],
+      relations: ['deployments', 'deployments.compose'],
     });
   }
 
@@ -52,8 +52,8 @@ export class NodeResolver {
     return self.username;
   }
 
-  @ResolveField(type => [ComposeModel])
-  async composes(@Parent() self: NodeEntity) {
-    return self.target.composes;
+  @ResolveField(() => [DeploymentModel], { nullable: true })
+  async deployments(@Parent() self: NodeEntity) {
+    return self.deployments;
   }
 }

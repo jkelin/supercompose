@@ -8,8 +8,10 @@ import {
 } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ComposeEntity } from './compose.entity';
 import { ComposeModel } from './compose.model';
 import { ComposeVersionEntity } from './composeVersion.entity';
+import { DeploymentModel } from './deployment.model';
 
 @Resolver(() => ComposeModel)
 export class ComposeResolver {
@@ -18,31 +20,41 @@ export class ComposeResolver {
 
   @Query(() => ComposeModel)
   async compose(@Args('id', { type: () => ID }) id: string) {
-    return this.composeRepo.findOne({ where: { id }, relations: ['service'] });
+    return this.composeRepo.findOne({
+      where: { id },
+      relations: ['current', 'deployments', 'deployments.node'],
+    });
   }
 
   @Query(() => [ComposeModel])
   async composes() {
-    return this.composeRepo.find({ relations: ['service'] });
+    return this.composeRepo.find({
+      relations: ['current', 'deployments', 'deployments.node'],
+    });
   }
 
   @ResolveField(() => String)
-  async name(@Parent() self: ComposeVersionEntity) {
-    return self.compose.name;
+  async name(@Parent() self: ComposeEntity) {
+    return self.name;
   }
 
   @ResolveField(() => String)
-  async content(@Parent() self: ComposeVersionEntity) {
-    return self.content;
+  async content(@Parent() self: ComposeEntity) {
+    return self.current.content;
   }
 
   @ResolveField(() => Boolean)
-  async serviceEnabled(@Parent() self: ComposeVersionEntity) {
-    return self.serviceEnabled;
+  async serviceEnabled(@Parent() self: ComposeEntity) {
+    return self.current.serviceEnabled;
   }
 
   @ResolveField(() => String, { nullable: true })
-  async serviceName(@Parent() self: ComposeVersionEntity) {
-    return self.serviceName;
+  async serviceName(@Parent() self: ComposeEntity) {
+    return self.current.serviceName;
+  }
+
+  @ResolveField(() => [DeploymentModel], { nullable: true })
+  async deployments(@Parent() self: ComposeEntity) {
+    return self.deployments;
   }
 }
