@@ -21,6 +21,7 @@ export class ComposeVersionEntity {
   @ManyToOne(
     () => ComposeEntity,
     x => x.versions,
+    { onDelete: 'CASCADE' },
   )
-  compose: ComposeEntity;
+  compose: Promise<ComposeEntity>;
 }

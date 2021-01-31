@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { NodeEntity } from 'src/node/node.entity';
-import { IsNull, Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { NodeConnectionManager } from './nodeConnectionManager';
 
 @Injectable({ scope: Scope.DEFAULT })

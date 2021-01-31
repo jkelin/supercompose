@@ -44,9 +44,9 @@ function parseSystemctlShow(output: string): Record<string, string> {
   return Object.fromEntries(output.split('\n').map(x => x.split('=')));
 }
 
-function generateServiceFile(compose: ComposeVersionEntity) {
+function generateServiceFile(name: string, compose: ComposeVersionEntity) {
   return `[Unit]
-Description=${compose.compose.name} service with docker compose managed by supercompose
+Description=${name} service with docker compose managed by supercompose
 Requires=docker.service
 After=docker.service
 
@@ -77,23 +77,22 @@ export class DirectorService {
     });
 
     for (const node of nodes) {
-      for (const deployment of node.deployments) {
+      for (const deployment of await node.deployments) {
         await this.reconciliateCompose(deployment);
       }
     }
   }
 
   private async reconciliateCompose(deployment: DeploymentEntity) {
-    console.info(
-      'Reconciliating node',
-      deployment.node.id,
-      'compose',
-      deployment.compose.id,
-    );
+    const node = await deployment.node;
+    const compose = await deployment.compose;
+    const current = await compose.current;
+
+    console.info('Reconciliating node', node.id, 'compose', compose.id);
 
     try {
       await this.ensureComposeFileIsUpToDate(deployment);
-      if (deployment.compose.current.serviceEnabled) {
+      if (current.serviceEnabled) {
         await this.ensureServiceIsUpToDate(deployment);
       }
 
@@ -101,17 +100,21 @@ export class DirectorService {
     } catch (ex) {
       console.error(
         'Exception initCompose for node',
-        deployment.node.id,
+        node.id,
         'compose',
-        deployment.compose.id,
+        compose.id,
         ex,
       );
     }
   }
 
   private async ensureServiceHasCorrectState(deployment: DeploymentEntity) {
+    const node = await deployment.node;
+    const compose = await deployment.compose;
+    const current = await compose.current;
+
     const systemctlVersion = await this.pool.runCommandOn(
-      deployment.node.id,
+      node.id,
       'systemctl --version',
     );
     if (systemctlVersion.code !== 0) {
@@ -119,37 +122,41 @@ export class DirectorService {
     }
 
     const serviceStatusOutput = await this.pool.runCommandOn(
-      deployment.node.id,
-      `systemctl show ${deployment.compose.current.serviceName} --no-page`,
+      node.id,
+      `systemctl show ${current.serviceName} --no-page`,
     );
     const serviceStatus = parseSystemctlShow(serviceStatusOutput.stdout);
     if (
       (serviceStatus['UnitFileState'] === 'enabled') !==
-      deployment.compose.current.serviceEnabled
+      current.serviceEnabled
     ) {
       console.info(
         'Systemd service has incorrect state, setting to',
-        deployment.compose.current.serviceEnabled ? 'enabled' : 'disabled',
+        current.serviceEnabled ? 'enabled' : 'disabled',
       );
 
       const enablingRes = await this.pool.runCommandOn(
-        deployment.node.id,
-        `systemctl ${
-          deployment.compose.current.serviceEnabled ? 'enable' : 'disable'
-        } ${deployment.compose.current.serviceName}`,
+        node.id,
+        `systemctl ${current.serviceEnabled ? 'enable' : 'disable'} ${
+          current.serviceName
+        }`,
       );
 
       if (enablingRes.code !== 0) {
         throw new Error(
-          `Could not update status for service ${deployment.compose.current.serviceName}`,
+          `Could not update status for service ${current.serviceName}`,
         );
       }
     }
   }
 
   private async ensureServiceIsUpToDate(deployment: DeploymentEntity) {
+    const node = await deployment.node;
+    const compose = await deployment.compose;
+    const current = await compose.current;
+
     const systemctlVersion = await this.pool.runCommandOn(
-      deployment.node.id,
+      node.id,
       'systemctl --version',
     );
     if (systemctlVersion.code !== 0) {
@@ -157,14 +164,10 @@ export class DirectorService {
     }
 
     const servicePath =
-      '/etc/systemd/system/' +
-      deployment.compose.current.serviceName +
-      '.service';
-    const targetServiceContents = generateServiceFile(
-      deployment.compose.current,
-    );
+      '/etc/systemd/system/' + current.serviceName + '.service';
+    const targetServiceContents = generateServiceFile(compose.name, current);
     const serviceFileExists = await this.pool.fileExistsOn(
-      deployment.node.id,
+      node.id,
       servicePath,
     );
 
@@ -175,10 +178,7 @@ export class DirectorService {
         'exists, reading and determining update',
       );
 
-      const contents = await this.pool.readFileOn(
-        deployment.node.id,
-        servicePath,
-      );
+      const contents = await this.pool.readFileOn(node.id, servicePath);
 
       if (contents.toString('utf8') === targetServiceContents) {
         console.debug('Service file at', servicePath, 'is already up-to-date');
@@ -188,32 +188,24 @@ export class DirectorService {
 
     console.info('Updating service file at', servicePath);
 
-    await this.pool.writeFileOn(
-      deployment.node.id,
-      servicePath,
-      targetServiceContents,
-    );
+    await this.pool.writeFileOn(node.id, servicePath, targetServiceContents);
 
     console.info('Reloading systemd');
 
-    await this.pool.runCommandOn(deployment.node.id, `systemctl daemon-reload`);
+    await this.pool.runCommandOn(node.id, `systemctl daemon-reload`);
   }
 
   private async ensureComposeFileIsUpToDate(deployment: DeploymentEntity) {
-    const composePath =
-      deployment.compose.current.directory + 'docker-compose.yml';
-    const composeExists = await this.pool.fileExistsOn(
-      deployment.node.id,
-      composePath,
-    );
+    const node = await deployment.node;
+    const compose = await deployment.compose;
+    const current = await compose.current;
+
+    const composePath = current.directory + 'docker-compose.yml';
+    const composeExists = await this.pool.fileExistsOn(node.id, composePath);
 
     if (!composeExists) {
       console.info('Compose file at', composePath, 'does not exist, writing');
-      await this.pool.writeFileOn(
-        deployment.node.id,
-        composePath,
-        deployment.compose.current.content,
-      );
+      await this.pool.writeFileOn(node.id, composePath, current.content);
     } else {
       console.debug(
         'Compose file at',
@@ -221,23 +213,15 @@ export class DirectorService {
         'exists, reading and determining update',
       );
 
-      const contents = await this.pool.readFileOn(
-        deployment.node.id,
-        composePath,
-      );
+      const contents = await this.pool.readFileOn(node.id, composePath);
 
       if (isYamlOrJson(contents)) {
-        if (contents.toString('utf-8') !== deployment.compose.current.content) {
+        if (contents.toString('utf-8') !== current.content) {
           console.debug('Compose file at', composePath, 'outdated, updating');
 
-          await this.pool.writeFileOn(
-            deployment.node.id,
-            composePath,
-            deployment.compose.current.content,
-            {
-              recursive: true,
-            },
-          );
+          await this.pool.writeFileOn(node.id, composePath, current.content, {
+            recursive: true,
+          });
         } else {
           console.debug('Compose file at', composePath, 'is up-to-date');
         }

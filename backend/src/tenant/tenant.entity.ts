@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { NodeEntity } from 'src/node/node.entity';
+import { ComposeEntity } from 'src/compose/compose.entity';
 
 @Entity('tenant')
 export class TenantEntity {
@@ -13,5 +14,11 @@ export class TenantEntity {
     () => NodeEntity,
     x => x.tenant,
   )
-  nodes: NodeEntity[];
+  nodes: Promise<NodeEntity[]>;
+
+  @OneToMany(
+    () => ComposeEntity,
+    x => x.tenant,
+  )
+  composes: Promise<ComposeEntity[]>;
 }

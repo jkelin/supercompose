@@ -26,6 +26,7 @@ export class NodeService {
     const nodeEntity = new NodeEntity();
     nodeEntity.id = uuid();
     nodeEntity.name = args.name;
+    nodeEntity.enabled = true;
     nodeEntity.host = args.host;
     nodeEntity.username = args.username;
     nodeEntity.port = args.port;

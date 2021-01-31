@@ -40,17 +40,17 @@ export class ComposeResolver {
 
   @ResolveField(() => String)
   async content(@Parent() self: ComposeEntity) {
-    return self.current.content;
+    return (await self.current).content;
   }
 
   @ResolveField(() => Boolean)
   async serviceEnabled(@Parent() self: ComposeEntity) {
-    return self.current.serviceEnabled;
+    return (await self.current).serviceEnabled;
   }
 
   @ResolveField(() => String, { nullable: true })
   async serviceName(@Parent() self: ComposeEntity) {
-    return self.current.serviceName;
+    return (await self.current).serviceName;
   }
 
   @ResolveField(() => [DeploymentModel], { nullable: true })

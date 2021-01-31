@@ -4,11 +4,16 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   OneToMany,
+  Check,
 } from 'typeorm';
 import { DeploymentEntity } from 'src/deployment/deployment.entity';
 import { TenantEntity } from 'src/tenant/tenant.entity';
+import { Max, Min } from 'class-validator';
 
 @Entity('node')
+@Check(
+  `("password" IS NOT NULL AND "privateKey" is NULL) OR ("privateKey" IS NOT NULL AND "password" is NULL)`,
+)
 export class NodeEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,6 +28,8 @@ export class NodeEntity {
   host: string;
 
   @Column({ type: 'int' })
+  @Min(0)
+  @Max(65535)
   port: number;
 
   @Column({ type: 'text' })
@@ -37,12 +44,13 @@ export class NodeEntity {
   @ManyToOne(
     () => TenantEntity,
     x => x.nodes,
+    { onDelete: 'CASCADE' },
   )
-  tenant: TenantEntity;
+  tenant: Promise<TenantEntity>;
 
   @OneToMany(
     () => DeploymentEntity,
     x => x.node,
   )
-  deployments: DeploymentEntity[];
+  deployments: Promise<DeploymentEntity[]>;
 }

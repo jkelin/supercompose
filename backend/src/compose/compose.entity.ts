@@ -21,21 +21,22 @@ export class ComposeEntity {
   @ManyToOne(
     () => TenantEntity,
     x => x.nodes,
+    { onDelete: 'CASCADE' },
   )
-  tenant: TenantEntity;
+  tenant: Promise<TenantEntity>;
 
   @OneToMany(
     () => DeploymentEntity,
     x => x.compose,
   )
-  deployments: DeploymentEntity[];
+  deployments: Promise<DeploymentEntity[]>;
 
   @OneToMany(
     () => ComposeVersionEntity,
     x => x.compose,
   )
-  versions: ComposeVersionEntity[];
+  versions: Promise<ComposeVersionEntity[]>;
 
   @OneToOne(() => ComposeVersionEntity)
-  current: ComposeVersionEntity;
+  current: Promise<ComposeVersionEntity>;
 }

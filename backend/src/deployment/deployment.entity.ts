@@ -1,9 +1,16 @@
-import { PrimaryGeneratedColumn, Entity, ManyToOne, Column } from 'typeorm';
+import {
+  PrimaryGeneratedColumn,
+  Entity,
+  ManyToOne,
+  Column,
+  Unique,
+} from 'typeorm';
 import { ComposeEntity } from 'src/compose/compose.entity';
 import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
 import { NodeEntity } from 'src/node/node.entity';
 
 @Entity('deployment')
+@Unique(['compose', 'node'])
 export class DeploymentEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -14,8 +21,9 @@ export class DeploymentEntity {
   @ManyToOne(
     () => ComposeEntity,
     x => x.deployments,
+    { onDelete: 'CASCADE' },
   )
-  compose: ComposeEntity;
+  compose: Promise<ComposeEntity>;
 
   @ManyToOne(() => ComposeVersionEntity)
   lastDeployedVersion: ComposeVersionEntity;
@@ -23,6 +31,7 @@ export class DeploymentEntity {
   @ManyToOne(
     () => NodeEntity,
     x => x.deployments,
+    { onDelete: 'CASCADE' },
   )
-  node: NodeEntity;
+  node: Promise<NodeEntity>;
 }
