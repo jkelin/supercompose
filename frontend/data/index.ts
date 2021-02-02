@@ -61,6 +61,12 @@ export type QueryNodeArgs = {
   id: Scalars['ID'];
 };
 
+export type GetComposesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetComposesQuery = { __typename?: 'Query' } & {
+  composes: Array<{ __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>>;
+};
+
 export type GetNodesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetNodesQuery = { __typename?: 'Query' } & {
@@ -69,6 +75,60 @@ export type GetNodesQuery = { __typename?: 'Query' } & {
   >;
 };
 
+export const GetComposesDocument = gql`
+  query getComposes {
+    composes {
+      id
+      name
+    }
+  }
+`;
+
+/**
+ * __useGetComposesQuery__
+ *
+ * To run a query within a React component, call `useGetComposesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetComposesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetComposesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetComposesQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    GetComposesQuery,
+    GetComposesQueryVariables
+  >,
+) {
+  return Apollo.useQuery<GetComposesQuery, GetComposesQueryVariables>(
+    GetComposesDocument,
+    baseOptions,
+  );
+}
+export function useGetComposesLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    GetComposesQuery,
+    GetComposesQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<GetComposesQuery, GetComposesQueryVariables>(
+    GetComposesDocument,
+    baseOptions,
+  );
+}
+export type GetComposesQueryHookResult = ReturnType<typeof useGetComposesQuery>;
+export type GetComposesLazyQueryHookResult = ReturnType<
+  typeof useGetComposesLazyQuery
+>;
+export type GetComposesQueryResult = Apollo.QueryResult<
+  GetComposesQuery,
+  GetComposesQueryVariables
+>;
 export const GetNodesDocument = gql`
   query getNodes {
     nodes {

@@ -1,29 +1,30 @@
-import { useGetNodesQuery, Node } from 'data';
+import { useGetNodesQuery, Node, useGetComposesQuery, Compose } from 'data';
 import React from 'react';
 import Link from 'next/link';
+import { CreateCard } from 'components';
 
-function createNodeQuickTitle(name: string) {
+function createComposeQuickTitle(name: string) {
   return ('' + name[0] + name[1]).toUpperCase();
 }
 
-const NodeCard: React.FC<{
-  node: Pick<Node, 'id' | 'host' | 'name' | 'username'>;
+const ComposeCard: React.FC<{
+  compose: Pick<Compose, 'id' | 'name'>;
 }> = (props) => {
   return (
     <li className="col-span-1 flex shadow-sm rounded-md">
       <div className="flex-shrink-0 flex items-center justify-center w-16 bg-pink-600 text-white text-sm font-medium rounded-l-md">
-        {createNodeQuickTitle(props.node.name)}
+        {createComposeQuickTitle(props.compose.name)}
       </div>
       <div className="flex-1 flex items-center justify-between border-t border-r border-b border-gray-200 bg-white rounded-r-md truncate">
         <div className="flex-1 px-4 py-2 text-sm truncate">
-          <Link href={`/nodes/${props.node.id}`}>
+          <Link href={`/composes/${props.compose.id}`}>
             <a className="text-gray-900 font-medium hover:text-gray-600">
-              {props.node.name}
+              {props.compose.name}
             </a>
           </Link>
-          <p className="text-gray-500">
+          {/* <p className="text-gray-500">
             {props.node.username}@{props.node.host}
-          </p>
+          </p> */}
         </div>
         <div className="flex-shrink-0 pr-2">
           <button className="w-8 h-8 bg-white inline-flex items-center justify-center text-gray-400 rounded-full bg-transparent hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -44,19 +45,15 @@ const NodeCard: React.FC<{
   );
 };
 
-export const NodeDashboard: React.FC<{}> = (props) => {
-  const nodes = useGetNodesQuery();
+export const ComposeList: React.FC<{}> = (props) => {
+  const composes = useGetComposesQuery();
   return (
-    <div>
-      {nodes && nodes.loading && <div>Loading</div>}
-      {nodes?.data?.nodes && <div>Loaded {nodes.data.nodes.length} nodes</div>}
-      {nodes?.data?.nodes && (
-        <ul className="mt-3 grid grid-cols-1 gap-5 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {nodes?.data?.nodes?.map((node) => (
-            <NodeCard key={node.id} node={node} />
-          ))}
-        </ul>
-      )}
-    </div>
+    <ul className="mt-3 grid grid-cols-1 gap-4">
+      <CreateCard href="/compose/create">Create compose</CreateCard>
+      {composes && composes.loading && <div>Loading</div>}
+      {composes?.data?.composes?.map((compose) => (
+        <ComposeCard key={compose.id} compose={compose} />
+      ))}
+    </ul>
   );
 };

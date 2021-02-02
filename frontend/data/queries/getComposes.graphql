@@ -1,0 +1,6 @@
+query getComposes {
+  composes {
+    id
+    name
+  }
+}
