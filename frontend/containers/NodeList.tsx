@@ -11,7 +11,7 @@ const NodeCard: React.FC<{
   node: Pick<Node, 'id' | 'host' | 'name' | 'username'>;
 }> = (props) => {
   return (
-    <li className="col-span-1 flex shadow-sm rounded-md">
+    <li className="col-span-1 flex shadow-sm rounded-md max-h-14">
       <div className="flex-shrink-0 flex items-center justify-center w-16 bg-pink-600 text-white text-sm font-medium rounded-l-md">
         {createNodeQuickTitle(props.node.name)}
       </div>
@@ -48,11 +48,14 @@ const NodeCard: React.FC<{
 export const NodeList: React.FC<{}> = (props) => {
   const nodes = useGetNodesQuery();
   return (
-    <ul className="mt-3 grid grid-cols-1 gap-4">
+    <ul className="flex flex-col">
       <CreateCard href="/nodes/create">Create node</CreateCard>
       {nodes && nodes.loading && <div>Loading</div>}
-      {nodes?.data?.nodes?.map((node) => (
-        <NodeCard key={node.id} node={node} />
+      {nodes?.data?.nodes?.map((node, i) => (
+        <>
+          {i !== nodes!.data!.nodes!.length && <div className="h-4" />}
+          <NodeCard key={node.id} node={node} />
+        </>
       ))}
     </ul>
   );

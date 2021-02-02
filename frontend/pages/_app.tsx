@@ -41,7 +41,7 @@ const gqlHoC = withApollo(
         }
       } else {
         try {
-          const tokenResp = await axios.get('/api/token');
+          const tokenResp = await axios.get('/api/auth/token');
 
           return {
             headers: {

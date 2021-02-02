@@ -17,16 +17,16 @@
   },
   "include": [
     "next-env.d.ts",
-    "./pages/*.ts",
-    "./containers/*.ts",
-    "./components/*.ts",
-    "./lib/*.ts",
-    "./data/*.ts",
-    "./pages/*.tsx",
-    "./containers/*.tsx",
-    "./components/*.tsx",
-    "./lib/*.tsx",
-    "./data/*.tsx"
+    "./pages/**/*.ts",
+    "./containers/**/*.ts",
+    "./components/**/*.ts",
+    "./lib/**/*.ts",
+    "./data/**/*.ts",
+    "./pages/**/*.tsx",
+    "./containers/**/*.tsx",
+    "./components/**/*.tsx",
+    "./lib/**/*.tsx",
+    "./data/**/*.tsx"
   ],
   "exclude": ["node_modules"]
 }

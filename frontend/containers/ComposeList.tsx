@@ -11,7 +11,7 @@ const ComposeCard: React.FC<{
   compose: Pick<Compose, 'id' | 'name'>;
 }> = (props) => {
   return (
-    <li className="col-span-1 flex shadow-sm rounded-md">
+    <li className="max-h-14 col-span-1 flex shadow-sm rounded-md">
       <div className="flex-shrink-0 flex items-center justify-center w-16 bg-pink-600 text-white text-sm font-medium rounded-l-md">
         {createComposeQuickTitle(props.compose.name)}
       </div>
@@ -48,11 +48,14 @@ const ComposeCard: React.FC<{
 export const ComposeList: React.FC<{}> = (props) => {
   const composes = useGetComposesQuery();
   return (
-    <ul className="mt-3 grid grid-cols-1 gap-4">
+    <ul className="flex flex-col">
       <CreateCard href="/compose/create">Create compose</CreateCard>
       {composes && composes.loading && <div>Loading</div>}
-      {composes?.data?.composes?.map((compose) => (
-        <ComposeCard key={compose.id} compose={compose} />
+      {composes?.data?.composes?.map((compose, i) => (
+        <>
+          {i !== composes!.data!.composes.length && <div className="h-4" />}
+          <ComposeCard key={compose.id} compose={compose} />
+        </>
       ))}
     </ul>
   );
