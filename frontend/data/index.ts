@@ -20,11 +20,19 @@ export type Scalars = {
 export type Compose = {
   __typename?: 'Compose';
   id: Scalars['ID'];
-  contents: Scalars['String'];
-  serviceEnabled: Scalars['Boolean'];
-  serviceName?: Maybe<Scalars['String']>;
+  deployments: Array<Deployment>;
   name: Scalars['String'];
   content: Scalars['String'];
+  serviceEnabled: Scalars['Boolean'];
+  serviceName?: Maybe<Scalars['String']>;
+};
+
+export type Deployment = {
+  __typename?: 'Deployment';
+  id: Scalars['ID'];
+  node: Node;
+  compose: Compose;
+  enabled: Scalars['Boolean'];
 };
 
 export type Node = {
@@ -34,7 +42,7 @@ export type Node = {
   host: Scalars['String'];
   port: Scalars['Int'];
   username: Scalars['String'];
-  composes: Array<Compose>;
+  deployments: Array<Deployment>;
 };
 
 export type Query = {
@@ -56,13 +64,18 @@ export type QueryNodeArgs = {
 export type GetNodesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetNodesQuery = { __typename?: 'Query' } & {
-  nodes: Array<{ __typename?: 'Node' } & Pick<Node, 'id'>>;
+  nodes: Array<
+    { __typename?: 'Node' } & Pick<Node, 'id' | 'name' | 'host' | 'username'>
+  >;
 };
 
 export const GetNodesDocument = gql`
   query getNodes {
     nodes {
       id
+      name
+      host
+      username
     }
   }
 `;

@@ -38,7 +38,7 @@ module.exports = {
         'jsx-a11y/anchor-is-valid': 'off',
 
         // Why would you want unused vars?
-        '@typescript-eslint/no-unused-vars': ['error'],
+        // '@typescript-eslint/no-unused-vars': ['error'],
 
         // I suggest this setting for requiring return types on functions only where useful
         // '@typescript-eslint/explicit-function-return-type': [
@@ -54,7 +54,9 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
         '@typescript-eslint/explicit-module-boundary-types': 'off',
-        ' @typescript-eslint/no-non-null-assertion': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
+        '@typescript-eslint/ban-types': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
       },
     },
   ],

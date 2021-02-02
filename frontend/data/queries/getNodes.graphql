@@ -1,5 +1,8 @@
 query getNodes {
   nodes {
     id
+    name
+    host
+    username
   }
 }
