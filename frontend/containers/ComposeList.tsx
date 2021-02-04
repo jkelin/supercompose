@@ -53,7 +53,9 @@ export const ComposeList: React.FC<{}> = (props) => {
       {composes && composes.loading && <div>Loading</div>}
       {composes?.data?.composes?.map((compose, i) => (
         <>
-          {i !== composes!.data!.composes.length && <div className="h-4" />}
+          {i !== composes!.data!.composes.length && (
+            <div key={compose.id + 'spacer'} className="h-4" />
+          )}
           <ComposeCard key={compose.id} compose={compose} />
         </>
       ))}

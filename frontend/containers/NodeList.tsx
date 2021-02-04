@@ -49,11 +49,15 @@ export const NodeList: React.FC<{}> = (props) => {
   const nodes = useGetNodesQuery();
   return (
     <ul className="flex flex-col">
-      <CreateCard href="/nodes/create">Create node</CreateCard>
+      <CreateCard key="create" href="/nodes/create">
+        Create node
+      </CreateCard>
       {nodes && nodes.loading && <div>Loading</div>}
       {nodes?.data?.nodes?.map((node, i) => (
         <>
-          {i !== nodes!.data!.nodes!.length && <div className="h-4" />}
+          {i !== nodes!.data!.nodes!.length && (
+            <div key={node.id + 'spacer'} className="h-4" />
+          )}
           <NodeCard key={node.id} node={node} />
         </>
       ))}
