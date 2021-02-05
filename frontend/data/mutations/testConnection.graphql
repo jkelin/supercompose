@@ -1,0 +1,19 @@
+mutation testConnection(
+  $name: String!
+  $host: String!
+  $port: Int!
+  $username: String!
+  $password: String
+  $privateKey: String
+) {
+  testConnection(
+    node: {
+      name: $name
+      host: $host
+      port: $port
+      username: $username
+      password: $password
+      privateKey: $privateKey
+    }
+  )
+}

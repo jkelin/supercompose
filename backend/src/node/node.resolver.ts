@@ -1,6 +1,10 @@
 import {
   Args,
+  Field,
   ID,
+  InputType,
+  Int,
+  Mutation,
   Parent,
   Query,
   ResolveField,
@@ -11,11 +15,63 @@ import { Repository } from 'typeorm';
 import { NodeModel } from './node.model';
 import { NodeEntity } from './node.entity';
 import { DeploymentModel } from 'src/deployment/deployment.model';
+import { Max, Min } from 'class-validator';
+import { NodeService } from './node.service';
+
+@InputType()
+export class CreateNodeInput {
+  @Field()
+  name: string;
+
+  @Min(0)
+  @Max(65535)
+  @Field()
+  host: string;
+
+  @Field(() => Int)
+  port: number;
+
+  @Field()
+  username: string;
+
+  @Field({ nullable: true })
+  password?: string;
+
+  @Field({ nullable: true })
+  privateKey?: string;
+}
 
 @Resolver(() => NodeModel)
 export class NodeResolver {
   @InjectRepository(NodeEntity)
   private readonly nodeRepo: Repository<NodeEntity>;
+
+  constructor(private readonly nodeService: NodeService) {}
+
+  @Mutation(() => NodeModel)
+  async createNode(@Args('node') node: CreateNodeInput) {
+    const nodeId = await this.nodeService.createNode({
+      name: node.name,
+      host: node.host,
+      port: node.port,
+      username: node.username,
+      password: node.password,
+      privateKey: node.privateKey,
+    });
+
+    return await this.node(nodeId);
+  }
+
+  @Mutation(() => Boolean)
+  async testConnection(@Args('node') node: CreateNodeInput) {
+    return await this.nodeService.testConnection({
+      host: node.host,
+      port: node.port,
+      username: node.username,
+      password: node.password,
+      privateKey: node.privateKey,
+    });
+  }
 
   @Query(() => NodeModel)
   async node(@Args('id', { type: () => ID }) id: string) {

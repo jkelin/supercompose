@@ -11,6 +11,7 @@ const NavbarLink: React.FC<{ active?: boolean; href: string }> = (props) => {
           `border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1  text-sm font-medium`,
           props.active && 'border-b-2',
         )}
+        style={(props.active && { paddingTop: 6 }) || undefined}
       >
         {props.children}
       </a>
@@ -47,7 +48,7 @@ export const Navbar: React.FC<{}> = (props) => {
               </NavbarLink>
               <NavbarLink
                 href="/dashboard"
-                active={/^\/dashboard/.test(router.pathname)}
+                active={/^\/(dashboard|nodes)/.test(router.pathname)}
               >
                 Dashboard
               </NavbarLink>

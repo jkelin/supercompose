@@ -1,5 +1,6 @@
 import classNames from 'classnames';
 import Link from 'next/link';
+import { useCallback, useState } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 
 const Spinner: React.FC<{ className?: string }> = (props) => (
@@ -58,28 +59,81 @@ const Spinner: React.FC<{ className?: string }> = (props) => (
   </svg>
 );
 
-export const CancelButton: React.FC<{ href: string }> = (props) => {
+type ButtonKind = 'primary' | 'secondary';
+
+function buttonClassName(opts: { isLoading?: boolean; kind: ButtonKind }) {
+  if (opts.kind === 'secondary') {
+    return 'bg-white border border-grey-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500';
+  } else if (opts.kind === 'primary') {
+    return classNames(
+      'border border-transparent rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-white  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
+      !opts.isLoading && 'bg-indigo-600 hover:bg-indigo-700',
+      opts.isLoading && 'bg-gray-600 disabled cursor-wait',
+    );
+  }
+}
+
+export const ActionButton: React.FC<{
+  onClick: () => unknown | Promise<unknown>;
+  isLoading?: boolean;
+  kind: ButtonKind;
+}> = (props) => {
+  const [isPromiseExecuting, setIsLoading] = useState(false);
+
+  const propsOnClick = props.onClick;
+  const onClick = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await propsOnClick();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [propsOnClick, setIsLoading]);
+
+  const isLoading = props.isLoading || isPromiseExecuting;
+
+  return (
+    <button
+      type="button"
+      disabled={isLoading}
+      className={buttonClassName({
+        isLoading: isLoading,
+        kind: props.kind,
+      })}
+      onClick={onClick}
+    >
+      {props.children}
+    </button>
+  );
+};
+
+export const LinkButton: React.FC<{ href: string; kind: ButtonKind }> = (
+  props,
+) => {
   return (
     <Link href={props.href}>
-      <a className="bg-white border border-grey-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+      <a
+        className={buttonClassName({
+          kind: props.kind,
+        })}
+      >
         {props.children}
       </a>
     </Link>
   );
 };
 
-export const SubmitButton: React.FC<{}> = (props) => {
+export const SubmitButton: React.FC<{ kind: ButtonKind }> = (props) => {
   const { formState } = useFormContext();
 
   return (
     <button
       type="submit"
       disabled={formState.isSubmitting}
-      className={classNames(
-        'border border-transparent rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-white  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
-        !formState.isSubmitting && 'bg-indigo-600 hover:bg-indigo-700',
-        formState.isSubmitting && 'bg-gray-600 disabled cursor-wait',
-      )}
+      className={buttonClassName({
+        isLoading: formState.isSubmitting,
+        kind: props.kind,
+      })}
     >
       {formState.isSubmitting ? (
         <>

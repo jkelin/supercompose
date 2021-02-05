@@ -41,4 +41,14 @@ export class NodeService {
 
     return nodeEntity.id;
   }
+
+  public async testConnection(args: {
+    host: string;
+    username: string;
+    port: number;
+    password: string;
+    privateKey: string;
+  }) {
+    return true;
+  }
 }

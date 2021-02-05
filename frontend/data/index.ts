@@ -61,6 +61,43 @@ export type QueryNodeArgs = {
   id: Scalars['ID'];
 };
 
+export type Mutation = {
+  __typename?: 'Mutation';
+  createNode: Node;
+  testConnection: Scalars['Boolean'];
+};
+
+export type MutationCreateNodeArgs = {
+  node: CreateNodeInput;
+};
+
+export type MutationTestConnectionArgs = {
+  node: CreateNodeInput;
+};
+
+export type CreateNodeInput = {
+  name: Scalars['String'];
+  host: Scalars['String'];
+  port: Scalars['Int'];
+  username: Scalars['String'];
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
+};
+
+export type TestConnectionMutationVariables = Exact<{
+  name: Scalars['String'];
+  host: Scalars['String'];
+  port: Scalars['Int'];
+  username: Scalars['String'];
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
+}>;
+
+export type TestConnectionMutation = { __typename?: 'Mutation' } & Pick<
+  Mutation,
+  'testConnection'
+>;
+
 export type GetComposesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetComposesQuery = { __typename?: 'Query' } & {
@@ -75,6 +112,73 @@ export type GetNodesQuery = { __typename?: 'Query' } & {
   >;
 };
 
+export const TestConnectionDocument = gql`
+  mutation testConnection(
+    $name: String!
+    $host: String!
+    $port: Int!
+    $username: String!
+    $password: String
+    $privateKey: String
+  ) {
+    testConnection(
+      node: {
+        name: $name
+        host: $host
+        port: $port
+        username: $username
+        password: $password
+        privateKey: $privateKey
+      }
+    )
+  }
+`;
+export type TestConnectionMutationFn = Apollo.MutationFunction<
+  TestConnectionMutation,
+  TestConnectionMutationVariables
+>;
+
+/**
+ * __useTestConnectionMutation__
+ *
+ * To run a mutation, you first call `useTestConnectionMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestConnectionMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testConnectionMutation, { data, loading, error }] = useTestConnectionMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      host: // value for 'host'
+ *      port: // value for 'port'
+ *      username: // value for 'username'
+ *      password: // value for 'password'
+ *      privateKey: // value for 'privateKey'
+ *   },
+ * });
+ */
+export function useTestConnectionMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    TestConnectionMutation,
+    TestConnectionMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    TestConnectionMutation,
+    TestConnectionMutationVariables
+  >(TestConnectionDocument, baseOptions);
+}
+export type TestConnectionMutationHookResult = ReturnType<
+  typeof useTestConnectionMutation
+>;
+export type TestConnectionMutationResult = Apollo.MutationResult<TestConnectionMutation>;
+export type TestConnectionMutationOptions = Apollo.BaseMutationOptions<
+  TestConnectionMutation,
+  TestConnectionMutationVariables
+>;
 export const GetComposesDocument = gql`
   query getComposes {
     composes {

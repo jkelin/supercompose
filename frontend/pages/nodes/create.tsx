@@ -1,11 +1,13 @@
 import classNames from 'classnames';
-import { CancelButton, SubmitButton } from 'components';
+import { ActionButton, LinkButton, SubmitButton } from 'components';
 import { DashboardLayout } from 'containers';
+import { useTestConnectionMutation } from 'data';
 import Head from 'next/head';
 import React, { forwardRef, ReactNode, useCallback } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 interface FormData {
+  name: string;
   host: string;
   port: number;
   username: string;
@@ -107,6 +109,7 @@ const FieldContainer: React.FC<{
 };
 
 export default function CreateNode() {
+  const [testConnection] = useTestConnectionMutation();
   const form = useForm<FormData>({
     defaultValues: { port: 22 },
   });
@@ -115,6 +118,28 @@ export default function CreateNode() {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     console.log(data);
   });
+
+  const onTestConnection = useCallback(async () => {
+    if (
+      await form.trigger(['host', 'port', 'username', 'password', 'privateKey'])
+    ) {
+      const formValues = form.getValues();
+      const resp = await testConnection({
+        variables: {
+          name: 'TEST_CONNECTION',
+          host: formValues.host,
+          port: parseInt(formValues.port + ''),
+          username: formValues.username,
+          password: formValues.password,
+          privateKey: formValues.privateKey,
+        },
+        fetchPolicy: 'no-cache',
+      });
+      console.warn('testing connection', form.getValues());
+    } else {
+      form.handleSubmit(undefined as any)();
+    }
+  }, [form, testConnection]);
 
   return (
     <DashboardLayout>
@@ -183,11 +208,15 @@ export default function CreateNode() {
               </div>
             </div>
             <div className="px-4 py-3 bg-gray-50 flex flex-row justify-end sm:px-6">
-              <CancelButton href="/dashboard">Cancel</CancelButton>
+              <LinkButton href="/dashboard" kind="secondary">
+                Cancel
+              </LinkButton>
               <div className="flex-grow"></div>
-              <CancelButton href="/dashboard">Test Connection</CancelButton>
+              <ActionButton onClick={onTestConnection} kind="secondary">
+                Test Connection
+              </ActionButton>
               <span className="ml-4"></span>
-              <SubmitButton>Create</SubmitButton>
+              <SubmitButton kind="primary">Create</SubmitButton>
             </div>
           </div>
         </form>
