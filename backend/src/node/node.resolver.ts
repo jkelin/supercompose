@@ -148,6 +148,9 @@ export class NodeResolver {
   @Query(() => [NodeModel])
   async nodes() {
     return this.nodeRepo.find({
+      order: {
+        name: 'ASC',
+      },
       relations: ['deployments', 'deployments.compose'],
     });
   }
