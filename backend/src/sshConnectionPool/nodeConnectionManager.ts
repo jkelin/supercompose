@@ -35,7 +35,7 @@ export class NodeConnectionManager {
           password: this.node.password
             ? await this.crypto.decryptSecret(this.node.password)
             : undefined,
-          pkey: this.node.privateKey
+          privateKey: this.node.privateKey
             ? await this.crypto.decryptSecret(this.node.privateKey)
             : undefined,
           port: this.node.port,

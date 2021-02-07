@@ -63,7 +63,11 @@ type ButtonKind = 'primary' | 'secondary';
 
 function buttonClassName(opts: { isLoading?: boolean; kind: ButtonKind }) {
   if (opts.kind === 'secondary') {
-    return 'bg-white border border-grey-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500';
+    return classNames(
+      'border border-grey-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500',
+      !opts.isLoading && 'bg-white ',
+      opts.isLoading && 'bg-gray-400 disabled cursor-wait',
+    );
   } else if (opts.kind === 'primary') {
     return classNames(
       'border border-transparent rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-white  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
@@ -102,7 +106,14 @@ export const ActionButton: React.FC<{
       })}
       onClick={onClick}
     >
-      {props.children}
+      {isLoading ? (
+        <>
+          <Spinner className="absolute animate-spin h-5 w-5" />
+          <span className="opacity-0">{props.children}</span>
+        </>
+      ) : (
+        props.children
+      )}
     </button>
   );
 };

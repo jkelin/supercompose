@@ -5,7 +5,9 @@ import {
   InputType,
   Int,
   Mutation,
+  ObjectType,
   Parent,
+  PartialType,
   Query,
   ResolveField,
   Resolver,
@@ -17,12 +19,10 @@ import { NodeEntity } from './node.entity';
 import { DeploymentModel } from 'src/deployment/deployment.model';
 import { Max, Min } from 'class-validator';
 import { NodeService } from './node.service';
+import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
 
 @InputType()
-export class CreateNodeInput {
-  @Field()
-  name: string;
-
+export class NodeInput {
   @Min(0)
   @Max(65535)
   @Field()
@@ -41,12 +41,33 @@ export class CreateNodeInput {
   privateKey?: string;
 }
 
+@InputType()
+export class CreateNodeInput extends PartialType(NodeInput) {
+  @Field()
+  name: string;
+}
+
+@InputType()
+export class TestConnectionInput extends PartialType(NodeInput) {}
+
+@ObjectType()
+export class TestConnectionError {
+  @Field()
+  error: string;
+
+  @Field({ nullable: true })
+  field?: 'host' | 'port' | 'username' | 'password' | 'privatekey';
+}
+
 @Resolver(() => NodeModel)
 export class NodeResolver {
   @InjectRepository(NodeEntity)
   private readonly nodeRepo: Repository<NodeEntity>;
 
-  constructor(private readonly nodeService: NodeService) {}
+  constructor(
+    private readonly nodeService: NodeService,
+    private readonly sshService: SSHPoolService,
+  ) {}
 
   @Mutation(() => NodeModel)
   async createNode(@Args('node') node: CreateNodeInput) {
@@ -62,15 +83,25 @@ export class NodeResolver {
     return await this.node(nodeId);
   }
 
-  @Mutation(() => Boolean)
-  async testConnection(@Args('node') node: CreateNodeInput) {
-    return await this.nodeService.testConnection({
-      host: node.host,
-      port: node.port,
-      username: node.username,
-      password: node.password,
-      privateKey: node.privateKey,
-    });
+  @Mutation(() => TestConnectionError, { nullable: true })
+  async testConnection(@Args('node') node: TestConnectionInput) {
+    try {
+      await this.sshService.testConnection({
+        host: node.host,
+        port: node.port,
+        username: node.username,
+        password: node.password,
+        privateKey: node.privateKey,
+      });
+
+      return null;
+    } catch (ex) {
+      if (ex.TYPE === 'TestConnectionError') {
+        return { error: ex.message, field: ex.field };
+      }
+
+      throw ex;
+    }
   }
 
   @Query(() => NodeModel)

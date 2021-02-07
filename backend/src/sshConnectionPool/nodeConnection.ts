@@ -21,7 +21,7 @@ export class NodeConnection extends EventEmitter {
       port: number;
       username: string;
       password: string;
-      pkey: string;
+      privateKey: string;
     },
   ) {
     super({});
@@ -64,21 +64,24 @@ export class NodeConnection extends EventEmitter {
           'Error in NodeConnection',
           this.id,
           'while connecting',
-          err,
+          err.message,
         );
 
+        this.client?.removeListener('close', closeListener);
         return reject(err);
       };
 
-      this.client?.once('error', errorListener);
-      this.client?.once('ready', () => {
-        resolve();
-        this.client?.removeListener('error', errorListener);
-      });
+      const closeListener = () => {
+        errorListener(new Error('Closed while connecting'));
+      };
 
-      this.client?.once('close', () =>
-        errorListener(new Error('Closed while connecting')),
-      );
+      this.client?.once('close', closeListener);
+      this.client?.on('error', errorListener);
+      this.client?.once('ready', () => {
+        this.client?.removeListener('error', errorListener);
+        this.client?.removeListener('close', closeListener);
+        resolve();
+      });
 
       this.client!.connect(this.credentials);
     });

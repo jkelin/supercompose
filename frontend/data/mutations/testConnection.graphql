@@ -1,5 +1,4 @@
 mutation testConnection(
-  $name: String!
   $host: String!
   $port: Int!
   $username: String!
@@ -8,12 +7,14 @@ mutation testConnection(
 ) {
   testConnection(
     node: {
-      name: $name
       host: $host
       port: $port
       username: $username
       password: $password
       privateKey: $privateKey
     }
-  )
+  ) {
+    error
+    field
+  }
 }

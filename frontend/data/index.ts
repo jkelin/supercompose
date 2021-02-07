@@ -45,6 +45,12 @@ export type Node = {
   deployments: Array<Deployment>;
 };
 
+export type TestConnectionError = {
+  __typename?: 'TestConnectionError';
+  error: Scalars['String'];
+  field: Scalars['String'];
+};
+
 export type Query = {
   __typename?: 'Query';
   compose: Compose;
@@ -64,7 +70,7 @@ export type QueryNodeArgs = {
 export type Mutation = {
   __typename?: 'Mutation';
   createNode: Node;
-  testConnection: Scalars['Boolean'];
+  testConnection?: Maybe<TestConnectionError>;
 };
 
 export type MutationCreateNodeArgs = {
@@ -72,20 +78,27 @@ export type MutationCreateNodeArgs = {
 };
 
 export type MutationTestConnectionArgs = {
-  node: CreateNodeInput;
+  node: TestConnectionInput;
 };
 
 export type CreateNodeInput = {
+  host?: Maybe<Scalars['String']>;
+  port?: Maybe<Scalars['Int']>;
+  username?: Maybe<Scalars['String']>;
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
   name: Scalars['String'];
-  host: Scalars['String'];
-  port: Scalars['Int'];
-  username: Scalars['String'];
+};
+
+export type TestConnectionInput = {
+  host?: Maybe<Scalars['String']>;
+  port?: Maybe<Scalars['Int']>;
+  username?: Maybe<Scalars['String']>;
   password?: Maybe<Scalars['String']>;
   privateKey?: Maybe<Scalars['String']>;
 };
 
 export type TestConnectionMutationVariables = Exact<{
-  name: Scalars['String'];
   host: Scalars['String'];
   port: Scalars['Int'];
   username: Scalars['String'];
@@ -93,10 +106,14 @@ export type TestConnectionMutationVariables = Exact<{
   privateKey?: Maybe<Scalars['String']>;
 }>;
 
-export type TestConnectionMutation = { __typename?: 'Mutation' } & Pick<
-  Mutation,
-  'testConnection'
->;
+export type TestConnectionMutation = { __typename?: 'Mutation' } & {
+  testConnection?: Maybe<
+    { __typename?: 'TestConnectionError' } & Pick<
+      TestConnectionError,
+      'error' | 'field'
+    >
+  >;
+};
 
 export type GetComposesQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -114,7 +131,6 @@ export type GetNodesQuery = { __typename?: 'Query' } & {
 
 export const TestConnectionDocument = gql`
   mutation testConnection(
-    $name: String!
     $host: String!
     $port: Int!
     $username: String!
@@ -123,14 +139,16 @@ export const TestConnectionDocument = gql`
   ) {
     testConnection(
       node: {
-        name: $name
         host: $host
         port: $port
         username: $username
         password: $password
         privateKey: $privateKey
       }
-    )
+    ) {
+      error
+      field
+    }
   }
 `;
 export type TestConnectionMutationFn = Apollo.MutationFunction<
@@ -151,7 +169,6 @@ export type TestConnectionMutationFn = Apollo.MutationFunction<
  * @example
  * const [testConnectionMutation, { data, loading, error }] = useTestConnectionMutation({
  *   variables: {
- *      name: // value for 'name'
  *      host: // value for 'host'
  *      port: // value for 'port'
  *      username: // value for 'username'

@@ -3,8 +3,13 @@ import { ActionButton, LinkButton, SubmitButton } from 'components';
 import { DashboardLayout } from 'containers';
 import { useTestConnectionMutation } from 'data';
 import Head from 'next/head';
-import React, { forwardRef, ReactNode, useCallback } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
+import React, { forwardRef, ReactNode, useCallback, useState } from 'react';
+import {
+  FieldError,
+  FormProvider,
+  useForm,
+  useFormContext,
+} from 'react-hook-form';
 
 interface FormData {
   name: string;
@@ -15,6 +20,13 @@ interface FormData {
   privateKey?: string;
 }
 
+function useFormError(field: string): FieldError | undefined {
+  const { errors } = useFormContext();
+
+  if (errors[field]?.type === 'global') return undefined;
+  return errors[field];
+}
+
 const NumberField = forwardRef<
   HTMLInputElement,
   {
@@ -23,20 +35,18 @@ const NumberField = forwardRef<
   }
 >(function NumberField(props, ref) {
   return (
-    <div className="mt-1 rounded-md shadow-sm flex">
-      <input
-        type="number"
-        min={0}
-        max={65535}
-        name={props.name}
-        id={props.name}
-        ref={ref}
-        className={classNames(
-          'focus:ring-indigo-500 focus:border-indigo-500 flex-grow block w-full min-w-0 rounded-md sm:text-sm border-gray-300',
-          props.className,
-        )}
-      />
-    </div>
+    <input
+      type="number"
+      min={0}
+      max={65535}
+      name={props.name}
+      id={props.name}
+      ref={ref}
+      className={classNames(
+        'focus:ring-indigo-500 focus:border-indigo-500 flex-grow block w-full min-w-0 rounded-md sm:text-sm border-gray-300',
+        props.className,
+      )}
+    />
   );
 });
 
@@ -47,19 +57,22 @@ const TextAreaField = forwardRef<
     className?: string;
   }
 >(function TextAreaField(props, ref) {
+  const error = useFormError(props.name);
+
   return (
-    <div className="mt-1 rounded-md shadow-sm flex">
-      <textarea
-        rows={3}
-        name={props.name}
-        id={props.name}
-        ref={ref}
-        className={classNames(
-          'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mt-1 block w-full sm:text-sm border-gray-300 rounded-md',
-          props.className,
-        )}
-      />
-    </div>
+    <textarea
+      rows={3}
+      name={props.name}
+      id={props.name}
+      ref={ref}
+      className={classNames(
+        'shadow-sm mt-1 block w-full sm:text-sm rounded-md',
+        props.className,
+        error
+          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+          : 'focus:ring-indigo-500 focus:border-indigo-500 border-gray-300',
+      )}
+    />
   );
 });
 
@@ -70,19 +83,22 @@ const TextField = forwardRef<
     className?: string;
   }
 >(function TextField(props, ref) {
+  const error = useFormError(props.name);
+
   return (
-    <div className="mt-1 rounded-md shadow-sm flex">
-      <input
-        type="text"
-        name={props.name}
-        id={props.name}
-        ref={ref}
-        className={classNames(
-          'focus:ring-indigo-500 focus:border-indigo-500 flex-grow block w-full min-w-0 rounded-md sm:text-sm border-gray-300',
-          props.className,
-        )}
-      />
-    </div>
+    <input
+      type="text"
+      name={props.name}
+      id={props.name}
+      ref={ref}
+      className={classNames(
+        'flex-grow block w-full min-w-0 rounded-md sm:text-sm',
+        props.className,
+        error
+          ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+          : 'focus:ring-indigo-500 focus:border-indigo-500 border-gray-300',
+      )}
+    />
   );
 });
 
@@ -92,6 +108,8 @@ const FieldContainer: React.FC<{
   text?: ReactNode;
   className?: string;
 }> = (props) => {
+  const error = useFormError(props.name);
+
   return (
     <div className={props.className}>
       {props.label && (
@@ -100,6 +118,13 @@ const FieldContainer: React.FC<{
           className="block text-sm font-medium text-gray-700"
         >
           {props.label}
+
+          {error?.message && (
+            <>
+              <span> - </span>
+              <span className="text-red-500">{error.message}</span>
+            </>
+          )}
         </label>
       )}
       {props.children}
@@ -113,6 +138,12 @@ export default function CreateNode() {
   const form = useForm<FormData>({
     defaultValues: { port: 22 },
   });
+  const [testSuccess, setTestSuccess] = useState<boolean | undefined>(
+    undefined,
+  );
+
+  const globalError =
+    form.errors.username?.type === 'global' && form.errors.username?.message;
 
   const onSubmit = form.handleSubmit(async (data) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -120,13 +151,13 @@ export default function CreateNode() {
   });
 
   const onTestConnection = useCallback(async () => {
+    setTestSuccess(undefined);
     if (
       await form.trigger(['host', 'port', 'username', 'password', 'privateKey'])
     ) {
       const formValues = form.getValues();
       const resp = await testConnection({
         variables: {
-          name: 'TEST_CONNECTION',
           host: formValues.host,
           port: parseInt(formValues.port + ''),
           username: formValues.username,
@@ -135,7 +166,24 @@ export default function CreateNode() {
         },
         fetchPolicy: 'no-cache',
       });
-      console.warn('testing connection', form.getValues());
+
+      if (resp.data?.testConnection) {
+        const err = resp.data?.testConnection;
+        if (err.field) {
+          form.setError(err.field as any, {
+            type: 'specific',
+            message: err.error,
+            shouldFocus: true,
+          });
+        } else {
+          form.setError('username', {
+            type: 'global',
+            message: err.error,
+          });
+        }
+      } else {
+        setTestSuccess(true);
+      }
     } else {
       form.handleSubmit(undefined as any)();
     }
@@ -206,6 +254,17 @@ export default function CreateNode() {
                   <TextAreaField name="privateKey" ref={form.register()} />
                 </FieldContainer>
               </div>
+
+              {globalError && (
+                <div className="bg-red-500 text-white rounded py-2 px-4 text-sm">
+                  {globalError}
+                </div>
+              )}
+              {testSuccess && (
+                <div className="bg-green-500 text-white rounded py-2 px-4 text-sm">
+                  Connection test succeeded
+                </div>
+              )}
             </div>
             <div className="px-4 py-3 bg-gray-50 flex flex-row justify-end sm:px-6">
               <LinkButton href="/dashboard" kind="secondary">
