@@ -1,5 +1,6 @@
 import {
   Args,
+  createUnionType,
   Field,
   ID,
   InputType,
@@ -59,6 +60,14 @@ export class TestConnectionError {
   field?: 'host' | 'port' | 'username' | 'password' | 'privatekey';
 }
 
+export const CreateNodeResult = createUnionType({
+  name: 'CreateNodeResult',
+  types: () => [NodeModel, TestConnectionError],
+  resolveType(val) {
+    return val.error ? TestConnectionError : NodeModel;
+  },
+});
+
 @Resolver(() => NodeModel)
 export class NodeResolver {
   @InjectRepository(NodeEntity)
@@ -69,8 +78,28 @@ export class NodeResolver {
     private readonly sshService: SSHPoolService,
   ) {}
 
-  @Mutation(() => NodeModel)
+  @Mutation(() => CreateNodeResult)
   async createNode(@Args('node') node: CreateNodeInput) {
+    try {
+      await this.sshService.testConnection({
+        host: node.host,
+        port: node.port,
+        username: node.username,
+        password: node.password,
+        privateKey: node.privateKey,
+      });
+    } catch (ex) {
+      if (ex.TYPE === 'TestConnectionError') {
+        const err = new TestConnectionError();
+        err.error = ex.message;
+        err.field = ex.field;
+
+        return err;
+      }
+
+      throw ex;
+    }
+
     const nodeId = await this.nodeService.createNode({
       name: node.name,
       host: node.host,
@@ -97,7 +126,11 @@ export class NodeResolver {
       return null;
     } catch (ex) {
       if (ex.TYPE === 'TestConnectionError') {
-        return { error: ex.message, field: ex.field };
+        const err = new TestConnectionError();
+        err.error = ex.message;
+        err.field = ex.field;
+
+        return err;
       }
 
       throw ex;

@@ -1,0 +1,30 @@
+mutation createNode(
+  $name: String!
+  $host: String!
+  $port: Int!
+  $username: String!
+  $password: String
+  $privateKey: String
+) {
+  createNode(
+    node: {
+      name: $name
+      host: $host
+      port: $port
+      username: $username
+      password: $password
+      privateKey: $privateKey
+    }
+  ) {
+    ... on Node {
+      id
+      name
+      host
+      username
+    }
+    ... on TestConnectionError {
+      error
+      field
+    }
+  }
+}

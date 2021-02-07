@@ -12,7 +12,7 @@ export const DashboardLayout: React.FC<{}> = (props) => {
           <title>Create Next App</title>
           <link rel="icon" href="/favicon.ico" />
         </Head>
-        <ul className="mt-8 grid grid-cols-layout gap-4">
+        <ul className="my-8 grid grid-cols-layout gap-4">
           <NodeList />
           {props.children}
           <ComposeList />

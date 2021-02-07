@@ -1,7 +1,13 @@
+import { gql, useApolloClient } from '@apollo/react-hooks';
 import classNames from 'classnames';
 import { ActionButton, LinkButton, SubmitButton } from 'components';
 import { DashboardLayout } from 'containers';
-import { useTestConnectionMutation } from 'data';
+import {
+  TestConnectionError,
+  useCreateNodeMutation,
+  useTestConnectionMutation,
+} from 'data';
+import { useRouter } from 'next/dist/client/router';
 import Head from 'next/head';
 import React, { forwardRef, ReactNode, useCallback, useState } from 'react';
 import {
@@ -128,13 +134,17 @@ const FieldContainer: React.FC<{
         </label>
       )}
       {props.children}
-      {props.text && <p className="mt-2 text-sm text-gray-500">{props.text}</p>}
+      {props.text && <p className="mt-1 text-sm text-gray-500">{props.text}</p>}
     </div>
   );
 };
 
 export default function CreateNode() {
+  const apollo = useApolloClient();
+  const router = useRouter();
   const [testConnection] = useTestConnectionMutation();
+  const [createNode] = useCreateNodeMutation();
+
   const form = useForm<FormData>({
     defaultValues: { port: 22 },
   });
@@ -145,9 +155,62 @@ export default function CreateNode() {
   const globalError =
     form.errors.username?.type === 'global' && form.errors.username?.message;
 
+  const handleErrors = useCallback(
+    (err: TestConnectionError) => {
+      if (err.field) {
+        form.setError(err.field as any, {
+          type: 'specific',
+          message: err.error,
+          shouldFocus: true,
+        });
+      } else {
+        form.setError('username', {
+          type: 'global',
+          message: err.error,
+        });
+      }
+    },
+    [form],
+  );
+
   const onSubmit = form.handleSubmit(async (data) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log(data);
+    const resp = await createNode({
+      variables: {
+        name: data.name,
+        host: data.host,
+        port: parseInt(data.port + ''),
+        username: data.username,
+        password: data.password,
+        privateKey: data.privateKey,
+      },
+      fetchPolicy: 'no-cache',
+    });
+
+    if (resp?.data?.createNode.__typename == 'Node') {
+      apollo.cache.modify({
+        fields: {
+          nodes(existingNodesRefs = [], { readField }) {
+            const newNodeRef = apollo.cache.writeFragment({
+              data: resp?.data?.createNode,
+              fragment: gql`
+                fragment NewNode on Node {
+                  id
+                  host
+                  username
+                  name
+                }
+              `,
+            });
+
+            return [...existingNodesRefs, newNodeRef];
+          },
+        },
+      });
+
+      router.push(`/nodes/${resp?.data?.createNode.id}`);
+    } else {
+      handleErrors(resp?.data?.createNode as any);
+    }
   });
 
   const onTestConnection = useCallback(async () => {
@@ -168,26 +231,14 @@ export default function CreateNode() {
       });
 
       if (resp.data?.testConnection) {
-        const err = resp.data?.testConnection;
-        if (err.field) {
-          form.setError(err.field as any, {
-            type: 'specific',
-            message: err.error,
-            shouldFocus: true,
-          });
-        } else {
-          form.setError('username', {
-            type: 'global',
-            message: err.error,
-          });
-        }
+        handleErrors(resp.data?.testConnection);
       } else {
         setTestSuccess(true);
       }
     } else {
       form.handleSubmit(undefined as any)();
     }
-  }, [form, testConnection]);
+  }, [form, testConnection, handleErrors]);
 
   return (
     <DashboardLayout>
@@ -205,6 +256,17 @@ export default function CreateNode() {
                   node will allow you to manage compose files on it.
                 </p>
               </div>
+
+              <FieldContainer
+                name="name"
+                label="Display name"
+                text="Node display name will be visible throughout supercompose to help you tell apart your nodes"
+              >
+                <TextField
+                  name="name"
+                  ref={form.register({ required: true })}
+                />
+              </FieldContainer>
 
               <div className="grid grid-cols-5 gap-6">
                 <FieldContainer

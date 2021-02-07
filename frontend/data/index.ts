@@ -48,7 +48,7 @@ export type Node = {
 export type TestConnectionError = {
   __typename?: 'TestConnectionError';
   error: Scalars['String'];
-  field: Scalars['String'];
+  field?: Maybe<Scalars['String']>;
 };
 
 export type Query = {
@@ -69,7 +69,7 @@ export type QueryNodeArgs = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createNode: Node;
+  createNode: CreateNodeResult;
   testConnection?: Maybe<TestConnectionError>;
 };
 
@@ -80,6 +80,8 @@ export type MutationCreateNodeArgs = {
 export type MutationTestConnectionArgs = {
   node: TestConnectionInput;
 };
+
+export type CreateNodeResult = Node | TestConnectionError;
 
 export type CreateNodeInput = {
   host?: Maybe<Scalars['String']>;
@@ -96,6 +98,27 @@ export type TestConnectionInput = {
   username?: Maybe<Scalars['String']>;
   password?: Maybe<Scalars['String']>;
   privateKey?: Maybe<Scalars['String']>;
+};
+
+export type CreateNodeMutationVariables = Exact<{
+  name: Scalars['String'];
+  host: Scalars['String'];
+  port: Scalars['Int'];
+  username: Scalars['String'];
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
+}>;
+
+export type CreateNodeMutation = { __typename?: 'Mutation' } & {
+  createNode:
+    | ({ __typename?: 'Node' } & Pick<
+        Node,
+        'id' | 'name' | 'host' | 'username'
+      >)
+    | ({ __typename?: 'TestConnectionError' } & Pick<
+        TestConnectionError,
+        'error' | 'field'
+      >);
 };
 
 export type TestConnectionMutationVariables = Exact<{
@@ -129,6 +152,84 @@ export type GetNodesQuery = { __typename?: 'Query' } & {
   >;
 };
 
+export const CreateNodeDocument = gql`
+  mutation createNode(
+    $name: String!
+    $host: String!
+    $port: Int!
+    $username: String!
+    $password: String
+    $privateKey: String
+  ) {
+    createNode(
+      node: {
+        name: $name
+        host: $host
+        port: $port
+        username: $username
+        password: $password
+        privateKey: $privateKey
+      }
+    ) {
+      ... on Node {
+        id
+        name
+        host
+        username
+      }
+      ... on TestConnectionError {
+        error
+        field
+      }
+    }
+  }
+`;
+export type CreateNodeMutationFn = Apollo.MutationFunction<
+  CreateNodeMutation,
+  CreateNodeMutationVariables
+>;
+
+/**
+ * __useCreateNodeMutation__
+ *
+ * To run a mutation, you first call `useCreateNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createNodeMutation, { data, loading, error }] = useCreateNodeMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      host: // value for 'host'
+ *      port: // value for 'port'
+ *      username: // value for 'username'
+ *      password: // value for 'password'
+ *      privateKey: // value for 'privateKey'
+ *   },
+ * });
+ */
+export function useCreateNodeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    CreateNodeMutation,
+    CreateNodeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<CreateNodeMutation, CreateNodeMutationVariables>(
+    CreateNodeDocument,
+    baseOptions,
+  );
+}
+export type CreateNodeMutationHookResult = ReturnType<
+  typeof useCreateNodeMutation
+>;
+export type CreateNodeMutationResult = Apollo.MutationResult<CreateNodeMutation>;
+export type CreateNodeMutationOptions = Apollo.BaseMutationOptions<
+  CreateNodeMutation,
+  CreateNodeMutationVariables
+>;
 export const TestConnectionDocument = gql`
   mutation testConnection(
     $host: String!
