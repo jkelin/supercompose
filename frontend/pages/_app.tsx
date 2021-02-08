@@ -7,10 +7,13 @@ import { setContext } from '@apollo/client/link/context';
 import '../styles/globals.css';
 import { auth0, getToken } from 'lib/auth0';
 import axios from 'axios';
+import { ToastProvider } from 'containers';
 
 const App = ({ Component, pageProps, apollo }: any) => (
   <ApolloProvider client={apollo}>
-    <Component {...pageProps} />
+    <ToastProvider>
+      <Component {...pageProps} />
+    </ToastProvider>
   </ApolloProvider>
 );
 
