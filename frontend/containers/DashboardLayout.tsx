@@ -7,7 +7,10 @@ export const DashboardLayout: React.FC<{}> = (props) => {
   return (
     <React.Fragment>
       <Navbar />
-      <div className="mx-auto container">
+      <Head>
+        <style>{`html, body { background-color: rgba(249, 250, 251) }`}</style>
+      </Head>
+      <main className="mx-auto container">
         <Head>
           <title>Create Next App</title>
           <link rel="icon" href="/favicon.ico" />
@@ -17,7 +20,7 @@ export const DashboardLayout: React.FC<{}> = (props) => {
           {props.children}
           <ComposeList />
         </ul>
-      </div>
+      </main>
     </React.Fragment>
   );
 };

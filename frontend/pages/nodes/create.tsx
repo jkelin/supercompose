@@ -1,7 +1,7 @@
 import { gql, useApolloClient } from '@apollo/react-hooks';
 import classNames from 'classnames';
 import { ActionButton, LinkButton, SubmitButton } from 'components';
-import { DashboardLayout, useCreateToast } from 'containers';
+import { DashboardLayout, useToast as useToast } from 'containers';
 import {
   TestConnectionError,
   useCreateNodeMutation,
@@ -144,7 +144,7 @@ export default function CreateNode() {
   const router = useRouter();
   const [testConnection] = useTestConnectionMutation();
   const [createNode] = useCreateNodeMutation();
-  const createToast = useCreateToast();
+  const toast = useToast();
 
   const form = useForm<FormData>({
     defaultValues: { port: 22 },
@@ -208,7 +208,7 @@ export default function CreateNode() {
         },
       });
 
-      createToast({
+      toast({
         kind: 'success',
         title: 'Node created',
       });

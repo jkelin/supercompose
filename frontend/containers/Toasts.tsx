@@ -99,7 +99,7 @@ const Toast: React.FC<{ toast: Toast }> = (props) => {
   );
 };
 
-export function useCreateToast() {
+export function useToast() {
   return useContext(ToastContext);
 }
 
