@@ -17,7 +17,7 @@ const NodeCard: React.FC<{
       </div>
       <div className="flex-1 flex items-center justify-between border-t border-r border-b border-gray-200 bg-white rounded-r-md truncate">
         <div className="flex-1 px-4 py-2 text-sm truncate">
-          <Link href={`/nodes/${props.node.id}`}>
+          <Link href={`/node/${props.node.id}`}>
             <a className="text-gray-900 font-medium hover:text-gray-600">
               {props.node.name}
             </a>
@@ -49,7 +49,7 @@ export const NodeList: React.FC<{}> = (props) => {
   const nodes = useGetNodesQuery();
   return (
     <ul className="flex flex-col">
-      <CreateCard key="create" href="/nodes/create">
+      <CreateCard key="create" href="/node/create">
         Create node
       </CreateCard>
       {nodes && nodes.loading && <div>Loading</div>}

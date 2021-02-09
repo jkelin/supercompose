@@ -1,0 +1,10 @@
+query getComposeById($id: ID!) {
+  compose(id: $id) {
+    id
+    name
+    content
+    directory
+    serviceName
+    serviceEnabled
+  }
+}

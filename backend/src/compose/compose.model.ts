@@ -1,21 +1,25 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { DeploymentModel } from 'src/deployment/deployment.model';
-import { ManyToOne, OneToMany } from 'typeorm';
-import { ComposeVersionEntity } from './composeVersion.entity';
 
 @ObjectType('Compose')
 export class ComposeModel {
   @Field(() => ID)
   id: string;
 
-  @OneToMany(
-    () => ComposeVersionEntity,
-    x => x.compose,
-  )
-  history: ComposeVersionEntity[];
+  @Field()
+  name: string;
 
-  @ManyToOne(() => ComposeVersionEntity)
-  current: ComposeVersionEntity;
+  @Field()
+  content: string;
+
+  @Field()
+  directory: boolean;
+
+  @Field()
+  serviceEnabled: boolean;
+
+  @Field({ nullable: true })
+  serviceName: string;
 
   @Field(() => [DeploymentModel])
   deployments: DeploymentModel[];

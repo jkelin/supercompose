@@ -1,0 +1,12 @@
+query getNodeById($id: ID!) {
+  node(id: $id) {
+    id
+    name
+    host
+    username
+    port
+    deployments {
+      id
+    }
+  }
+}
