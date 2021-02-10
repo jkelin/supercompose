@@ -8,6 +8,7 @@ import {
   SubmitButton,
   TextAreaField,
   TextField,
+  TogglField,
 } from 'components';
 import { DashboardLayout, useToast as useToast } from 'containers';
 import {
@@ -17,20 +18,91 @@ import {
 } from 'data';
 import { useRouter } from 'next/dist/client/router';
 import Head from 'next/head';
-import React, { forwardRef, ReactNode, useCallback, useState } from 'react';
+import React, {
+  forwardRef,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import {
+  Control,
+  Controller,
   FieldError,
   FormProvider,
   useForm,
   useFormContext,
+  UseFormMethods,
 } from 'react-hook-form';
+
+import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
+
+const YamlEditorField: React.FC<{
+  onChange: (value: string) => void;
+  value: string;
+}> = (props) => {
+  return (
+    <Editor
+      theme="vs-dark"
+      className="border"
+      path="docker-compose.yaml"
+      value={props.value}
+      onChange={(x) => props.onChange(x!)}
+      height="45vh"
+      language="yaml"
+      options={{ formatOnPaste: true, insertSpaces: true, tabSize: 2 }}
+    />
+  );
+};
+
+const defaultYaml = `version: "3.9"
+services:
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+  postgres:
+    image: postgres
+    ports:
+      - "5432:5432"
+`;
 
 interface FormData {
   name: string;
   compose: string;
   directory?: string;
   serviceEnabled: boolean;
-  serviceName?: string;
+}
+
+function directoryFromName(name: string) {
+  return (
+    '/opt/docker/' + name.replace(/[^a-z0-9_-]/gi, '-').replace(/-+/g, '-')
+  );
+}
+
+function useDeriveDirectoryFromName(form: UseFormMethods<any>) {
+  const { name, directory } = form.watch(['name', 'directory']);
+  const [prevName, setPrevName] = useState(name);
+  const [prevDirectory, setPrevDirectory] = useState(directory);
+  useEffect(() => {
+    if (prevName !== name) {
+      const prevDirectoryFromPrevName = directoryFromName(prevName);
+      const newDirectory = directoryFromName(name);
+      if (
+        prevDirectory === prevDirectoryFromPrevName &&
+        newDirectory !== directory
+      ) {
+        form.setValue('directory', newDirectory);
+      }
+    }
+
+    if (name !== prevName) {
+      setPrevName(name);
+    }
+    if (directory !== prevDirectory) {
+      setPrevDirectory(directory);
+    }
+  }, [name, directory, form, form.setValue, prevName, prevDirectory]);
 }
 
 export default function CreateCompose() {
@@ -39,8 +111,15 @@ export default function CreateCompose() {
   const toast = useToast();
 
   const form = useForm<FormData>({
-    defaultValues: { serviceEnabled: true },
+    defaultValues: {
+      name: '',
+      serviceEnabled: true,
+      compose: defaultYaml,
+      directory: '/opt/docker/',
+    },
   });
+
+  const onSubmit = form.handleSubmit((data) => console.log('data', data));
 
   // const onSubmit = form.handleSubmit(async (data) => {
   //   const resp = await createNode({
@@ -86,10 +165,12 @@ export default function CreateCompose() {
   //   }
   // });
 
+  useDeriveDirectoryFromName(form);
+
   return (
     <DashboardLayout>
       <FormProvider {...form}>
-        <form onSubmit={() => undefined} autoComplete="off">
+        <form onSubmit={onSubmit} autoComplete="off">
           <div className="shadow sm:rounded-md sm:overflow-hidden">
             <div className="bg-white py-6 px-4 space-y-6 sm:p-6">
               <div>
@@ -103,64 +184,64 @@ export default function CreateCompose() {
                   keeps on running
                 </p>
               </div>
-
-              <FieldContainer
-                name="name"
-                label="Display name"
-                text="Compose display name will be visible throughout supercompose"
-              >
-                <TextField
-                  name="name"
-                  ref={form.register({ required: true })}
-                />
-              </FieldContainer>
-
-              <div className="grid grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 <FieldContainer
-                  name="serviceName"
-                  label="Systemd Service Name"
-                  className="col-span-4"
-                  text="Optional name of the service file that will be installed on your server"
+                  name="name"
+                  label="Name"
+                  text="Compose display name will be visible throughout supercompose"
                 >
                   <TextField
-                    name="serviceName"
-                    ref={form.register({ required: true })}
+                    name="name"
+                    ref={form.register({ required: true, maxLength: 32 })}
                   />
                 </FieldContainer>
-                <FieldContainer name="port" label="Port" className="col-span-1">
-                  <NumberField
-                    name="port"
-                    ref={form.register({ required: true, min: 0, max: 65535 })}
-                  />
-                </FieldContainer>
-              </div>
 
-              <div className="grid grid-cols-6 gap-6">
                 <FieldContainer
                   name="directory"
                   label="Directory"
-                  className="col-span-6"
-                  text="Location that your Compose file will be stored at. Paths referenced in the Compose file will be relative to this directory"
+                  className="col-span-1"
+                  text="A folder in which docker-compose.yaml will be stored"
                 >
                   <TextField
                     name="directory"
-                    ref={form.register({ required: true })}
+                    ref={form.register({
+                      required: true,
+                      pattern: /^(\/[^/ ]*)+\/?$/,
+                    })}
                   />
                 </FieldContainer>
               </div>
-              <div className="grid grid-cols-3 gap-6">
-                <FieldContainer
-                  name="content"
-                  label="Compose File Content"
-                  className="col-span-3"
-                >
-                  <TextAreaField
-                    rows={8}
-                    name="content"
-                    ref={form.register()}
-                  />
-                </FieldContainer>
-              </div>
+
+              <Controller
+                name="serviceEnabled"
+                render={(props) => (
+                  <TogglField value={props.value} onChange={props.onChange}>
+                    <span className="text-sm font-medium text-gray-900">
+                      Automatic startup
+                    </span>
+                    <br />
+                    <span className="text-sm text-gray-500">
+                      Configure a <strong>systemd</strong> service to keep
+                      automatically start this docker-compose and keep it
+                      running
+                    </span>
+                  </TogglField>
+                )}
+              />
+
+              <FieldContainer
+                name="content"
+                label="docker-compose.yaml"
+                className="col-span-3"
+              >
+                <Controller
+                  name="compose"
+                  control={form.control}
+                  defaultValue={false}
+                  rules={{ required: true }}
+                  render={(props) => <YamlEditorField {...props} />}
+                />
+              </FieldContainer>
             </div>
 
             <div className="px-4 py-3 bg-gray-50 flex flex-row justify-end sm:px-6">

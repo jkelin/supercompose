@@ -15,6 +15,7 @@
     "@apollo/react-hooks": "^4.0.0",
     "@apollo/react-ssr": "^4.0.0",
     "@auth0/nextjs-auth0": "^0.16.1",
+    "@monaco-editor/react": "^4.0.9",
     "@tailwindcss/forms": "^0.2.1",
     "apollo-boost": "^0.4.9",
     "autoprefixer": "^10.2.4",
