@@ -4,7 +4,11 @@ import React, { useCallback, useState } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 import { Spinner } from './Icons';
 
-type ButtonKind = 'primary' | 'secondary';
+type ButtonKind =
+  | 'primary'
+  | 'primary-danger'
+  | 'secondary'
+  | 'secondary-danger';
 
 function buttonClassName(opts: {
   isLoading?: boolean;
@@ -18,10 +22,24 @@ function buttonClassName(opts: {
       opts.isLoading && 'bg-gray-400 disabled cursor-wait',
       opts.className,
     );
+  } else if (opts.kind === 'secondary-danger') {
+    return classNames(
+      'select-none border border-red-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500',
+      !opts.isLoading && 'bg-white ',
+      opts.isLoading && 'bg-red-400 disabled cursor-wait',
+      opts.className,
+    );
   } else if (opts.kind === 'primary') {
     return classNames(
       'select-none border border-transparent rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-white  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
       !opts.isLoading && 'bg-indigo-600 hover:bg-indigo-700',
+      opts.isLoading && 'bg-gray-600 disabled cursor-wait',
+      opts.className,
+    );
+  } else if (opts.kind === 'primary-danger') {
+    return classNames(
+      'select-none border border-transparent rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-white  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500',
+      !opts.isLoading && 'bg-red-600 hover:bg-red-700',
       opts.isLoading && 'bg-gray-600 disabled cursor-wait',
       opts.className,
     );

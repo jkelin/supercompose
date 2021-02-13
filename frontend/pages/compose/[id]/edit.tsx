@@ -1,7 +1,10 @@
 import { gql, useApolloClient } from '@apollo/react-hooks';
 import {
+  ActionButton,
+  ConfirmationModal,
   FieldContainer,
   LinkButton,
+  Modal,
   Spinner,
   SubmitButton,
   TextField,
@@ -21,7 +24,7 @@ import {
   useUpdateComposeMutation,
 } from 'data';
 import { useRouter } from 'next/dist/client/router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 
 interface FormData {
@@ -69,6 +72,8 @@ const EditComposeForm: React.FC<{
   });
 
   useDeriveDirectoryFromName(form);
+
+  const [isDeleting, setIsDeleting] = useState(false);
 
   return (
     <DashboardLayout>
@@ -153,11 +158,35 @@ const EditComposeForm: React.FC<{
               </LinkButton>
               <div className="flex-grow"></div>
 
+              <ActionButton
+                onClick={() => setIsDeleting(true)}
+                kind="secondary-danger"
+              >
+                Delete
+              </ActionButton>
+              <span className="ml-4"></span>
               <SubmitButton kind="primary">Update</SubmitButton>
             </div>
           </div>
         </form>
       </FormProvider>
+
+      <ConfirmationModal
+        isOpen={isDeleting}
+        onClose={() => setIsDeleting(false)}
+        kind="danger"
+        onConfirm={() => console.warn('delete')}
+        confirm="Delete"
+        title="Confirm Compose deletion"
+      >
+        Are you sure you wish to delete Docker Compose{' '}
+        <strong>{compose.name}</strong>? This compose will be permanently
+        deleted and it&apos;s service removed. It&apos;s data and directory will
+        be left intact.
+        <br />
+        <br />
+        This action cannot be undone.
+      </ConfirmationModal>
     </DashboardLayout>
   );
 };
