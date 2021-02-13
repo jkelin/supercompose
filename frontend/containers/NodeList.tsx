@@ -1,7 +1,8 @@
 import { useGetNodesQuery, Node } from 'data';
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { CreateCard } from 'components';
+import { orderBy } from 'lodash';
 
 function createNodeQuickTitle(name: string) {
   return ('' + name[0] + name[1]).toUpperCase();
@@ -47,13 +48,17 @@ const NodeCard: React.FC<{
 
 export const NodeList: React.FC<{}> = (props) => {
   const nodes = useGetNodesQuery();
+
+  const nodeList = nodes?.data?.nodes;
+  const sorted = useMemo(() => orderBy(nodeList, 'name'), [nodeList]);
+
   return (
     <ul className="flex flex-col">
       <CreateCard key="create" href="/node/create">
         Create node
       </CreateCard>
       {nodes && nodes.loading && <div>Loading</div>}
-      {nodes?.data?.nodes?.map((node, i) => (
+      {sorted?.map((node, i) => (
         <React.Fragment key={node.id}>
           {i !== nodes!.data!.nodes!.length && <div className="h-4" />}
           <NodeCard node={node} />

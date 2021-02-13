@@ -11,13 +11,14 @@ import js from 'react-syntax-highlighter/dist/cjs/languages/hljs/yaml';
 
 SyntaxHighlighter.registerLanguage('yaml', js);
 
-const NodeDetail: NextPage<{}> = (props) => {
+const ComposeDetail: NextPage<{}> = (props) => {
   const router = useRouter();
   const composeQuery = useGetComposeByIdQuery({
     variables: { id: router.query.id as string },
+    fetchPolicy: 'cache-and-network',
   });
 
-  if (composeQuery.loading) {
+  if (!composeQuery.data) {
     return (
       <DashboardLayout>
         <div className="flex justify-center py-16 bg-white shadow rounded-lg">
@@ -34,7 +35,13 @@ const NodeDetail: NextPage<{}> = (props) => {
       <div className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200 ">
         <div className="px-4 py-5 sm:px-6 flex flex-col lg:flex-row items-stretch justify-between lg:items-center">
           <div>
-            <h1 className="text-lg font-semibold mb-0">{compose.name}</h1>
+            <h1 className="text-lg font-semibold mb-0">
+              {compose.name}
+
+              {composeQuery.loading && (
+                <Spinner className="inline-block ml-1 w-5 h-5" />
+              )}
+            </h1>
             <div className="text-sm text-gray-600">Docker Compose</div>
           </div>
 
@@ -74,6 +81,7 @@ const NodeDetail: NextPage<{}> = (props) => {
             <div className="w-full inline-flex py-1 px-2 items-center rounded-md border border-gray-300 bg-gray-50 text-gray-700 sm:text-sm shadow-sm">
               <SyntaxHighlighter
                 customStyle={{
+                  minWidth: '100%',
                   background: 'auto',
                   color: 'inherit',
                   padding: 0,
@@ -91,4 +99,4 @@ const NodeDetail: NextPage<{}> = (props) => {
   );
 };
 
-export default NodeDetail;
+export default ComposeDetail;

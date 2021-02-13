@@ -1,7 +1,8 @@
 import { useGetNodesQuery, Node, useGetComposesQuery, Compose } from 'data';
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { CreateCard } from 'components';
+import { orderBy } from 'lodash';
 
 function createComposeQuickTitle(name: string) {
   return ('' + name[0] + name[1]).toUpperCase();
@@ -47,11 +48,15 @@ const ComposeCard: React.FC<{
 
 export const ComposeList: React.FC<{}> = (props) => {
   const composes = useGetComposesQuery();
+
+  const composeList = composes?.data?.composes;
+  const sorted = useMemo(() => orderBy(composeList, 'name'), [composeList]);
+
   return (
     <ul className="flex flex-col">
       <CreateCard href="/compose/create">Create compose</CreateCard>
       {composes && composes.loading && <div>Loading</div>}
-      {composes?.data?.composes?.map((compose, i) => (
+      {sorted?.map((compose, i) => (
         <React.Fragment key={compose.id}>
           {i !== composes!.data!.composes.length && <div className="h-4" />}
           <ComposeCard compose={compose} />

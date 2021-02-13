@@ -18,6 +18,7 @@ import {
   GetComposeByIdQuery,
   useCreateComposeMutation,
   useGetComposeByIdQuery,
+  useUpdateComposeMutation,
 } from 'data';
 import { useRouter } from 'next/dist/client/router';
 import React from 'react';
@@ -37,7 +38,7 @@ const EditComposeForm: React.FC<{
 
   const router = useRouter();
   const toast = useToast();
-  const [createCompose] = useCreateComposeMutation();
+  const [updateCompose] = useUpdateComposeMutation();
   const apollo = useApolloClient();
 
   const form = useForm<FormData>({
@@ -50,32 +51,13 @@ const EditComposeForm: React.FC<{
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
-    const resp = await createCompose({
+    const resp = await updateCompose({
       variables: {
+        id: compose.id,
         name: data.name,
         directory: data.directory,
         compose: data.compose,
         serviceEnabled: data.serviceEnabled,
-      },
-      fetchPolicy: 'no-cache',
-    });
-
-    apollo.cache.modify({
-      fields: {
-        nodes(existingComposesRefs = [], {}) {
-          const newComposeRef = apollo.cache.writeFragment({
-            data: resp?.data?.createCompose,
-            fragment: gql`
-              fragment NewCompose on Compose {
-                id
-                name
-                serviceEnabled
-              }
-            `,
-          });
-
-          return [...existingComposesRefs, newComposeRef];
-        },
       },
     });
 
@@ -83,7 +65,7 @@ const EditComposeForm: React.FC<{
       kind: 'success',
       title: 'Compose updated',
     });
-    router.push(`/compose/${resp?.data?.createCompose.id}`);
+    router.push(`/compose/${resp?.data?.updateCompose.id}`);
   });
 
   useDeriveDirectoryFromName(form);
@@ -184,6 +166,7 @@ const EditCompose: React.FC<{}> = (props) => {
   const router = useRouter();
   const composeQuery = useGetComposeByIdQuery({
     variables: { id: router.query.id as string },
+    fetchPolicy: 'network-only',
   });
 
   if (composeQuery.loading) {

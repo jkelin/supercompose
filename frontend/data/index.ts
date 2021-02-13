@@ -71,12 +71,18 @@ export type QueryNodeArgs = {
 export type Mutation = {
   __typename?: 'Mutation';
   createCompose: Compose;
+  updateCompose: Compose;
   createNode: CreateNodeResult;
   testConnection?: Maybe<TestConnectionError>;
 };
 
 export type MutationCreateComposeArgs = {
   compose: ComposeInput;
+};
+
+export type MutationUpdateComposeArgs = {
+  compose: ComposeInput;
+  id: Scalars['ID'];
 };
 
 export type MutationCreateNodeArgs = {
@@ -162,6 +168,21 @@ export type TestConnectionMutation = { __typename?: 'Mutation' } & {
       TestConnectionError,
       'error' | 'field'
     >
+  >;
+};
+
+export type UpdateComposeMutationVariables = Exact<{
+  id: Scalars['ID'];
+  name: Scalars['String'];
+  directory: Scalars['String'];
+  serviceEnabled: Scalars['Boolean'];
+  compose: Scalars['String'];
+}>;
+
+export type UpdateComposeMutation = { __typename?: 'Mutation' } & {
+  updateCompose: { __typename?: 'Compose' } & Pick<
+    Compose,
+    'id' | 'name' | 'directory' | 'serviceEnabled' | 'serviceName' | 'content'
   >;
 };
 
@@ -416,6 +437,77 @@ export type TestConnectionMutationResult = Apollo.MutationResult<TestConnectionM
 export type TestConnectionMutationOptions = Apollo.BaseMutationOptions<
   TestConnectionMutation,
   TestConnectionMutationVariables
+>;
+export const UpdateComposeDocument = gql`
+  mutation updateCompose(
+    $id: ID!
+    $name: String!
+    $directory: String!
+    $serviceEnabled: Boolean!
+    $compose: String!
+  ) {
+    updateCompose(
+      id: $id
+      compose: {
+        name: $name
+        directory: $directory
+        serviceEnabled: $serviceEnabled
+        compose: $compose
+      }
+    ) {
+      id
+      name
+      directory
+      serviceEnabled
+      serviceName
+      content
+    }
+  }
+`;
+export type UpdateComposeMutationFn = Apollo.MutationFunction<
+  UpdateComposeMutation,
+  UpdateComposeMutationVariables
+>;
+
+/**
+ * __useUpdateComposeMutation__
+ *
+ * To run a mutation, you first call `useUpdateComposeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateComposeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateComposeMutation, { data, loading, error }] = useUpdateComposeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      name: // value for 'name'
+ *      directory: // value for 'directory'
+ *      serviceEnabled: // value for 'serviceEnabled'
+ *      compose: // value for 'compose'
+ *   },
+ * });
+ */
+export function useUpdateComposeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    UpdateComposeMutation,
+    UpdateComposeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    UpdateComposeMutation,
+    UpdateComposeMutationVariables
+  >(UpdateComposeDocument, baseOptions);
+}
+export type UpdateComposeMutationHookResult = ReturnType<
+  typeof useUpdateComposeMutation
+>;
+export type UpdateComposeMutationResult = Apollo.MutationResult<UpdateComposeMutation>;
+export type UpdateComposeMutationOptions = Apollo.BaseMutationOptions<
+  UpdateComposeMutation,
+  UpdateComposeMutationVariables
 >;
 export const GetComposeByIdDocument = gql`
   query getComposeById($id: ID!) {

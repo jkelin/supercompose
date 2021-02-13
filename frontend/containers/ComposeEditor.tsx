@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UseFormMethods } from 'react-hook-form';
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
+import { Spinner } from 'components';
 
 export const YamlEditorField: React.FC<{
   onChange: (value: string) => void;
@@ -13,6 +14,7 @@ export const YamlEditorField: React.FC<{
       path="docker-compose.yaml"
       value={props.value}
       onChange={(x) => props.onChange(x!)}
+      loading={<Spinner className="text-gray-200 w-16 h-16" />}
       height="45vh"
       language="yaml"
       options={{ formatOnPaste: true, insertSpaces: true, tabSize: 2 }}

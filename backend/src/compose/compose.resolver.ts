@@ -52,6 +52,19 @@ export class ComposeResolver {
     });
   }
 
+  @Mutation(() => ComposeModel)
+  async updateCompose(
+    @Args('id', { type: () => ID }) id: string,
+    @Args('compose') compose: ComposeInput,
+  ) {
+    await this.composeService.update(id, compose);
+
+    return this.composeRepo.findOne({
+      where: { id },
+      relations: ['current'],
+    });
+  }
+
   @Query(() => ComposeModel)
   async compose(@Args('id', { type: () => ID }) id: string) {
     return this.composeRepo.findOne({

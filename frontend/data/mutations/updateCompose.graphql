@@ -1,0 +1,24 @@
+mutation updateCompose(
+  $id: ID!
+  $name: String!
+  $directory: String!
+  $serviceEnabled: Boolean!
+  $compose: String!
+) {
+  updateCompose(
+    id: $id
+    compose: {
+      name: $name
+      directory: $directory
+      serviceEnabled: $serviceEnabled
+      compose: $compose
+    }
+  ) {
+    id
+    name
+    directory
+    serviceEnabled
+    serviceName
+    content
+  }
+}

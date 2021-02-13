@@ -52,7 +52,7 @@ export default function CreateCompose() {
 
     apollo.cache.modify({
       fields: {
-        nodes(existingComposesRefs = [], {}) {
+        composes(existingComposesRefs = [], {}) {
           const newComposeRef = apollo.cache.writeFragment({
             data: resp?.data?.createCompose,
             fragment: gql`
