@@ -22,7 +22,7 @@ export type Compose = {
   id: Scalars['ID'];
   name: Scalars['String'];
   content: Scalars['String'];
-  directory: Scalars['Boolean'];
+  directory: Scalars['String'];
   serviceEnabled: Scalars['Boolean'];
   serviceName?: Maybe<Scalars['String']>;
   deployments: Array<Deployment>;
@@ -70,8 +70,13 @@ export type QueryNodeArgs = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  createCompose: Compose;
   createNode: CreateNodeResult;
   testConnection?: Maybe<TestConnectionError>;
+};
+
+export type MutationCreateComposeArgs = {
+  compose: ComposeInput;
 };
 
 export type MutationCreateNodeArgs = {
@@ -80,6 +85,13 @@ export type MutationCreateNodeArgs = {
 
 export type MutationTestConnectionArgs = {
   node: TestConnectionInput;
+};
+
+export type ComposeInput = {
+  name: Scalars['String'];
+  directory: Scalars['String'];
+  serviceEnabled: Scalars['Boolean'];
+  compose: Scalars['String'];
 };
 
 export type CreateNodeResult = Node | TestConnectionError;
@@ -99,6 +111,20 @@ export type TestConnectionInput = {
   username?: Maybe<Scalars['String']>;
   password?: Maybe<Scalars['String']>;
   privateKey?: Maybe<Scalars['String']>;
+};
+
+export type CreateComposeMutationVariables = Exact<{
+  name: Scalars['String'];
+  directory: Scalars['String'];
+  serviceEnabled: Scalars['Boolean'];
+  compose: Scalars['String'];
+}>;
+
+export type CreateComposeMutation = { __typename?: 'Mutation' } & {
+  createCompose: { __typename?: 'Compose' } & Pick<
+    Compose,
+    'id' | 'name' | 'directory' | 'serviceEnabled' | 'content'
+  >;
 };
 
 export type CreateNodeMutationVariables = Exact<{
@@ -179,6 +205,73 @@ export type GetNodesQuery = { __typename?: 'Query' } & {
   >;
 };
 
+export const CreateComposeDocument = gql`
+  mutation createCompose(
+    $name: String!
+    $directory: String!
+    $serviceEnabled: Boolean!
+    $compose: String!
+  ) {
+    createCompose(
+      compose: {
+        name: $name
+        directory: $directory
+        serviceEnabled: $serviceEnabled
+        compose: $compose
+      }
+    ) {
+      id
+      name
+      directory
+      serviceEnabled
+      content
+    }
+  }
+`;
+export type CreateComposeMutationFn = Apollo.MutationFunction<
+  CreateComposeMutation,
+  CreateComposeMutationVariables
+>;
+
+/**
+ * __useCreateComposeMutation__
+ *
+ * To run a mutation, you first call `useCreateComposeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateComposeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createComposeMutation, { data, loading, error }] = useCreateComposeMutation({
+ *   variables: {
+ *      name: // value for 'name'
+ *      directory: // value for 'directory'
+ *      serviceEnabled: // value for 'serviceEnabled'
+ *      compose: // value for 'compose'
+ *   },
+ * });
+ */
+export function useCreateComposeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    CreateComposeMutation,
+    CreateComposeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    CreateComposeMutation,
+    CreateComposeMutationVariables
+  >(CreateComposeDocument, baseOptions);
+}
+export type CreateComposeMutationHookResult = ReturnType<
+  typeof useCreateComposeMutation
+>;
+export type CreateComposeMutationResult = Apollo.MutationResult<CreateComposeMutation>;
+export type CreateComposeMutationOptions = Apollo.BaseMutationOptions<
+  CreateComposeMutation,
+  CreateComposeMutationVariables
+>;
 export const CreateNodeDocument = gql`
   mutation createNode(
     $name: String!

@@ -54,12 +54,10 @@ export const NodeList: React.FC<{}> = (props) => {
       </CreateCard>
       {nodes && nodes.loading && <div>Loading</div>}
       {nodes?.data?.nodes?.map((node, i) => (
-        <>
-          {i !== nodes!.data!.nodes!.length && (
-            <div key={node.id + 'spacer'} className="h-4" />
-          )}
-          <NodeCard key={node.id} node={node} />
-        </>
+        <React.Fragment key={node.id}>
+          {i !== nodes!.data!.nodes!.length && <div className="h-4" />}
+          <NodeCard node={node} />
+        </React.Fragment>
       ))}
     </ul>
   );

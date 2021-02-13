@@ -13,7 +13,7 @@ export class ComposeModel {
   content: string;
 
   @Field()
-  directory: boolean;
+  directory: string;
 
   @Field()
   serviceEnabled: boolean;

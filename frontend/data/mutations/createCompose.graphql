@@ -1,0 +1,21 @@
+mutation createCompose(
+  $name: String!
+  $directory: String!
+  $serviceEnabled: Boolean!
+  $compose: String!
+) {
+  createCompose(
+    compose: {
+      name: $name
+      directory: $directory
+      serviceEnabled: $serviceEnabled
+      compose: $compose
+    }
+  ) {
+    id
+    name
+    directory
+    serviceEnabled
+    content
+  }
+}

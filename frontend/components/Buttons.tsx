@@ -6,18 +6,24 @@ import { Spinner } from './Icons';
 
 type ButtonKind = 'primary' | 'secondary';
 
-function buttonClassName(opts: { isLoading?: boolean; kind: ButtonKind }) {
+function buttonClassName(opts: {
+  isLoading?: boolean;
+  kind: ButtonKind;
+  className?: string;
+}) {
   if (opts.kind === 'secondary') {
     return classNames(
       'border border-grey-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500',
       !opts.isLoading && 'bg-white ',
       opts.isLoading && 'bg-gray-400 disabled cursor-wait',
+      opts.className,
     );
   } else if (opts.kind === 'primary') {
     return classNames(
       'border border-transparent rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-white  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
       !opts.isLoading && 'bg-indigo-600 hover:bg-indigo-700',
       opts.isLoading && 'bg-gray-600 disabled cursor-wait',
+      opts.className,
     );
   }
 }
@@ -63,14 +69,17 @@ export const ActionButton: React.FC<{
   );
 };
 
-export const LinkButton: React.FC<{ href: string; kind: ButtonKind }> = (
-  props,
-) => {
+export const LinkButton: React.FC<{
+  className?: string;
+  href: string;
+  kind: ButtonKind;
+}> = (props) => {
   return (
     <Link href={props.href}>
       <a
         className={buttonClassName({
           kind: props.kind,
+          className: props.className,
         })}
       >
         {props.children}

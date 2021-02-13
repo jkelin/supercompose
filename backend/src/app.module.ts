@@ -17,6 +17,7 @@ import { ComposeVersionEntity } from './compose/composeVersion.entity';
 import { TenantEntity } from './tenant/tenant.entity';
 import { DeploymentEntity } from './deployment/deployment.entity';
 import { DeploymentResolver } from './deployment/deployment.resolver';
+import { ComposeService } from './compose/compose.service';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { DeploymentResolver } from './deployment/deployment.resolver';
     ComposeResolver,
     NodeResolver,
     CryptoService,
+    ComposeService,
     DeploymentResolver,
   ],
 })

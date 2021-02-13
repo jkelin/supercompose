@@ -5,6 +5,7 @@ import {
   Column,
   ManyToOne,
   OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
 import { DeploymentEntity } from 'src/deployment/deployment.entity';
@@ -38,5 +39,6 @@ export class ComposeEntity {
   versions: Promise<ComposeVersionEntity[]>;
 
   @OneToOne(() => ComposeVersionEntity)
+  @JoinColumn()
   current: Promise<ComposeVersionEntity>;
 }

@@ -17,7 +17,7 @@ const ComposeCard: React.FC<{
       </div>
       <div className="flex-1 flex items-center justify-between border-t border-r border-b border-gray-200 bg-white rounded-r-md truncate">
         <div className="flex-1 px-4 py-2 text-sm truncate">
-          <Link href={`/composes/${props.compose.id}`}>
+          <Link href={`/compose/${props.compose.id}`}>
             <a className="text-gray-900 font-medium hover:text-gray-600">
               {props.compose.name}
             </a>
@@ -52,12 +52,10 @@ export const ComposeList: React.FC<{}> = (props) => {
       <CreateCard href="/compose/create">Create compose</CreateCard>
       {composes && composes.loading && <div>Loading</div>}
       {composes?.data?.composes?.map((compose, i) => (
-        <>
-          {i !== composes!.data!.composes.length && (
-            <div key={compose.id + 'spacer'} className="h-4" />
-          )}
-          <ComposeCard key={compose.id} compose={compose} />
-        </>
+        <React.Fragment key={compose.id}>
+          {i !== composes!.data!.composes.length && <div className="h-4" />}
+          <ComposeCard compose={compose} />
+        </React.Fragment>
       ))}
     </ul>
   );

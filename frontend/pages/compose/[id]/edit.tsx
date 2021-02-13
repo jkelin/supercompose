@@ -2,6 +2,7 @@ import { gql, useApolloClient } from '@apollo/react-hooks';
 import {
   FieldContainer,
   LinkButton,
+  Spinner,
   SubmitButton,
   TextField,
   TogglField,
@@ -13,8 +14,13 @@ import {
   useToast as useToast,
   YamlEditorField,
 } from 'containers';
-import { useCreateComposeMutation } from 'data';
+import {
+  GetComposeByIdQuery,
+  useCreateComposeMutation,
+  useGetComposeByIdQuery,
+} from 'data';
 import { useRouter } from 'next/dist/client/router';
+import React from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 
 interface FormData {
@@ -24,7 +30,11 @@ interface FormData {
   serviceEnabled: boolean;
 }
 
-export default function CreateCompose() {
+const EditComposeForm: React.FC<{
+  composeQuery: ReturnType<typeof useGetComposeByIdQuery>;
+}> = (props) => {
+  const compose = props.composeQuery.data!.compose;
+
   const router = useRouter();
   const toast = useToast();
   const [createCompose] = useCreateComposeMutation();
@@ -32,10 +42,10 @@ export default function CreateCompose() {
 
   const form = useForm<FormData>({
     defaultValues: {
-      name: '',
-      serviceEnabled: true,
-      compose: defaultComposeYaml,
-      directory: '/opt/docker/',
+      name: compose.name,
+      serviceEnabled: compose.serviceEnabled,
+      compose: compose.content,
+      directory: compose.directory,
     },
   });
 
@@ -71,7 +81,7 @@ export default function CreateCompose() {
 
     toast({
       kind: 'success',
-      title: 'Compose created',
+      title: 'Compose updated',
     });
     router.push(`/compose/${resp?.data?.createCompose.id}`);
   });
@@ -86,7 +96,7 @@ export default function CreateCompose() {
             <div className="bg-white py-6 px-4 space-y-6 sm:p-6">
               <div>
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Configure new Docker Compose
+                  Update Compose {compose.name}
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   Supercompose will create a <strong>docker-compose</strong>{' '}
@@ -156,16 +166,37 @@ export default function CreateCompose() {
             </div>
 
             <div className="px-4 py-3 bg-gray-50 flex flex-row justify-end sm:px-6">
-              <LinkButton href="/dashboard" kind="secondary">
+              <LinkButton href={`/compose/${compose.id}`} kind="secondary">
                 Cancel
               </LinkButton>
               <div className="flex-grow"></div>
 
-              <SubmitButton kind="primary">Create</SubmitButton>
+              <SubmitButton kind="primary">Update</SubmitButton>
             </div>
           </div>
         </form>
       </FormProvider>
     </DashboardLayout>
   );
-}
+};
+
+const EditCompose: React.FC<{}> = (props) => {
+  const router = useRouter();
+  const composeQuery = useGetComposeByIdQuery({
+    variables: { id: router.query.id as string },
+  });
+
+  if (composeQuery.loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center py-16 bg-white shadow rounded-lg">
+          <Spinner className="animate-spin h-8 w-8 text-gray-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return <EditComposeForm composeQuery={composeQuery} />;
+};
+
+export default EditCompose;
