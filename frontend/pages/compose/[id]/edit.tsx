@@ -19,12 +19,14 @@ import {
 } from 'containers';
 import {
   GetComposeByIdQuery,
+  GetComposesDocument,
   useCreateComposeMutation,
+  useDeleteComposeMutation,
   useGetComposeByIdQuery,
   useUpdateComposeMutation,
 } from 'data';
 import { useRouter } from 'next/dist/client/router';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 
 interface FormData {
@@ -41,8 +43,13 @@ const EditComposeForm: React.FC<{
 
   const router = useRouter();
   const toast = useToast();
-  const [updateCompose] = useUpdateComposeMutation();
-  const apollo = useApolloClient();
+  const [updateCompose] = useUpdateComposeMutation({
+    refetchQueries: [{ query: GetComposesDocument }],
+  });
+  const [deleteCompose] = useDeleteComposeMutation({
+    refetchQueries: [{ query: GetComposesDocument }],
+    awaitRefetchQueries: true,
+  });
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -74,6 +81,16 @@ const EditComposeForm: React.FC<{
   useDeriveDirectoryFromName(form);
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const onComposeDelete = useCallback(async () => {
+    await deleteCompose({ variables: { id: compose.id } });
+
+    toast({
+      kind: 'success',
+      title: 'Compose deleted',
+    });
+    router.push(`/dashboard`);
+  }, [deleteCompose, compose.id, toast, router]);
 
   return (
     <DashboardLayout>
@@ -175,7 +192,7 @@ const EditComposeForm: React.FC<{
         isOpen={isDeleting}
         onClose={() => setIsDeleting(false)}
         kind="danger"
-        onConfirm={() => console.warn('delete')}
+        onConfirm={onComposeDelete}
         confirm="Delete"
         title="Confirm Compose deletion"
       >

@@ -13,7 +13,7 @@ import {
   useToast as useToast,
   YamlEditorField,
 } from 'containers';
-import { useCreateComposeMutation } from 'data';
+import { GetComposesDocument, useCreateComposeMutation } from 'data';
 import { useRouter } from 'next/dist/client/router';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 
@@ -27,8 +27,10 @@ interface FormData {
 export default function CreateCompose() {
   const router = useRouter();
   const toast = useToast();
-  const [createCompose] = useCreateComposeMutation();
-  const apollo = useApolloClient();
+  const [createCompose] = useCreateComposeMutation({
+    refetchQueries: [{ query: GetComposesDocument }],
+    awaitRefetchQueries: true,
+  });
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -48,25 +50,6 @@ export default function CreateCompose() {
         serviceEnabled: data.serviceEnabled,
       },
       fetchPolicy: 'no-cache',
-    });
-
-    apollo.cache.modify({
-      fields: {
-        composes(existingComposesRefs = [], {}) {
-          const newComposeRef = apollo.cache.writeFragment({
-            data: resp?.data?.createCompose,
-            fragment: gql`
-              fragment NewCompose on Compose {
-                id
-                name
-                serviceEnabled
-              }
-            `,
-          });
-
-          return [...existingComposesRefs, newComposeRef];
-        },
-      },
     });
 
     toast({

@@ -1,26 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { UseFormMethods } from 'react-hook-form';
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react';
 import { Spinner } from 'components';
 
-export const YamlEditorField: React.FC<{
-  onChange: (value: string) => void;
-  value: string;
-}> = (props) => {
+export const YamlEditorField = forwardRef<
+  HTMLTextAreaElement,
+  {
+    onChange: (value: string) => void;
+    value: string;
+  }
+>(function YamlEditorField(props, ref) {
   return (
     <Editor
       theme="vs-dark"
       className="border"
       path="docker-compose.yaml"
-      value={props.value}
-      onChange={(x) => props.onChange(x!)}
+      value={props.value || ''}
+      onChange={(x) => props.onChange(x! || '')}
       loading={<Spinner className="text-gray-200 w-16 h-16" />}
       height="45vh"
       language="yaml"
       options={{ formatOnPaste: true, insertSpaces: true, tabSize: 2 }}
     />
   );
-};
+});
 
 export const defaultComposeYaml = `version: "3.9"
 services:

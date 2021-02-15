@@ -73,9 +73,17 @@ export class ComposeResolver {
     });
   }
 
+  @Mutation(() => Boolean)
+  async deleteCompose(@Args('id', { type: () => ID }) id: string) {
+    await this.composeService.delete(id);
+
+    return true;
+  }
+
   @Query(() => [ComposeModel])
   async composes() {
     return this.composeRepo.find({
+      where: { pendingDelete: false },
       relations: ['current'],
     });
   }

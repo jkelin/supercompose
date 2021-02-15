@@ -77,4 +77,8 @@ export class ComposeService {
       await trx.save(compose);
     });
   }
+
+  public async delete(id: string) {
+    await this.composeRepo.update({ id: id }, { pendingDelete: true });
+  }
 }

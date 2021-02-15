@@ -19,6 +19,9 @@ export class ComposeEntity {
   @Column({ length: 255 })
   name: string;
 
+  @Column({ default: false })
+  pendingDelete: boolean;
+
   @ManyToOne(
     () => TenantEntity,
     x => x.nodes,

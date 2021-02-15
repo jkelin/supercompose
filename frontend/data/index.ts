@@ -72,6 +72,7 @@ export type Mutation = {
   __typename?: 'Mutation';
   createCompose: Compose;
   updateCompose: Compose;
+  deleteCompose: Scalars['Boolean'];
   createNode: CreateNodeResult;
   testConnection?: Maybe<TestConnectionError>;
 };
@@ -82,6 +83,10 @@ export type MutationCreateComposeArgs = {
 
 export type MutationUpdateComposeArgs = {
   compose: ComposeInput;
+  id: Scalars['ID'];
+};
+
+export type MutationDeleteComposeArgs = {
   id: Scalars['ID'];
 };
 
@@ -153,6 +158,15 @@ export type CreateNodeMutation = { __typename?: 'Mutation' } & {
         'error' | 'field'
       >);
 };
+
+export type DeleteComposeMutationVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+export type DeleteComposeMutation = { __typename?: 'Mutation' } & Pick<
+  Mutation,
+  'deleteCompose'
+>;
 
 export type TestConnectionMutationVariables = Exact<{
   host: Scalars['String'];
@@ -370,6 +384,52 @@ export type CreateNodeMutationResult = Apollo.MutationResult<CreateNodeMutation>
 export type CreateNodeMutationOptions = Apollo.BaseMutationOptions<
   CreateNodeMutation,
   CreateNodeMutationVariables
+>;
+export const DeleteComposeDocument = gql`
+  mutation deleteCompose($id: ID!) {
+    deleteCompose(id: $id)
+  }
+`;
+export type DeleteComposeMutationFn = Apollo.MutationFunction<
+  DeleteComposeMutation,
+  DeleteComposeMutationVariables
+>;
+
+/**
+ * __useDeleteComposeMutation__
+ *
+ * To run a mutation, you first call `useDeleteComposeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDeleteComposeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [deleteComposeMutation, { data, loading, error }] = useDeleteComposeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useDeleteComposeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    DeleteComposeMutation,
+    DeleteComposeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    DeleteComposeMutation,
+    DeleteComposeMutationVariables
+  >(DeleteComposeDocument, baseOptions);
+}
+export type DeleteComposeMutationHookResult = ReturnType<
+  typeof useDeleteComposeMutation
+>;
+export type DeleteComposeMutationResult = Apollo.MutationResult<DeleteComposeMutation>;
+export type DeleteComposeMutationOptions = Apollo.BaseMutationOptions<
+  DeleteComposeMutation,
+  DeleteComposeMutationVariables
 >;
 export const TestConnectionDocument = gql`
   mutation testConnection(
