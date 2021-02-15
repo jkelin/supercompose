@@ -1,0 +1,13 @@
+mutation createDeployment($compose: ID!, $node: ID!) {
+  createDeployment(compose: $compose, node: $node) {
+    id
+    compose {
+      id
+      name
+    }
+    node {
+      id
+      name
+    }
+  }
+}

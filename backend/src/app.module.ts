@@ -18,6 +18,7 @@ import { TenantEntity } from './tenant/tenant.entity';
 import { DeploymentEntity } from './deployment/deployment.entity';
 import { DeploymentResolver } from './deployment/deployment.resolver';
 import { ComposeService } from './compose/compose.service';
+import { DeploymentService } from './deployment/deployment.service';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ComposeService } from './compose/compose.service';
     CryptoService,
     ComposeService,
     DeploymentResolver,
+    DeploymentService,
   ],
 })
 export class AppModule {}

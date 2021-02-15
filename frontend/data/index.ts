@@ -75,6 +75,7 @@ export type Mutation = {
   deleteCompose: Scalars['Boolean'];
   createNode: CreateNodeResult;
   testConnection?: Maybe<TestConnectionError>;
+  createDeployment: Deployment;
 };
 
 export type MutationCreateComposeArgs = {
@@ -96,6 +97,11 @@ export type MutationCreateNodeArgs = {
 
 export type MutationTestConnectionArgs = {
   node: TestConnectionInput;
+};
+
+export type MutationCreateDeploymentArgs = {
+  node: Scalars['ID'];
+  compose: Scalars['ID'];
 };
 
 export type ComposeInput = {
@@ -136,6 +142,18 @@ export type CreateComposeMutation = { __typename?: 'Mutation' } & {
     Compose,
     'id' | 'name' | 'directory' | 'serviceEnabled' | 'content'
   >;
+};
+
+export type CreateDeploymentMutationVariables = Exact<{
+  compose: Scalars['ID'];
+  node: Scalars['ID'];
+}>;
+
+export type CreateDeploymentMutation = { __typename?: 'Mutation' } & {
+  createDeployment: { __typename?: 'Deployment' } & Pick<Deployment, 'id'> & {
+      compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
+      node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
+    };
 };
 
 export type CreateNodeMutationVariables = Exact<{
@@ -306,6 +324,63 @@ export type CreateComposeMutationResult = Apollo.MutationResult<CreateComposeMut
 export type CreateComposeMutationOptions = Apollo.BaseMutationOptions<
   CreateComposeMutation,
   CreateComposeMutationVariables
+>;
+export const CreateDeploymentDocument = gql`
+  mutation createDeployment($compose: ID!, $node: ID!) {
+    createDeployment(compose: $compose, node: $node) {
+      id
+      compose {
+        id
+        name
+      }
+      node {
+        id
+        name
+      }
+    }
+  }
+`;
+export type CreateDeploymentMutationFn = Apollo.MutationFunction<
+  CreateDeploymentMutation,
+  CreateDeploymentMutationVariables
+>;
+
+/**
+ * __useCreateDeploymentMutation__
+ *
+ * To run a mutation, you first call `useCreateDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createDeploymentMutation, { data, loading, error }] = useCreateDeploymentMutation({
+ *   variables: {
+ *      compose: // value for 'compose'
+ *      node: // value for 'node'
+ *   },
+ * });
+ */
+export function useCreateDeploymentMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    CreateDeploymentMutation,
+    CreateDeploymentMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    CreateDeploymentMutation,
+    CreateDeploymentMutationVariables
+  >(CreateDeploymentDocument, baseOptions);
+}
+export type CreateDeploymentMutationHookResult = ReturnType<
+  typeof useCreateDeploymentMutation
+>;
+export type CreateDeploymentMutationResult = Apollo.MutationResult<CreateDeploymentMutation>;
+export type CreateDeploymentMutationOptions = Apollo.BaseMutationOptions<
+  CreateDeploymentMutation,
+  CreateDeploymentMutationVariables
 >;
 export const CreateNodeDocument = gql`
   mutation createNode(

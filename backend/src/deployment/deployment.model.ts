@@ -12,4 +12,7 @@ export class DeploymentModel {
 
   @Field(() => ComposeModel)
   compose: ComposeModel;
+
+  @Field()
+  enabled: boolean;
 }

@@ -1,4 +1,4 @@
-import { LinkButton, Spinner } from 'components';
+import { LinkButton, NamedCodePill, Spinner } from 'components';
 import { DashboardLayout } from 'containers';
 import { useGetComposeByIdQuery } from 'data';
 import { NextPage } from 'next';
@@ -52,28 +52,22 @@ const ComposeDetail: NextPage<{}> = (props) => {
 
         <div className="px-4 py-5 sm:p-6">
           <div className="flex flex-wrap">
-            <div className="mt-1 mr-6">
-              <div className="text-sm font-semibold">Service enabled</div>
-              <code className="w-full inline-flex items-center px-2 py-1 rounded-md border border-gray-300 bg-gray-50 text-gray-700 sm:text-sm shadow-sm">
-                {compose.serviceEnabled ? 'true' : 'false'}
-              </code>
-            </div>
+            <NamedCodePill label="Service enabled">
+              {compose.serviceEnabled ? 'true' : 'false'}
+            </NamedCodePill>
+            <div className="mt-1 mr-6" />
 
             {compose.serviceEnabled && (
-              <div className="mt-1 mr-6">
-                <div className="text-sm font-semibold">Service name</div>
-                <code className="w-full inline-flex items-center px-2 py-1 rounded-md border border-gray-300 bg-gray-50 text-gray-700 sm:text-sm shadow-sm">
+              <>
+                <NamedCodePill label="Service name">
                   {compose.serviceName}
-                </code>
-              </div>
+                </NamedCodePill>
+                <div className="mt-1 mr-6" />
+              </>
             )}
 
-            <div className="mt-1 mr-6">
-              <div className="text-sm font-semibold">Directory</div>
-              <code className="w-full inline-flex items-center px-2 py-1 rounded-md border border-gray-300 bg-gray-50 text-gray-700 sm:text-sm shadow-sm">
-                {compose.directory}
-              </code>
-            </div>
+            <NamedCodePill label="Directory">{compose.directory}</NamedCodePill>
+            <div className="mt-1 mr-6" />
           </div>
 
           <div className="mt-4">
