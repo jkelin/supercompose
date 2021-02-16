@@ -1,0 +1,17 @@
+query getDeploymentById($id: ID!) {
+  deployment(id: $id) {
+    id
+    enabled
+    compose {
+      id
+      name
+    }
+    node {
+      id
+      name
+      host
+      port
+      username
+    }
+  }
+}

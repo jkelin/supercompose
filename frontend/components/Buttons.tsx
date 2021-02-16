@@ -47,6 +47,7 @@ function buttonClassName(opts: {
 }
 
 export const ActionButton: React.FC<{
+  className?: string;
   onClick: () => unknown | Promise<unknown>;
   isLoading?: boolean;
   kind: ButtonKind;
@@ -72,6 +73,7 @@ export const ActionButton: React.FC<{
       className={buttonClassName({
         isLoading: isLoading,
         kind: props.kind,
+        className: props.className,
       })}
       onClick={onClick}
     >

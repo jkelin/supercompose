@@ -3,19 +3,18 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { CreateCard } from 'components';
 import { orderBy } from 'lodash';
-
-function createNodeQuickTitle(name: string) {
-  return ('' + name[0] + name[1]).toUpperCase();
-}
+import { IdentificationIcon } from './ComposeList';
 
 const NodeCard: React.FC<{
   node: Pick<Node, 'id' | 'host' | 'name' | 'username'>;
 }> = (props) => {
   return (
     <li className="col-span-1 flex shadow-sm rounded-md max-h-14">
-      <div className="flex-shrink-0 flex items-center justify-center w-16 bg-pink-600 text-white text-sm font-medium rounded-l-md">
-        {createNodeQuickTitle(props.node.name)}
-      </div>
+      <IdentificationIcon
+        className="rounded-l-md"
+        name={props.node.name}
+        id={props.node.id}
+      />
       <div className="flex-1 flex items-center justify-between border-t border-r border-b border-gray-200 bg-white rounded-r-md truncate">
         <div className="flex-1 px-4 py-2 text-sm truncate">
           <Link href={`/node/${props.node.id}`}>

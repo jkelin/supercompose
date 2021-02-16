@@ -41,7 +41,12 @@ export class ComposeEntity {
   )
   versions: Promise<ComposeVersionEntity[]>;
 
-  @OneToOne(() => ComposeVersionEntity)
-  @JoinColumn()
+  @Column({ type: 'uuid' })
+  currentId: string;
+
+  @OneToOne(() => ComposeVersionEntity, {
+    nullable: false,
+  })
+  @JoinColumn({ name: 'currentId' })
   current: Promise<ComposeVersionEntity>;
 }

@@ -58,6 +58,8 @@ export type Query = {
   composes: Array<Compose>;
   node: Node;
   nodes: Array<Node>;
+  deployments: Array<Deployment>;
+  deployment: Deployment;
 };
 
 export type QueryComposeArgs = {
@@ -65,6 +67,10 @@ export type QueryComposeArgs = {
 };
 
 export type QueryNodeArgs = {
+  id: Scalars['ID'];
+};
+
+export type QueryDeploymentArgs = {
   id: Scalars['ID'];
 };
 
@@ -233,6 +239,34 @@ export type GetComposesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetComposesQuery = { __typename?: 'Query' } & {
   composes: Array<{ __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>>;
+};
+
+export type GetDeploymentByIdQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+export type GetDeploymentByIdQuery = { __typename?: 'Query' } & {
+  deployment: { __typename?: 'Deployment' } & Pick<
+    Deployment,
+    'id' | 'enabled'
+  > & {
+      compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
+      node: { __typename?: 'Node' } & Pick<
+        Node,
+        'id' | 'name' | 'host' | 'port' | 'username'
+      >;
+    };
+};
+
+export type GetDeploymentsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetDeploymentsQuery = { __typename?: 'Query' } & {
+  deployments: Array<
+    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+        node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
+        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
+      }
+  >;
 };
 
 export type GetNodeByIdQueryVariables = Exact<{
@@ -758,6 +792,138 @@ export type GetComposesLazyQueryHookResult = ReturnType<
 export type GetComposesQueryResult = Apollo.QueryResult<
   GetComposesQuery,
   GetComposesQueryVariables
+>;
+export const GetDeploymentByIdDocument = gql`
+  query getDeploymentById($id: ID!) {
+    deployment(id: $id) {
+      id
+      enabled
+      compose {
+        id
+        name
+      }
+      node {
+        id
+        name
+        host
+        port
+        username
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetDeploymentByIdQuery__
+ *
+ * To run a query within a React component, call `useGetDeploymentByIdQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDeploymentByIdQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDeploymentByIdQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetDeploymentByIdQuery(
+  baseOptions: Apollo.QueryHookOptions<
+    GetDeploymentByIdQuery,
+    GetDeploymentByIdQueryVariables
+  >,
+) {
+  return Apollo.useQuery<
+    GetDeploymentByIdQuery,
+    GetDeploymentByIdQueryVariables
+  >(GetDeploymentByIdDocument, baseOptions);
+}
+export function useGetDeploymentByIdLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    GetDeploymentByIdQuery,
+    GetDeploymentByIdQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<
+    GetDeploymentByIdQuery,
+    GetDeploymentByIdQueryVariables
+  >(GetDeploymentByIdDocument, baseOptions);
+}
+export type GetDeploymentByIdQueryHookResult = ReturnType<
+  typeof useGetDeploymentByIdQuery
+>;
+export type GetDeploymentByIdLazyQueryHookResult = ReturnType<
+  typeof useGetDeploymentByIdLazyQuery
+>;
+export type GetDeploymentByIdQueryResult = Apollo.QueryResult<
+  GetDeploymentByIdQuery,
+  GetDeploymentByIdQueryVariables
+>;
+export const GetDeploymentsDocument = gql`
+  query getDeployments {
+    deployments {
+      id
+      enabled
+      node {
+        id
+        name
+      }
+      compose {
+        id
+        name
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetDeploymentsQuery__
+ *
+ * To run a query within a React component, call `useGetDeploymentsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDeploymentsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDeploymentsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetDeploymentsQuery(
+  baseOptions?: Apollo.QueryHookOptions<
+    GetDeploymentsQuery,
+    GetDeploymentsQueryVariables
+  >,
+) {
+  return Apollo.useQuery<GetDeploymentsQuery, GetDeploymentsQueryVariables>(
+    GetDeploymentsDocument,
+    baseOptions,
+  );
+}
+export function useGetDeploymentsLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    GetDeploymentsQuery,
+    GetDeploymentsQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<GetDeploymentsQuery, GetDeploymentsQueryVariables>(
+    GetDeploymentsDocument,
+    baseOptions,
+  );
+}
+export type GetDeploymentsQueryHookResult = ReturnType<
+  typeof useGetDeploymentsQuery
+>;
+export type GetDeploymentsLazyQueryHookResult = ReturnType<
+  typeof useGetDeploymentsLazyQuery
+>;
+export type GetDeploymentsQueryResult = Apollo.QueryResult<
+  GetDeploymentsQuery,
+  GetDeploymentsQueryVariables
 >;
 export const GetNodeByIdDocument = gql`
   query getNodeById($id: ID!) {

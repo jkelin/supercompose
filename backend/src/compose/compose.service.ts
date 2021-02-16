@@ -37,10 +37,8 @@ export class ComposeService {
     composeVersion.serviceName = serviceNameFromCompose(args.name);
 
     await this.manager.transaction(async trx => {
-      await trx.save(compose);
-      await trx.save(composeVersion);
-      compose.current = Promise.resolve(composeVersion);
-      await trx.save(compose);
+      compose.currentId = composeVersion.id;
+      await trx.save([composeVersion, compose]);
     });
 
     return compose.id;

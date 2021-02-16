@@ -1,0 +1,14 @@
+query getDeployments {
+  deployments {
+    id
+    enabled
+    node {
+      id
+      name
+    }
+    compose {
+      id
+      name
+    }
+  }
+}

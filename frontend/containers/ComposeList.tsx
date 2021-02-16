@@ -3,19 +3,39 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { CreateCard } from 'components';
 import { orderBy } from 'lodash';
+import classNames from 'classnames';
 
-function createComposeQuickTitle(name: string) {
+export function createQuickIdentificationTitle(name: string) {
   return ('' + name[0] + name[1]).toUpperCase();
 }
+
+export const IdentificationIcon: React.FC<{
+  id: string;
+  name: string;
+  className?: string;
+}> = (props) => {
+  return (
+    <div
+      className={classNames(
+        'flex-shrink-0 flex items-center justify-center w-16 bg-pink-600 text-white text-sm font-medium',
+        props.className,
+      )}
+    >
+      {createQuickIdentificationTitle(props.name)}
+    </div>
+  );
+};
 
 const ComposeCard: React.FC<{
   compose: Pick<Compose, 'id' | 'name'>;
 }> = (props) => {
   return (
     <li className="max-h-14 col-span-1 flex shadow-sm rounded-md">
-      <div className="flex-shrink-0 flex items-center justify-center w-16 bg-pink-600 text-white text-sm font-medium rounded-l-md">
-        {createComposeQuickTitle(props.compose.name)}
-      </div>
+      <IdentificationIcon
+        className="rounded-l-md"
+        name={props.compose.name}
+        id={props.compose.id}
+      />
       <div className="flex-1 flex items-center justify-between border-t border-r border-b border-gray-200 bg-white rounded-r-md truncate">
         <div className="flex-1 px-4 py-2 text-sm truncate">
           <Link href={`/compose/${props.compose.id}`}>
@@ -46,19 +66,26 @@ const ComposeCard: React.FC<{
   );
 };
 
-export const ComposeList: React.FC<{}> = (props) => {
+export const useComposeList = (): [Compose[], { loading: boolean }] => {
   const composes = useGetComposesQuery();
 
   const composeList = composes?.data?.composes;
-  const sorted = useMemo(() => orderBy(composeList, 'name'), [composeList]);
+  return [
+    useMemo(() => orderBy(composeList, 'name'), [composeList]) as any,
+    { loading: composes.loading },
+  ];
+};
+
+export const ComposeList: React.FC<{}> = (props) => {
+  const [composes, composeQuery] = useComposeList();
 
   return (
     <ul className="flex flex-col">
       <CreateCard href="/compose/create">Create compose</CreateCard>
-      {composes && composes.loading && <div>Loading</div>}
-      {sorted?.map((compose, i) => (
+      {composeQuery && composeQuery.loading && <div>Loading</div>}
+      {composes?.map((compose, i) => (
         <React.Fragment key={compose.id}>
-          {i !== composes!.data!.composes.length && <div className="h-4" />}
+          {i !== composes.length && <div className="h-4" />}
           <ComposeCard compose={compose} />
         </React.Fragment>
       ))}
