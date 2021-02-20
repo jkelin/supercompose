@@ -30,15 +30,28 @@ export class ComposeService {
 
     const composeVersion = new ComposeVersionEntity();
     composeVersion.id = v4();
-    composeVersion.compose = Promise.resolve(compose);
+    composeVersion.composeId = compose.id;
     composeVersion.content = args.compose;
     composeVersion.directory = args.directory;
     composeVersion.serviceEnabled = args.serviceEnabled;
     composeVersion.serviceName = serviceNameFromCompose(args.name);
 
+    compose.currentId = composeVersion.id;
+
     await this.manager.transaction(async trx => {
-      compose.currentId = composeVersion.id;
-      await trx.save([composeVersion, compose]);
+      await trx
+        .createQueryBuilder()
+        .insert()
+        .into<ComposeEntity>('compose')
+        .values(compose)
+        .execute();
+
+      await trx
+        .createQueryBuilder()
+        .insert()
+        .into<ComposeVersionEntity>('compose_version')
+        .values(composeVersion)
+        .execute();
     });
 
     return compose.id;

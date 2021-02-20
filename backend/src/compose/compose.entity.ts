@@ -35,17 +35,14 @@ export class ComposeEntity {
   )
   deployments: Promise<DeploymentEntity[]>;
 
-  @OneToMany(
-    () => ComposeVersionEntity,
-    x => x.compose,
-  )
+  @OneToMany('ComposeVersionEntity', 'compose')
   versions: Promise<ComposeVersionEntity[]>;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   currentId: string;
 
-  @OneToOne(() => ComposeVersionEntity, {
-    nullable: false,
+  @OneToOne('ComposeVersionEntity', {
+    deferrable: 'INITIALLY DEFERRED',
   })
   @JoinColumn({ name: 'currentId' })
   current: Promise<ComposeVersionEntity>;

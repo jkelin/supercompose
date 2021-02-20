@@ -25,10 +25,6 @@ import { DeploymentService } from './deployment/deployment.service';
     ConfigModule.forRoot({ isGlobal: true }),
     GraphQLModule.forRoot({ autoSchemaFile: true }),
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      url: process.env.POSTGRES_CONNECTION_STRING,
-      synchronize: true,
-      entities: [join(__dirname, '/**/*.entity{.ts,.js}')],
       autoLoadEntities: true,
     }),
     TypeOrmModule.forFeature([

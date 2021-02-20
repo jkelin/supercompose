@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { ComposeEntity } from './compose.entity';
 
 @Entity('compose_version')
@@ -18,10 +24,13 @@ export class ComposeVersionEntity {
   @Column()
   serviceEnabled: boolean;
 
-  @ManyToOne(
-    () => ComposeEntity,
-    x => x.versions,
-    { onDelete: 'CASCADE' },
-  )
+  @Column({ type: 'uuid' })
+  composeId: string;
+
+  @ManyToOne('ComposeEntity', 'versions', {
+    onDelete: 'CASCADE',
+    deferrable: 'INITIALLY DEFERRED',
+  })
+  @JoinColumn({ name: 'composeId' })
   compose: Promise<ComposeEntity>;
 }
