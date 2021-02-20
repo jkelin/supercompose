@@ -22,7 +22,9 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js --config ormconfig.cli.js",
     "migration:generate": "yarn run typeorm migration:generate -n",
     "migration:create": "yarn run typeorm migration:create -n",
-    "migration:run": "yarn run typeorm migration:run"
+    "migration:run": "yarn run typeorm migration:run",
+    "migration:revert": "yarn run typeorm migration:revert",
+    "schema:sync": "yarn run typeorm schema:sync"
   },
   "dependencies": {
     "@nestjs/common": "^7.0.0",
