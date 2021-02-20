@@ -3,7 +3,7 @@ import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { NodeEntity } from './node.entity';
 import { v4 as uuid } from 'uuid';
-import { CryptoService } from 'src/crypto/crypto.service';
+import { CryptoService } from 'crypto/crypto.service';
 
 @Injectable()
 export class NodeService {

@@ -7,9 +7,9 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
-import { DeploymentEntity } from 'src/deployment/deployment.entity';
-import { TenantEntity } from 'src/tenant/tenant.entity';
+import { ComposeVersionEntity } from 'compose/composeVersion.entity';
+import { DeploymentEntity } from 'deployment/deployment.entity';
+import { TenantEntity } from 'tenant/tenant.entity';
 
 @Entity('compose')
 export class ComposeEntity {
@@ -38,7 +38,7 @@ export class ComposeEntity {
   @OneToMany('ComposeVersionEntity', 'compose')
   versions: Promise<ComposeVersionEntity[]>;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: 'uuid' })
   currentId: string;
 
   @OneToOne('ComposeVersionEntity', {

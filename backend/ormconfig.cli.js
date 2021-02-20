@@ -1,6 +1,6 @@
 module.exports = {
-  entities: ['dist/**/*.entity.js'],
-  migrations: ['dist/migration/*.js'],
+  entities: ['src/**/*.entity.ts'],
+  migrations: ['src/migration/*.ts'],
   migrationsRun: true,
   synchronize: false,
   dropSchema: false,

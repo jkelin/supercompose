@@ -24,13 +24,8 @@ export class ComposeVersionEntity {
   @Column()
   serviceEnabled: boolean;
 
-  @Column({ type: 'uuid' })
-  composeId: string;
-
   @ManyToOne('ComposeEntity', 'versions', {
     onDelete: 'CASCADE',
-    deferrable: 'INITIALLY DEFERRED',
   })
-  @JoinColumn({ name: 'composeId' })
   compose: Promise<ComposeEntity>;
 }

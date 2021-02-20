@@ -5,9 +5,9 @@ import {
   Column,
   Unique,
 } from 'typeorm';
-import { ComposeEntity } from 'src/compose/compose.entity';
-import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
-import { NodeEntity } from 'src/node/node.entity';
+import { ComposeEntity } from 'compose/compose.entity';
+import { ComposeVersionEntity } from 'compose/composeVersion.entity';
+import { NodeEntity } from 'node/node.entity';
 
 @Entity('deployment')
 @Unique(['compose', 'node'])

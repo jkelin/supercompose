@@ -6,8 +6,8 @@ import {
   OneToMany,
   Check,
 } from 'typeorm';
-import { DeploymentEntity } from 'src/deployment/deployment.entity';
-import { TenantEntity } from 'src/tenant/tenant.entity';
+import { DeploymentEntity } from 'deployment/deployment.entity';
+import { TenantEntity } from 'tenant/tenant.entity';
 import { Max, Min } from 'class-validator';
 
 @Entity('node')

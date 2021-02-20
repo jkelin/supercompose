@@ -5,8 +5,8 @@ import {
   Scope,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CryptoService } from 'src/crypto/crypto.service';
-import { NodeEntity } from 'src/node/node.entity';
+import { CryptoService } from 'crypto/crypto.service';
+import { NodeEntity } from 'node/node.entity';
 import { Repository } from 'typeorm';
 import { NodeConnection } from './nodeConnection';
 import { NodeConnectionManager } from './nodeConnectionManager';

@@ -8,7 +8,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import { InjectRepository } from '@nestjs/typeorm';
-import { NodeModel } from 'src/node/node.model';
+import { NodeModel } from 'node/node.model';
 import { Repository } from 'typeorm';
 import { DeploymentEntity } from './deployment.entity';
 import { DeploymentModel } from './deployment.model';

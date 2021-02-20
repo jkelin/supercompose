@@ -30,7 +30,7 @@ export class ComposeService {
 
     const composeVersion = new ComposeVersionEntity();
     composeVersion.id = v4();
-    composeVersion.composeId = compose.id;
+    composeVersion.compose = Promise.resolve(compose);
     composeVersion.content = args.compose;
     composeVersion.directory = args.directory;
     composeVersion.serviceEnabled = args.serviceEnabled;

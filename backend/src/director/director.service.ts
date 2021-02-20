@@ -1,12 +1,12 @@
 import isUtf8 from 'is-utf8';
 import YAML from 'yaml';
 import { Injectable, Scope } from '@nestjs/common';
-import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
+import { SSHPoolService } from 'sshConnectionPool/sshpool.service';
 import { IsNull, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ComposeVersionEntity } from 'src/compose/composeVersion.entity';
-import { NodeEntity } from 'src/node/node.entity';
-import { DeploymentEntity } from 'src/deployment/deployment.entity';
+import { ComposeVersionEntity } from 'compose/composeVersion.entity';
+import { NodeEntity } from 'node/node.entity';
+import { DeploymentEntity } from 'deployment/deployment.entity';
 
 function isJson(what: string) {
   try {

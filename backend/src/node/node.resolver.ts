@@ -17,11 +17,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NodeModel } from './node.model';
 import { NodeEntity } from './node.entity';
-import { DeploymentModel } from 'src/deployment/deployment.model';
+import { DeploymentModel } from 'deployment/deployment.model';
 import { Max, Min } from 'class-validator';
 import { NodeService } from './node.service';
-import { SSHPoolService } from 'src/sshConnectionPool/sshpool.service';
-import { DeploymentEntity } from 'src/deployment/deployment.entity';
+import { SSHPoolService } from 'sshConnectionPool/sshpool.service';
+import { DeploymentEntity } from 'deployment/deployment.entity';
 
 @InputType()
 export class NodeInput {

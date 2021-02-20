@@ -1,6 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { NodeEntity } from 'src/node/node.entity';
-import { ComposeEntity } from 'src/compose/compose.entity';
+import { NodeEntity } from 'node/node.entity';
+import { ComposeEntity } from 'compose/compose.entity';
 
 @Entity('tenant')
 export class TenantEntity {

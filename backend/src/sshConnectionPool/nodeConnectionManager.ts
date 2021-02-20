@@ -2,8 +2,8 @@ import { NodeConnection } from './nodeConnection';
 import EventEmitter from 'events';
 import AsyncLock from 'async-lock';
 import { Repository } from 'typeorm';
-import { NodeEntity } from 'src/node/node.entity';
-import { CryptoService } from 'src/crypto/crypto.service';
+import { NodeEntity } from 'node/node.entity';
+import { CryptoService } from 'crypto/crypto.service';
 
 export class NodeConnectionManager {
   private node?: NodeEntity;

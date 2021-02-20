@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
-import { ComposeEntity } from 'src/compose/compose.entity';
-import { NodeEntity } from 'src/node/node.entity';
+import { ComposeEntity } from 'compose/compose.entity';
+import { NodeEntity } from 'node/node.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { v4 } from 'uuid';
 import { DeploymentEntity } from './deployment.entity';
