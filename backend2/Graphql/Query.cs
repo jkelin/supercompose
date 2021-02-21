@@ -1,0 +1,85 @@
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using HotChocolate;
+using HotChocolate.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace backend2
+{
+  public class Query
+  {
+    public Person GetPerson()
+    {
+      return new($"Luke Skywalker {Guid.NewGuid()}");
+    }
+
+    [UseProjection]
+    [UseFiltering]
+    [UseSorting]
+    public IQueryable<Node> GetNodes(
+      [Service] SupercomposeContext ctx)
+    {
+      return ctx.Nodes;
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    [UseFiltering]
+    public IQueryable<Node> GetNode(
+      [Service] SupercomposeContext ctx)
+    {
+      return ctx.Nodes;
+    }
+
+    [UseProjection]
+    [UseFiltering]
+    public DbSet<Compose> GetComposes(
+      [Service] SupercomposeContext ctx)
+    {
+      return ctx.Composes;
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    [UseFiltering]
+    public DbSet<Compose> GetCompose(
+      [Service] SupercomposeContext ctx)
+    {
+      return ctx.Composes;
+    }
+
+    [UseProjection]
+    [UseFiltering]
+    public DbSet<Deployment> GetDeployments(
+      [Service] SupercomposeContext ctx)
+    {
+      return ctx.Deployments;
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    [UseFiltering]
+    public DbSet<Deployment> GetDeployment(
+      [Service] SupercomposeContext ctx)
+    {
+      return ctx.Deployments;
+    }
+  }
+
+  public class Person
+  {
+    public Person(string name)
+    {
+      Name = name;
+    }
+
+    public string Name { get; }
+
+    public async Task<string> Test()
+    {
+      await Task.Delay(1000);
+      return Guid.NewGuid().ToString();
+    }
+  }
+}

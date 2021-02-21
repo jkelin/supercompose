@@ -1,28 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using HotChocolate;
 
 #nullable disable
 
 namespace backend2
 {
-    public partial class Node
-    {
-        public Node()
-        {
-            Deployments = new HashSet<Deployment>();
-        }
+  public partial class Node
+  {
+    private readonly SupercomposeContext ctx;
 
-        public Guid Id { get; set; }
-        public bool Enabled { get; set; }
-        public string Name { get; set; }
-        public string Host { get; set; }
-        public int Port { get; set; }
-        public string Username { get; set; }
-        public byte[] Password { get; set; }
-        public byte[] PrivateKey { get; set; }
-        public Guid? TenantId { get; set; }
+    [Required]
+    [Key]
+    public Guid Id { get; set; }
 
-        public virtual Tenant Tenant { get; set; }
-        public virtual ICollection<Deployment> Deployments { get; set; }
-    }
+    [Required]
+    public bool? Enabled { get; set; }
+
+    [Required]
+    [MaxLength(255)]
+    public string Name { get; set; }
+
+    [Required]
+    [MaxLength(255)]
+    public string Host { get; set; }
+
+    [Required]
+    public int? Port { get; set; }
+
+    [Required]
+    [MaxLength(255)]
+    public string Username { get; set; }
+    
+    [GraphQLIgnore]
+    public byte[]? Password { get; set; }
+
+    [GraphQLIgnore]
+    public byte[]? PrivateKey { get; set; }
+    public Guid? TenantId { get; set; }
+
+    public virtual Tenant Tenant { get; set; }
+
+    public virtual ICollection<Deployment> Deployments { get; set; } =
+      new List<Deployment>();
+  }
 }
