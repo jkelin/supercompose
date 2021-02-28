@@ -9,11 +9,9 @@ namespace backend2
 {
   public partial class Node
   {
-    private readonly SupercomposeContext ctx;
-
     [Required]
     [Key]
-    public Guid Id { get; set; }
+    public Guid? Id { get; set; }
 
     [Required]
     public bool? Enabled { get; set; }
@@ -27,17 +25,19 @@ namespace backend2
     public string Host { get; set; }
 
     [Required]
+    [Range(1, 65535)]
     public int? Port { get; set; }
 
     [Required]
     [MaxLength(255)]
     public string Username { get; set; }
-    
-    [GraphQLIgnore]
-    public byte[]? Password { get; set; }
 
     [GraphQLIgnore]
-    public byte[]? PrivateKey { get; set; }
+    public byte[] Password { get; set; }
+
+    [GraphQLIgnore]
+    public byte[] PrivateKey { get; set; }
+
     public Guid? TenantId { get; set; }
 
     public virtual Tenant Tenant { get; set; }

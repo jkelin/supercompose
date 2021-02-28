@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using HotChocolate;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -12,36 +13,51 @@ namespace backend2
 {
   public class Startup
   {
-    public Startup(IConfiguration configuration)
+    private readonly IConfiguration configuration;
+    private readonly IWebHostEnvironment env;
+
+    public Startup(IConfiguration configuration, IWebHostEnvironment env)
     {
-      Configuration = configuration;
+      this.configuration = configuration;
+      this.env = env;
     }
-
-    private IConfiguration Configuration { get; }
-
     // This method gets called by the runtime. Use this method to add services to the container.
     // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
     public void ConfigureServices(IServiceCollection services)
     {
+      services.AddControllers();
+
       // If you need dependency injection with your query object add your query type as a services.
       // services.AddSingleton<Query>();
       services
+        .AddScoped<CryptoService>()
+        .AddScoped<NodeService>();
+
+      services
         .AddRouting();
 
+      services.AddLogging();
+
       services.AddGraphQLServer()
+        .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = env.IsDevelopment())
         .AddFiltering()
         .AddSorting()
+        .AddDiagnosticEventListener(sp =>
+        new ConsoleQueryLogger(
+          sp.GetApplicationService<ILogger<ConsoleQueryLogger>>()
+        ))
+        .AddApolloTracing()
         .AddProjections()
-        .AddQueryType<Query>();
-        //.AddMutationType<Mutation>();
+        .AddQueryType<Query>()
+        .AddMutationType<Mutation>();
 
       services.AddDbContext<SupercomposeContext>(options =>
         options.UseNpgsql(
-          Configuration.GetConnectionString("SupercomposeContext")));
+          configuration.GetConnectionString("SupercomposeContext")));
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, 
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
     SupercomposeContext ctx, ILogger<Startup> logger)
     {
       Migrate(ctx, logger).Wait();
@@ -56,6 +72,7 @@ namespace backend2
         // This route also provides you with our GraphQL IDE. In order to configure the
         // the GraphQL IDE use endpoints.MapGraphQL().WithToolOptions(...).
         endpoints.MapGraphQL();
+        endpoints.MapControllers();
       });
     }
 

@@ -11,12 +11,10 @@ namespace backend2
 {
   public partial class Compose
   {
-    private readonly SupercomposeContext ctx;
-
     [Required]
     [Key]
-    public Guid Id { get; set; }
-    
+    public Guid? Id { get; set; }
+
     [Required]
     [MaxLength(255)]
     public string Name { get; set; }
@@ -27,31 +25,12 @@ namespace backend2
     [Required]
     public Guid? CurrentId { get; set; }
 
-    //[IsProjected(true)]
-    //[NotMapped]
-    public string Content () => Current.Content;
-    
-    [IsProjected(true)]
-    [NotMapped]
-    public string Directory { get; set; }
-    
-    [IsProjected(true)]
-    [NotMapped]
-    public string ServiceName { get; set; }
-
-    [IsProjected(true)]
-    [NotMapped]
-    public bool ServiceEnabled { get; set; }
-    
     public Guid? TenantId { get; set; }
 
     public virtual ComposeVersion Current { get; set; }
     public virtual Tenant Tenant { get; set; }
 
-    public virtual ICollection<ComposeVersion> ComposeVersions { get; set; } =
-      new List<ComposeVersion>();
-
-    public virtual ICollection<Deployment> Deployments { get; set; } =
-      new List<Deployment>();
+    public virtual ICollection<ComposeVersion> ComposeVersions { get; set; } = new List<ComposeVersion>();
+    public virtual ICollection<Deployment> Deployments { get; set; } = new List<Deployment>();
   }
 }
