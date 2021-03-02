@@ -8,7 +8,7 @@ using HotChocolate.Execution.Instrumentation;
 using HotChocolate.Resolvers;
 using Microsoft.Extensions.Logging;
 
-namespace backend2
+namespace supercompose
 {
   public class ConsoleQueryLogger : DiagnosticEventListener
   {

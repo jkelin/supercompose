@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using HotChocolate.Data;
 
-namespace backend2
+namespace supercompose
 {
   public class Mutation
   {

@@ -7,7 +7,7 @@ using ProtoBuf;
 using System.Security.Cryptography;
 using System.IO;
 
-namespace backend2
+namespace supercompose
 {
   public class CryptoService
   {

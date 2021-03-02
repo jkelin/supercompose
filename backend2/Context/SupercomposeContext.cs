@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 #nullable disable
 
-namespace backend2
+namespace supercompose
 {
   public partial class SupercomposeContext : DbContext
   {

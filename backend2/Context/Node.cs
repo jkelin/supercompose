@@ -5,7 +5,7 @@ using HotChocolate;
 
 #nullable disable
 
-namespace backend2
+namespace supercompose
 {
   public partial class Node
   {

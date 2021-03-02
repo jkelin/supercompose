@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 #nullable disable
 
-namespace backend2
+namespace supercompose
 {
   public partial class Deployment
   {

@@ -5,7 +5,7 @@ using HotChocolate;
 using HotChocolate.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend2
+namespace supercompose
 {
   public class Query
   {
