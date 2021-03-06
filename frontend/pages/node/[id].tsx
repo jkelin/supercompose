@@ -42,7 +42,7 @@ const NodeDetail: NextPage<{}> = (props) => {
           kind: 'success',
           title: 'Deployment created',
         });
-        router.push(`/deployment/${resp?.data?.createDeployment.id}`);
+        router.push(`/deployment/${resp?.data?.createDeployment!.id}`);
       }
     },
     [createDeployment, node, router, toast],
@@ -89,7 +89,7 @@ const NodeDetail: NextPage<{}> = (props) => {
             {composes.map((x, i) => {
               console.warn(deploymentsQuery.data?.deployments, node?.id);
               const deployment = deploymentsQuery.data?.deployments.find(
-                (y) => y.node.id === node?.id && y.compose.id === x.id,
+                (y) => y.node!.id === node?.id && y.compose!.id === x.id,
               );
 
               return (

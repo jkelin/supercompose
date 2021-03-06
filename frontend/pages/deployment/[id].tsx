@@ -34,7 +34,7 @@ const DeploymentDetail: NextPage<{}> = (props) => {
     );
   }
 
-  const deployment = deploymentQuery.data!.deployment;
+  const deployment = deploymentQuery.data!.deployment!;
 
   return (
     <DashboardLayout>
@@ -42,7 +42,7 @@ const DeploymentDetail: NextPage<{}> = (props) => {
         <div className="px-4 py-5 sm:px-6 flex flex-col lg:flex-row items-stretch justify-between lg:items-center">
           <div>
             <h1 className="text-lg font-semibold mb-0">
-              {deployment.compose.name} @ {deployment.node.name}
+              {deployment.compose!.name} @ {deployment.node!.name}
             </h1>
             <div className="text-sm text-gray-600">Deployment</div>
           </div>

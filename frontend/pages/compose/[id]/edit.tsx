@@ -39,7 +39,7 @@ interface FormData {
 const EditComposeForm: React.FC<{
   composeQuery: ReturnType<typeof useGetComposeByIdQuery>;
 }> = (props) => {
-  const compose = props.composeQuery.data!.compose;
+  const compose = props.composeQuery.data!.compose!;
 
   const router = useRouter();
   const toast = useToast();
@@ -54,9 +54,9 @@ const EditComposeForm: React.FC<{
   const form = useForm<FormData>({
     defaultValues: {
       name: compose.name,
-      serviceEnabled: compose.serviceEnabled,
-      compose: compose.content,
-      directory: compose.directory,
+      serviceEnabled: compose.current!.serviceEnabled,
+      compose: compose.current!.content,
+      directory: compose.current!.directory,
     },
   });
 
@@ -75,7 +75,7 @@ const EditComposeForm: React.FC<{
       kind: 'success',
       title: 'Compose updated',
     });
-    router.push(`/compose/${resp?.data?.updateCompose.id}`);
+    router.push(`/compose/${resp?.data?.updateCompose?.id}`);
   });
 
   useDeriveDirectoryFromName(form);
@@ -100,7 +100,7 @@ const EditComposeForm: React.FC<{
             <div className="bg-white py-6 px-4 space-y-6 sm:p-6">
               <div>
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Update Compose {compose.name}
+                  Update Compose {compose!.name}
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   Supercompose will create a <strong>docker-compose</strong>{' '}

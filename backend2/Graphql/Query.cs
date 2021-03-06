@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using HotChocolate;
@@ -9,11 +9,6 @@ namespace supercompose
 {
   public class Query
   {
-    public Person GetPerson()
-    {
-      return new($"Luke Skywalker {Guid.NewGuid()}");
-    }
-
     [UseProjection]
     [UseFiltering]
     [UseSorting]

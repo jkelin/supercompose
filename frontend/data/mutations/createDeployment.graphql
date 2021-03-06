@@ -1,4 +1,4 @@
-mutation createDeployment($compose: ID!, $node: ID!) {
+mutation createDeployment($compose: Uuid!, $node: Uuid!) {
   createDeployment(compose: $compose, node: $node) {
     id
     compose {

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 
 namespace supercompose
@@ -19,8 +20,8 @@ namespace supercompose
       string host,
       string username,
       int port,
-      string password,
-      string privateKey
+      string? password,
+      string? privateKey
     )
     {
       var node = new Node
@@ -41,12 +42,32 @@ namespace supercompose
       return node.Id.Value;
     }
 
+    public async Task Update(
+      Guid id,
+      string? name,
+      string? host,
+      string? username,
+      int? port,
+      string? password,
+      string? privateKey
+    )
+    {
+      throw new NotImplementedException();
+    }
+
     public async Task<Guid> TestConnection(
       string host,
       string username,
       int port,
-      string password,
-      string privateKey
+      string? password,
+      string? privateKey
+    )
+    {
+      throw new NodeConnectionFailedException();
+    }
+
+    public async Task Delete(
+      Guid id
     )
     {
       throw new NotImplementedException();

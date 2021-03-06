@@ -7,22 +7,22 @@ mutation createNode(
   $privateKey: String
 ) {
   createNode(
-    node: {
-      name: $name
-      host: $host
-      port: $port
-      username: $username
-      password: $password
-      privateKey: $privateKey
-    }
+    name: $name
+    host: $host
+    port: $port
+    username: $username
+    password: $password
+    privateKey: $privateKey
   ) {
-    ... on Node {
-      id
-      name
-      host
-      username
+    ... on SuccessfulNodeCreation {
+      node {
+        id
+        name
+        host
+        username
+      }
     }
-    ... on TestConnectionError {
+    ... on NodeConnectionFailed {
       error
       field
     }

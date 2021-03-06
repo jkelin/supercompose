@@ -28,7 +28,7 @@ const ComposeDetail: NextPage<{}> = (props) => {
     );
   }
 
-  const compose = composeQuery.data!.compose;
+  const compose = composeQuery.data!.compose!;
 
   return (
     <DashboardLayout>
@@ -53,20 +53,22 @@ const ComposeDetail: NextPage<{}> = (props) => {
         <div className="px-4 py-5 sm:p-6">
           <div className="flex flex-wrap">
             <NamedCodePill label="Service enabled">
-              {compose.serviceEnabled ? 'true' : 'false'}
+              {compose.current!.serviceEnabled ? 'true' : 'false'}
             </NamedCodePill>
             <div className="mt-1 mr-6" />
 
-            {compose.serviceEnabled && (
+            {compose.current!.serviceEnabled && (
               <>
                 <NamedCodePill label="Service name">
-                  {compose.serviceName}
+                  {compose.current!.serviceName}
                 </NamedCodePill>
                 <div className="mt-1 mr-6" />
               </>
             )}
 
-            <NamedCodePill label="Directory">{compose.directory}</NamedCodePill>
+            <NamedCodePill label="Directory">
+              {compose.current!.directory}
+            </NamedCodePill>
             <div className="mt-1 mr-6" />
           </div>
 
@@ -83,7 +85,7 @@ const ComposeDetail: NextPage<{}> = (props) => {
                 language="yaml"
                 style={docco}
               >
-                {compose.content.trim()}
+                {compose.current!.content.trim()}
               </SyntaxHighlighter>
             </div>
           </div>

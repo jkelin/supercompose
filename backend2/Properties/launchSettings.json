@@ -1,0 +1,21 @@
+{
+  "profiles": {
+    "run": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "watch": {
+      "commandName": "Executable",
+      "executablePath": "dotnet.exe",
+      "workingDirectory": "$(ProjectDir)",
+      "commandLineArgs": "watch run",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:5000"
+    }
+  }
+}

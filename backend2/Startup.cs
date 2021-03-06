@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using backend2.Services;
 using HotChocolate;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -21,6 +22,7 @@ namespace supercompose
       this.configuration = configuration;
       this.env = env;
     }
+
     // This method gets called by the runtime. Use this method to add services to the container.
     // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
     public void ConfigureServices(IServiceCollection services)
@@ -30,7 +32,11 @@ namespace supercompose
       // If you need dependency injection with your query object add your query type as a services.
       // services.AddSingleton<Query>();
       services
+        .AddScoped<Query>()
+        .AddScoped<Mutation>()
+        .AddScoped<ComposeService>()
         .AddScoped<CryptoService>()
+        .AddScoped<DeploymentService>()
         .AddScoped<NodeService>();
 
       services
@@ -43,13 +49,15 @@ namespace supercompose
         .AddFiltering()
         .AddSorting()
         .AddDiagnosticEventListener(sp =>
-        new ConsoleQueryLogger(
-          sp.GetApplicationService<ILogger<ConsoleQueryLogger>>()
-        ))
+          new ConsoleQueryLogger(
+            sp.GetApplicationService<ILogger<ConsoleQueryLogger>>()
+          ))
         .AddApolloTracing()
         .AddProjections()
         .AddQueryType<Query>()
-        .AddMutationType<Mutation>();
+        .AddMutationType<Mutation>()
+        .AddType<Mutation.SuccessfulNodeCreation>()
+        .AddType<Mutation.NodeConnectionFailed>();
 
       services.AddDbContext<SupercomposeContext>(options =>
         options.UseNpgsql(
@@ -58,7 +66,7 @@ namespace supercompose
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
-    SupercomposeContext ctx, ILogger<Startup> logger)
+      SupercomposeContext ctx, ILogger<Startup> logger)
     {
       Migrate(ctx, logger).Wait();
 
@@ -78,8 +86,7 @@ namespace supercompose
 
     private async Task Migrate(SupercomposeContext ctx, ILogger<Startup> logger)
     {
-      for (int i = 0; i < 10; i++)
-      {
+      for (var i = 0; i < 10; i++)
         if (await ctx.Database.CanConnectAsync())
         {
           await ctx.Database.MigrateAsync();
@@ -90,9 +97,9 @@ namespace supercompose
           logger.LogInformation("Could not connect to database, delaying");
           await Task.Delay(500);
         }
-      }
 
-      throw new ApplicationException("Could not migrate database because connection to database could not be established");
+      throw new ApplicationException(
+        "Could not migrate database because connection to database could not be established");
     }
   }
 }

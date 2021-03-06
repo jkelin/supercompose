@@ -1,5 +1,5 @@
-query getNodeById($id: ID!) {
-  node(id: $id) {
+query getNodeById($id: Uuid!) {
+  node(where: { id: { eq: $id } }) {
     id
     name
     host

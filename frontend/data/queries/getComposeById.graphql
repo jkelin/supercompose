@@ -1,10 +1,13 @@
-query getComposeById($id: ID!) {
-  compose(id: $id) {
+query getComposeById($id: Uuid!) {
+  compose(where: { id: { eq: $id } }) {
     id
     name
-    content
-    directory
-    serviceName
-    serviceEnabled
+    current {
+      id
+      content
+      directory
+      serviceName
+      serviceEnabled
+    }
   }
 }

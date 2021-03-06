@@ -1,5 +1,5 @@
 mutation updateCompose(
-  $id: ID!
+  $id: Uuid!
   $name: String!
   $directory: String!
   $serviceEnabled: Boolean!
@@ -7,18 +7,19 @@ mutation updateCompose(
 ) {
   updateCompose(
     id: $id
-    compose: {
-      name: $name
-      directory: $directory
-      serviceEnabled: $serviceEnabled
-      compose: $compose
-    }
+    name: $name
+    directory: $directory
+    serviceEnabled: $serviceEnabled
+    compose: $compose
   ) {
     id
     name
-    directory
-    serviceEnabled
-    serviceName
-    content
+    current {
+      id
+      directory
+      serviceEnabled
+      serviceName
+      content
+    }
   }
 }

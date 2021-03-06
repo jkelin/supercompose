@@ -56,7 +56,7 @@ export default function CreateCompose() {
       kind: 'success',
       title: 'Compose created',
     });
-    router.push(`/compose/${resp?.data?.createCompose.id}`);
+    router.push(`/compose/${resp?.data?.createCompose!.id}`);
   });
 
   useDeriveDirectoryFromName(form);

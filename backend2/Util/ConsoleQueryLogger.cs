@@ -32,9 +32,8 @@ namespace supercompose
     {
       base.ResolverError(context, error);
       if (error.Exception != null)
-      {
-        _logger.LogError(new EventId(1, "GraphQL Error"), error.Exception, "GraphQL Error");
-      }
+        _logger.LogError(new EventId(1, "GraphQL Error"), error.Exception, "GraphQL Error in {name}",
+          context.Field.Name);
     }
 
     private class RequestScope : IActivityScope
@@ -71,27 +70,19 @@ namespace supercompose
               {
                 foreach (var variableValue in _context.Variables!)
                 {
-                  if (variableValue.Name == "password" || variableValue.Name == "privateKey")
-                  {
-                    continue;
-                  }
+                  if (variableValue.Name == "password" || variableValue.Name == "privateKey") continue;
 
                   string PadRightHelper(string existingString, int lengthToPadTo)
                   {
-                    if (string.IsNullOrEmpty(existingString))
-                    {
-                      return "".PadRight(lengthToPadTo);
-                    }
+                    if (string.IsNullOrEmpty(existingString)) return "".PadRight(lengthToPadTo);
 
-                    if (existingString.Length > lengthToPadTo)
-                    {
-                      return existingString.Substring(0, lengthToPadTo);
-                    }
+                    if (existingString.Length > lengthToPadTo) return existingString.Substring(0, lengthToPadTo);
 
                     return existingString + " ".PadRight(lengthToPadTo - existingString.Length);
                   }
+
                   stringBuilder.AppendFormat(
-                      $"  {PadRightHelper(variableValue.Name, 20)} :  {PadRightHelper(variableValue.Value.ToString(), 20)}: {variableValue.Type}");
+                    $"  {PadRightHelper(variableValue.Name, 20)} :  {PadRightHelper(variableValue.Value.ToString(), 20)}: {variableValue.Type}");
                   stringBuilder.AppendFormat($"{Environment.NewLine}");
                 }
               }
@@ -106,7 +97,7 @@ namespace supercompose
 
           _queryTimer.Stop();
           stringBuilder.AppendFormat(
-              $"Ellapsed time for query is {_queryTimer.Elapsed.TotalMilliseconds:0.#} milliseconds.");
+            $"Ellapsed time for query is {_queryTimer.Elapsed.TotalMilliseconds:0.#} milliseconds.");
           _logger.LogInformation(stringBuilder.ToString());
         }
       }
