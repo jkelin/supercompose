@@ -9,6 +9,8 @@ import {
 } from 'containers';
 import {
   useCreateDeploymentMutation,
+  useDisableDeploymentMutation,
+  useEnableDeploymentMutation,
   useGetDeploymentByIdQuery,
   useGetDeploymentsQuery,
   useGetNodeByIdQuery,
@@ -24,6 +26,18 @@ const DeploymentDetail: NextPage<{}> = (props) => {
     variables: { id: router.query.id as string },
   });
 
+  const [enableDeployment] = useEnableDeploymentMutation({
+    variables: {
+      deployment: router.query.id,
+    },
+  });
+
+  const [disableDeployment] = useDisableDeploymentMutation({
+    variables: {
+      deployment: router.query.id,
+    },
+  });
+
   if (deploymentQuery.loading) {
     return (
       <DashboardLayout>
@@ -36,9 +50,12 @@ const DeploymentDetail: NextPage<{}> = (props) => {
 
   const deployment = deploymentQuery.data!.deployment!;
 
+  const onDisable = async () => disableDeployment();
+  const onEnable = async () => enableDeployment();
+
   return (
     <DashboardLayout>
-      <div className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200">
+      <div className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200 place-self-start w-full">
         <div className="px-4 py-5 sm:px-6 flex flex-col lg:flex-row items-stretch justify-between lg:items-center">
           <div>
             <h1 className="text-lg font-semibold mb-0">
@@ -46,8 +63,49 @@ const DeploymentDetail: NextPage<{}> = (props) => {
             </h1>
             <div className="text-sm text-gray-600">Deployment</div>
           </div>
+
+          {deployment?.enabled && (
+            <ActionButton kind="danger-outline" onClick={onDisable}>
+              Disable
+            </ActionButton>
+          )}
+
+          {!deployment?.enabled && (
+            <ActionButton kind="primary-outline" onClick={onEnable}>
+              Enable
+            </ActionButton>
+          )}
         </div>
-        <div className="px-4 py-5 sm:p-6"></div>
+        <div className="px-4 py-5 sm:p-6">
+          <div className="flex flex-wrap">
+            <NamedCodePill label="Enabled">
+              {deployment?.enabled ? 'true' : 'false'}
+            </NamedCodePill>
+            <div className="mt-3 mr-6" />
+            <NamedCodePill label="Node">{deployment?.node?.name}</NamedCodePill>
+            <div className="mt-3 mr-6" />
+            <NamedCodePill label="Node address">
+              {deployment?.node?.username}@{deployment?.node?.host}:
+              {deployment?.node?.port}
+            </NamedCodePill>
+            <div className="mt-3 mr-6" />
+            <NamedCodePill label="Compose">
+              {deployment?.compose?.name}
+            </NamedCodePill>
+            <div className="mt-3 mr-6" />
+            <NamedCodePill label="Compose service enabled">
+              {deployment?.compose?.current?.serviceEnabled ? 'true' : 'false'}
+            </NamedCodePill>
+            <div className="mt-3 mr-6" />
+            <NamedCodePill label="Compose service name">
+              {deployment?.compose?.current?.serviceName}
+            </NamedCodePill>
+            <div className="mt-3 mr-6" />
+            <NamedCodePill label="Compose directory">
+              {deployment?.compose?.current?.directory}
+            </NamedCodePill>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -55,7 +55,7 @@ export type QueryDeploymentArgs = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createNode?: Maybe<CreateNodeResult>;
+  createNode: CreateNodeResult;
   testConnection?: Maybe<NodeConnectionFailed>;
   updateNode?: Maybe<Node>;
   deleteNode: Scalars['Boolean'];
@@ -63,6 +63,8 @@ export type Mutation = {
   updateCompose?: Maybe<Compose>;
   deleteCompose: Scalars['Boolean'];
   createDeployment?: Maybe<Deployment>;
+  enableDeployment?: Maybe<Deployment>;
+  disableDeployment?: Maybe<Deployment>;
 };
 
 export type MutationCreateNodeArgs = {
@@ -118,6 +120,14 @@ export type MutationDeleteComposeArgs = {
 export type MutationCreateDeploymentArgs = {
   node: Scalars['Uuid'];
   compose: Scalars['Uuid'];
+};
+
+export type MutationEnableDeploymentArgs = {
+  deployment: Scalars['Uuid'];
+};
+
+export type MutationDisableDeploymentArgs = {
+  deployment: Scalars['Uuid'];
 };
 
 export type SuccessfulNodeCreation = {
@@ -398,7 +408,7 @@ export type CreateNodeMutationVariables = Exact<{
 }>;
 
 export type CreateNodeMutation = { __typename?: 'Mutation' } & {
-  createNode?: Maybe<
+  createNode:
     | ({ __typename?: 'SuccessfulNodeCreation' } & {
         node: { __typename?: 'Node' } & Pick<
           Node,
@@ -408,8 +418,7 @@ export type CreateNodeMutation = { __typename?: 'Mutation' } & {
     | ({ __typename?: 'NodeConnectionFailed' } & Pick<
         NodeConnectionFailed,
         'error' | 'field'
-      >)
-  >;
+      >);
 };
 
 export type DeleteComposeMutationVariables = Exact<{
@@ -420,6 +429,60 @@ export type DeleteComposeMutation = { __typename?: 'Mutation' } & Pick<
   Mutation,
   'deleteCompose'
 >;
+
+export type DisableDeploymentMutationVariables = Exact<{
+  deployment: Scalars['Uuid'];
+}>;
+
+export type DisableDeploymentMutation = { __typename?: 'Mutation' } & {
+  disableDeployment?: Maybe<
+    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
+        >;
+      }
+  >;
+};
+
+export type EnableDeploymentMutationVariables = Exact<{
+  deployment: Scalars['Uuid'];
+}>;
+
+export type EnableDeploymentMutation = { __typename?: 'Mutation' } & {
+  enableDeployment?: Maybe<
+    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
+        >;
+      }
+  >;
+};
 
 export type TestConnectionMutationVariables = Exact<{
   host: Scalars['String'];
@@ -490,7 +553,14 @@ export type GetDeploymentByIdQuery = { __typename?: 'Query' } & {
   deployment?: Maybe<
     { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
         compose?: Maybe<
-          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
         >;
         node?: Maybe<
           { __typename?: 'Node' } & Pick<
@@ -789,6 +859,138 @@ export type DeleteComposeMutationOptions = Apollo.BaseMutationOptions<
   DeleteComposeMutation,
   DeleteComposeMutationVariables
 >;
+export const DisableDeploymentDocument = gql`
+  mutation disableDeployment($deployment: Uuid!) {
+    disableDeployment(deployment: $deployment) {
+      id
+      enabled
+      compose {
+        id
+        name
+        current {
+          id
+          serviceEnabled
+          serviceName
+          directory
+        }
+      }
+      node {
+        id
+        name
+        host
+        port
+        username
+      }
+    }
+  }
+`;
+export type DisableDeploymentMutationFn = Apollo.MutationFunction<
+  DisableDeploymentMutation,
+  DisableDeploymentMutationVariables
+>;
+
+/**
+ * __useDisableDeploymentMutation__
+ *
+ * To run a mutation, you first call `useDisableDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDisableDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [disableDeploymentMutation, { data, loading, error }] = useDisableDeploymentMutation({
+ *   variables: {
+ *      deployment: // value for 'deployment'
+ *   },
+ * });
+ */
+export function useDisableDeploymentMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    DisableDeploymentMutation,
+    DisableDeploymentMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    DisableDeploymentMutation,
+    DisableDeploymentMutationVariables
+  >(DisableDeploymentDocument, baseOptions);
+}
+export type DisableDeploymentMutationHookResult = ReturnType<
+  typeof useDisableDeploymentMutation
+>;
+export type DisableDeploymentMutationResult = Apollo.MutationResult<DisableDeploymentMutation>;
+export type DisableDeploymentMutationOptions = Apollo.BaseMutationOptions<
+  DisableDeploymentMutation,
+  DisableDeploymentMutationVariables
+>;
+export const EnableDeploymentDocument = gql`
+  mutation enableDeployment($deployment: Uuid!) {
+    enableDeployment(deployment: $deployment) {
+      id
+      enabled
+      compose {
+        id
+        name
+        current {
+          id
+          serviceEnabled
+          serviceName
+          directory
+        }
+      }
+      node {
+        id
+        name
+        host
+        port
+        username
+      }
+    }
+  }
+`;
+export type EnableDeploymentMutationFn = Apollo.MutationFunction<
+  EnableDeploymentMutation,
+  EnableDeploymentMutationVariables
+>;
+
+/**
+ * __useEnableDeploymentMutation__
+ *
+ * To run a mutation, you first call `useEnableDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnableDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [enableDeploymentMutation, { data, loading, error }] = useEnableDeploymentMutation({
+ *   variables: {
+ *      deployment: // value for 'deployment'
+ *   },
+ * });
+ */
+export function useEnableDeploymentMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    EnableDeploymentMutation,
+    EnableDeploymentMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    EnableDeploymentMutation,
+    EnableDeploymentMutationVariables
+  >(EnableDeploymentDocument, baseOptions);
+}
+export type EnableDeploymentMutationHookResult = ReturnType<
+  typeof useEnableDeploymentMutation
+>;
+export type EnableDeploymentMutationResult = Apollo.MutationResult<EnableDeploymentMutation>;
+export type EnableDeploymentMutationOptions = Apollo.BaseMutationOptions<
+  EnableDeploymentMutation,
+  EnableDeploymentMutationVariables
+>;
 export const TestConnectionDocument = gql`
   mutation testConnection(
     $host: String!
@@ -1052,6 +1254,12 @@ export const GetDeploymentByIdDocument = gql`
       compose {
         id
         name
+        current {
+          id
+          serviceEnabled
+          serviceName
+          directory
+        }
       }
       node {
         id

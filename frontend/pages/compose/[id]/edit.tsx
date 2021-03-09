@@ -177,7 +177,7 @@ const EditComposeForm: React.FC<{
 
               <ActionButton
                 onClick={() => setIsDeleting(true)}
-                kind="secondary-danger"
+                kind="danger-outline"
               >
                 Delete
               </ActionButton>

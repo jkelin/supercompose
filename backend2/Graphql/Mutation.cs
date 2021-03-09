@@ -168,5 +168,27 @@ namespace supercompose
 
       return ctx.Deployments.Where(x => x.Id == id);
     }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    public async Task<IQueryable<Deployment>> EnableDeployment(
+      [Required] Guid deployment
+    )
+    {
+      await deploymentService.Enable(deployment);
+
+      return ctx.Deployments.Where(x => x.Id == deployment);
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    public async Task<IQueryable<Deployment>> DisableDeployment(
+      [Required] Guid deployment
+    )
+    {
+      await deploymentService.Disable(deployment);
+
+      return ctx.Deployments.Where(x => x.Id == deployment);
+    }
   }
 }

@@ -1,5 +1,5 @@
-query getDeploymentById($id: Uuid!) {
-  deployment(where: { id: { eq: $id } }) {
+mutation enableDeployment($deployment: Uuid!) {
+  enableDeployment(deployment: $deployment) {
     id
     enabled
     compose {

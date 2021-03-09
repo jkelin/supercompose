@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using backend2.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using supercompose;
 using Z.EntityFramework.Plus;
@@ -41,6 +42,30 @@ namespace backend2.Services
       await ctx.SaveChangesAsync();
 
       return deployment.Id.Value;
+    }
+
+    public async Task Disable(Guid deploymentId)
+    {
+      var deployment = await ctx.Deployments.FirstOrDefaultAsync(x => x.Id == deploymentId);
+
+      if (deployment == null) throw new DeploymentNotFoundException();
+
+      if (deployment.Enabled == false) return;
+
+      deployment.Enabled = false;
+      await ctx.SaveChangesAsync();
+    }
+
+    public async Task Enable(Guid deploymentId)
+    {
+      var deployment = await ctx.Deployments.FirstOrDefaultAsync(x => x.Id == deploymentId);
+
+      if (deployment == null) throw new DeploymentNotFoundException();
+
+      if (deployment.Enabled == true) return;
+
+      deployment.Enabled = true;
+      await ctx.SaveChangesAsync();
     }
   }
 }
