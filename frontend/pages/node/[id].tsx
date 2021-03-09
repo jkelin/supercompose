@@ -60,7 +60,7 @@ const NodeDetail: NextPage<{}> = (props) => {
 
   return (
     <DashboardLayout>
-      <div className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200">
+      <div className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200 place-self-start w-full">
         <div className="px-4 py-5 sm:px-6 flex flex-col lg:flex-row items-stretch justify-between lg:items-center">
           <div>
             <h1 className="text-lg font-semibold mb-0">{node?.name}</h1>
