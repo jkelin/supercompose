@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using ProtoBuf;
 using supercompose;
+using Z.EntityFramework.Plus;
 
 namespace backend2.Services
 {
@@ -52,14 +53,37 @@ namespace backend2.Services
       return composeId;
     }
 
-    public async Task Update(Guid id, string? name, string? directory, bool? serviceEnabled, string? compose)
+    public async Task Update(Guid id, string? name, string? directory, bool? serviceEnabled, string? content)
     {
-      throw new NotImplementedException();
+      var compose = await ctx.Composes.Include(x => x.Current).FirstOrDefaultAsync(x => x.Id == id);
+
+      if (compose == null) throw new ComposeNotFoundException();
+
+      if (name != null) compose.Name = name;
+
+      if (directory != null || serviceEnabled != null)
+      {
+        var version = new ComposeVersion
+        {
+          Id = Guid.NewGuid(),
+          Content = content ?? compose.Current.Content,
+          Directory = directory ?? compose.Current.Directory,
+          ServiceEnabled = serviceEnabled ?? compose.Current.ServiceEnabled,
+          ServiceName = name != null ? ServiceNameFromCompose(name) : compose.Current.ServiceName,
+          ComposeId = compose.Id
+        };
+
+        await ctx.ComposeVersions.AddAsync(version);
+
+        compose.CurrentId = version.Id;
+      }
+
+      await ctx.SaveChangesAsync();
     }
 
     public async Task Delete(Guid id)
     {
-      throw new NotImplementedException();
+      await ctx.Composes.Where(x => x.Id == id).DeleteAsync();
     }
 
     private string ServiceNameFromCompose(string name)
