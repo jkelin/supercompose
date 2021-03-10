@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using backend2.Services;
+using backend2.Util;
 using HotChocolate;
 using HotChocolate.Data;
 using HotChocolate.Types;
@@ -17,14 +19,21 @@ namespace supercompose
     private readonly ComposeService composeService;
     private readonly DeploymentService deploymentService;
     private readonly SupercomposeContext ctx;
+    private readonly ConnectionService conn;
 
-    public Mutation(NodeService nodeService, ComposeService composeService, DeploymentService deploymentService,
-      SupercomposeContext ctx)
+    public Mutation(
+      NodeService nodeService,
+      ComposeService composeService,
+      DeploymentService deploymentService,
+      SupercomposeContext ctx,
+      ConnectionService conn
+    )
     {
       this.nodeService = nodeService;
       this.composeService = composeService;
       this.deploymentService = deploymentService;
       this.ctx = ctx;
+      this.conn = conn;
     }
 
     [UnionType("CreateNodeResult")]
@@ -42,6 +51,47 @@ namespace supercompose
       public string Error { get; set; }
 
       public string? Field { get; set; }
+
+      public static NodeConnectionFailed FromNodeConnectionFailedException(NodeConnectionFailedException ex)
+      {
+        switch (ex.Kind)
+        {
+          case NodeConnectionFailedException.ConnectionErrorKind.Authentication:
+            return new NodeConnectionFailed
+            {
+              Error = "Authentication failed"
+            };
+          case NodeConnectionFailedException.ConnectionErrorKind.Connection:
+            return new NodeConnectionFailed
+            {
+              Error = "Connection refused",
+              Field = "host"
+            };
+          case NodeConnectionFailedException.ConnectionErrorKind.TimeOut:
+            return new NodeConnectionFailed
+            {
+              Error = "Connection timed out",
+              Field = "host"
+            };
+          case NodeConnectionFailedException.ConnectionErrorKind.DNS:
+            return new NodeConnectionFailed
+            {
+              Error = "Host not resolvable",
+              Field = "host"
+            };
+          case NodeConnectionFailedException.ConnectionErrorKind.PrivateKey:
+            return new NodeConnectionFailed
+            {
+              Error = "Cannot parse private key",
+              Field = "privateKey"
+            };
+          default:
+            return new NodeConnectionFailed
+            {
+              Error = ex.Message
+            };
+        }
+      }
     }
 
     public async Task<ICreateNodeResult> CreateNode(
@@ -55,16 +105,13 @@ namespace supercompose
     {
       try
       {
-        var id = await nodeService.Create(name, host, username, port, password, privateKey);
+        var id = await nodeService.Create(name, new ConnectionParams(host, username, port, password, privateKey));
 
         return await ctx.Nodes.Where(x => x.Id == id).Select(x => new SuccessfulNodeCreation {Node = x}).FirstAsync();
       }
       catch (NodeConnectionFailedException ex)
       {
-        return new NodeConnectionFailed
-        {
-          Error = ex.Message
-        };
+        return NodeConnectionFailed.FromNodeConnectionFailedException(ex);
       }
     }
 
@@ -73,10 +120,18 @@ namespace supercompose
       [Required] [MaxLength(255)] string username,
       [Range(1, 65535)] int port,
       string? password,
-      string? privateKey
+      string? privateKey,
+      CancellationToken ct
     )
     {
-      await nodeService.TestConnection(host, username, port, password, privateKey);
+      try
+      {
+        await conn.TestConnection(new ConnectionParams(host, username, port, password, privateKey), ct);
+      }
+      catch (NodeConnectionFailedException ex)
+      {
+        return NodeConnectionFailed.FromNodeConnectionFailedException(ex);
+      }
 
       return null;
     }

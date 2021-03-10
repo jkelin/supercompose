@@ -9,6 +9,18 @@ namespace supercompose
   [Serializable]
   public class NodeConnectionFailedException : Exception
   {
+    public ConnectionErrorKind Kind { get; set; }
+
+    public enum ConnectionErrorKind
+    {
+      Authentication,
+      DNS,
+      PrivateKey,
+      Connection,
+      TimeOut,
+      Unknown
+    }
+
     //
     // For guidelines regarding the creation of new exception types, see
     //    http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpgenref/html/cpconerrorraisinghandlingguidelines.asp

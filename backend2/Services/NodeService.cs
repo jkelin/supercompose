@@ -1,39 +1,43 @@
 using System;
 using System.Runtime.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
+using backend2.Services;
+using backend2.Util;
 
 namespace supercompose
 {
   public class NodeService
   {
     private readonly SupercomposeContext ctx;
+    private readonly ConnectionService connectionService;
     private readonly CryptoService crypto;
 
-    public NodeService(SupercomposeContext ctx, CryptoService crypto)
+    public NodeService(SupercomposeContext ctx, ConnectionService connectionService, CryptoService crypto)
     {
       this.ctx = ctx;
+      this.connectionService = connectionService;
       this.crypto = crypto;
     }
 
     public async Task<Guid> Create(
       string name,
-      string host,
-      string username,
-      int port,
-      string? password,
-      string? privateKey
+      ConnectionParams conn
     )
     {
+      using var cts = new CancellationTokenSource();
+      await connectionService.TestConnection(conn, cts.Token);
+
       var node = new Node
       {
-        Host = host,
+        Host = conn.host,
         Enabled = true,
         Id = Guid.NewGuid(),
         Name = name,
-        Port = port,
-        Username = username,
-        Password = password == null ? null : await crypto.EncryptSecret(password),
-        PrivateKey = privateKey == null ? null : await crypto.EncryptSecret(privateKey)
+        Port = conn.port,
+        Username = conn.username,
+        Password = conn.password == null ? null : await crypto.EncryptSecret(conn.password),
+        PrivateKey = conn.privateKey == null ? null : await crypto.EncryptSecret(conn.privateKey)
       };
 
       await ctx.Nodes.AddAsync(node);
@@ -53,17 +57,6 @@ namespace supercompose
     )
     {
       throw new NotImplementedException();
-    }
-
-    public async Task<Guid> TestConnection(
-      string host,
-      string username,
-      int port,
-      string? password,
-      string? privateKey
-    )
-    {
-      throw new NodeConnectionFailedException();
     }
 
     public async Task Delete(

@@ -37,6 +37,7 @@ namespace supercompose
         .AddScoped<ComposeService>()
         .AddScoped<CryptoService>()
         .AddScoped<DeploymentService>()
+        .AddScoped<ConnectionService>()
         .AddScoped<NodeService>();
 
       services
