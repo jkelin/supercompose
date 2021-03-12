@@ -13,10 +13,12 @@ namespace backend2.Services
   public class ComposeService
   {
     private readonly SupercomposeContext ctx;
+    private readonly NodeUpdaterService nodeUpdater;
 
-    public ComposeService(SupercomposeContext ctx)
+    public ComposeService(SupercomposeContext ctx, NodeUpdaterService nodeUpdater)
     {
       this.ctx = ctx;
+      this.nodeUpdater = nodeUpdater;
     }
 
     public async Task<Guid> Create(string name, string directory, bool serviceEnabled, string content)
@@ -55,7 +57,10 @@ namespace backend2.Services
 
     public async Task Update(Guid id, string? name, string? directory, bool? serviceEnabled, string? content)
     {
-      var compose = await ctx.Composes.Include(x => x.Current).FirstOrDefaultAsync(x => x.Id == id);
+      var compose = await ctx.Composes
+        .Include(x => x.Current)
+        .Include(x => x.Deployments)
+        .FirstOrDefaultAsync(x => x.Id == id);
 
       if (compose == null) throw new ComposeNotFoundException();
 
@@ -79,11 +84,20 @@ namespace backend2.Services
       }
 
       await ctx.SaveChangesAsync();
+
+      foreach (var deployment in compose.Deployments) await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);
     }
 
     public async Task Delete(Guid id)
     {
-      await ctx.Composes.Where(x => x.Id == id).DeleteAsync();
+      var compose = await ctx.Composes.Include(x => x.Deployments).FirstOrDefaultAsync(x => x.Id == id);
+      var nodeIds = compose.Deployments.Select(x => x.NodeId);
+
+      ctx.Composes.Remove(compose);
+
+      await ctx.SaveChangesAsync();
+
+      foreach (var nodeId in nodeIds) await nodeUpdater.NotifyAboutNodeChange(nodeId.Value);
     }
 
     private string ServiceNameFromCompose(string name)

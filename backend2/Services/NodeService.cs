@@ -12,12 +12,15 @@ namespace supercompose
     private readonly SupercomposeContext ctx;
     private readonly ConnectionService connectionService;
     private readonly CryptoService crypto;
+    private readonly NodeUpdaterService nodeUpdater;
 
-    public NodeService(SupercomposeContext ctx, ConnectionService connectionService, CryptoService crypto)
+    public NodeService(SupercomposeContext ctx, ConnectionService connectionService, CryptoService crypto,
+      NodeUpdaterService nodeUpdater)
     {
       this.ctx = ctx;
       this.connectionService = connectionService;
       this.crypto = crypto;
+      this.nodeUpdater = nodeUpdater;
     }
 
     public async Task<Guid> Create(
@@ -42,6 +45,8 @@ namespace supercompose
 
       await ctx.Nodes.AddAsync(node);
       await ctx.SaveChangesAsync();
+
+      await nodeUpdater.NotifyAboutNodeChange(node.Id.Value);
 
       return node.Id.Value;
     }

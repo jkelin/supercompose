@@ -12,10 +12,12 @@ namespace backend2.Services
   public class DeploymentService
   {
     private readonly SupercomposeContext ctx;
+    private readonly NodeUpdaterService nodeUpdater;
 
-    public DeploymentService(SupercomposeContext ctx)
+    public DeploymentService(SupercomposeContext ctx, NodeUpdaterService nodeUpdater)
     {
       this.ctx = ctx;
+      this.nodeUpdater = nodeUpdater;
     }
 
     public async Task<Guid> Create(Guid nodeId, Guid composeId)
@@ -41,6 +43,8 @@ namespace backend2.Services
       await ctx.Deployments.AddAsync(deployment);
       await ctx.SaveChangesAsync();
 
+      await nodeUpdater.NotifyAboutNodeChange(node.Id.Value);
+
       return deployment.Id.Value;
     }
 
@@ -54,6 +58,8 @@ namespace backend2.Services
 
       deployment.Enabled = false;
       await ctx.SaveChangesAsync();
+
+      await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);
     }
 
     public async Task Enable(Guid deploymentId)
@@ -66,6 +72,8 @@ namespace backend2.Services
 
       deployment.Enabled = true;
       await ctx.SaveChangesAsync();
+
+      await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);
     }
   }
 }

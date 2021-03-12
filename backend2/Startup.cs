@@ -63,9 +63,10 @@ namespace supercompose
         .AddScoped<CryptoService>()
         .AddScoped<DeploymentService>()
         .AddScoped<ConnectionService>()
+        .AddScoped<NodeUpdaterService>()
         .AddScoped<NodeService>();
 
-      services.AddHostedService<TestHostedService>();
+      services.AddHostedService<NodeUpdateListener>();
 
       services
         .AddRouting();
