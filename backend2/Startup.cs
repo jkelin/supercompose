@@ -1,14 +1,24 @@
 using System;
+using System.Collections.Generic;
+using System.Configuration;
 using System.Threading.Tasks;
+using backend2.HostedServices;
 using backend2.Services;
 using HotChocolate;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RedLockNet;
+using RedLockNet.SERedis;
+using RedLockNet.SERedis.Configuration;
+using StackExchange.Redis;
+using StackExchange.Redis.Extensions.Core.Abstractions;
+using StackExchange.Redis.Extensions.Core.Configuration;
 
 namespace supercompose
 {
@@ -27,6 +37,21 @@ namespace supercompose
     // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
     public void ConfigureServices(IServiceCollection services)
     {
+      services.AddSingleton<IConnectionMultiplexer>(action =>
+        ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")));
+      services.AddStackExchangeRedisCache(action =>
+      {
+        action.InstanceName = "Redis";
+        action.Configuration = configuration.GetConnectionString("Redis");
+      });
+
+      services.AddSingleton<IDistributedLockFactory>(provider =>
+        RedLockFactory.Create(new List<RedLockMultiplexer>
+        {
+          new(provider.GetRequiredService<IConnectionMultiplexer>())
+        })
+      );
+
       services.AddControllers();
 
       // If you need dependency injection with your query object add your query type as a services.
@@ -39,6 +64,8 @@ namespace supercompose
         .AddScoped<DeploymentService>()
         .AddScoped<ConnectionService>()
         .AddScoped<NodeService>();
+
+      services.AddHostedService<TestHostedService>();
 
       services
         .AddRouting();

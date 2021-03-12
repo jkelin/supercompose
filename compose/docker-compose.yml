@@ -2,7 +2,8 @@ version: "3.9"
 services:
   redis:
     image: "bitnami/redis:latest"
-    network_mode: host
+    ports:
+      - 6379:6379
     volumes:
       - redis-data:/bitnami/redis/data
     environment:
