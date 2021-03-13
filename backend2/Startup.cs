@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using backend2.HostedServices;
 using backend2.Services;
@@ -64,6 +65,7 @@ namespace supercompose
         .AddScoped<DeploymentService>()
         .AddScoped<ConnectionService>()
         .AddScoped<NodeUpdaterService>()
+        .AddScoped<ConnectionLogService>()
         .AddScoped<NodeService>();
 
       services.AddHostedService<NodeUpdateListener>();

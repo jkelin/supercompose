@@ -25,7 +25,7 @@ namespace backend2.Services
     }
 
     /// <exception cref="NodeConnectionFailedException"></exception>
-    public async Task<SftpClient> CreateConnection(ConnectionParams conn, TimeSpan timeout,
+    public async Task<SshClient> CreateSshConnection(ConnectionParams conn, TimeSpan timeout,
       CancellationToken ct)
     {
       logger.BeginScope(new
@@ -34,9 +34,44 @@ namespace backend2.Services
         conn.host,
         conn.port,
         passwordAvailable = !string.IsNullOrEmpty(conn.password),
-        privateKeyAvailable = !string.IsNullOrEmpty(conn.privateKey)
+        privateKeyAvailable = !string.IsNullOrEmpty(conn.privateKey),
+        kind = "ssh_client"
       });
 
+      var connectionInfo = await PrepareConnectionInfo(conn, timeout);
+
+      var client = new SshClient(connectionInfo);
+
+      await CreateConnectionInner(client, conn, ct);
+
+      return client;
+    }
+
+    /// <exception cref="NodeConnectionFailedException"></exception>
+    public async Task<SftpClient> CreateSftpConnection(ConnectionParams conn, TimeSpan timeout,
+      CancellationToken ct)
+    {
+      logger.BeginScope(new
+      {
+        conn.username,
+        conn.host,
+        conn.port,
+        passwordAvailable = !string.IsNullOrEmpty(conn.password),
+        privateKeyAvailable = !string.IsNullOrEmpty(conn.privateKey),
+        kind = "sftp_client"
+      });
+
+      var connectionInfo = await PrepareConnectionInfo(conn, timeout);
+
+      var client = new SftpClient(connectionInfo);
+
+      await CreateConnectionInner(client, conn, ct);
+
+      return client;
+    }
+
+    private async Task<ConnectionInfo> PrepareConnectionInfo(ConnectionParams conn, TimeSpan timeout)
+    {
       var authMethods = new List<AuthenticationMethod>();
 
       if (!string.IsNullOrEmpty(conn.password))
@@ -70,9 +105,12 @@ namespace backend2.Services
       {
         Timeout = timeout
       };
+      return connectionInfo;
+    }
 
-      var client = new SftpClient(connectionInfo);
-
+    /// <exception cref="NodeConnectionFailedException"></exception>
+    private async Task CreateConnectionInner(BaseClient client, ConnectionParams conn, CancellationToken ct)
+    {
       try
       {
         logger.LogDebug("Resolving host");
@@ -137,13 +175,11 @@ namespace backend2.Services
           Kind = NodeConnectionFailedException.ConnectionErrorKind.Unknown
         };
       }
-
-      return client;
     }
 
     public async Task TestConnection(ConnectionParams conn, CancellationToken ct)
     {
-      using var client = await CreateConnection(conn, TimeSpan.FromSeconds(5), ct);
+      using var client = await CreateSshConnection(conn, TimeSpan.FromSeconds(5), ct);
     }
   }
 }

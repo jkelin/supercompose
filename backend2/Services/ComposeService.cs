@@ -91,6 +91,9 @@ namespace backend2.Services
     public async Task Delete(Guid id)
     {
       var compose = await ctx.Composes.Include(x => x.Deployments).FirstOrDefaultAsync(x => x.Id == id);
+
+      if (compose == null) return;
+
       var nodeIds = compose.Deployments.Select(x => x.NodeId);
 
       ctx.Composes.Remove(compose);

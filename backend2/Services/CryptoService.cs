@@ -13,38 +13,28 @@ namespace supercompose
   {
     private readonly IConfiguration configuration;
 
-    enum EncAlg
+    private enum EncAlg
     {
-      AES_256_GCM = 1,
+      AES_256_GCM = 1
     }
 
-    enum KeyAlg
+    private enum KeyAlg
     {
-      PBKDF2_SHA256_1000_32 = 1,
+      PBKDF2_SHA256_1000_32 = 1
     }
 
     [ProtoContract]
-    class EncryptedContainer
+    private class EncryptedContainer
     {
-      [ProtoMember(1)]
-      [Required]
-      public EncAlg EncAlg { get; set; }
+      [ProtoMember(1)] [Required] public EncAlg EncAlg { get; set; }
 
-      [ProtoMember(2)]
-      [Required]
-      public KeyAlg KeyAlg { get; set; }
+      [ProtoMember(2)] [Required] public KeyAlg KeyAlg { get; set; }
 
-      [ProtoMember(3)]
-      [Required]
-      public byte[] Salt { get; set; }
+      [ProtoMember(3)] [Required] public byte[] Salt { get; set; }
 
-      [ProtoMember(4)]
-      [Required]
-      public byte[] IV { get; set; }
+      [ProtoMember(4)] [Required] public byte[] IV { get; set; }
 
-      [ProtoMember(5)]
-      [Required]
-      public byte[] Data { get; set; }
+      [ProtoMember(5)] [Required] public byte[] Data { get; set; }
     }
 
     public CryptoService(IConfiguration configuration)
@@ -55,13 +45,13 @@ namespace supercompose
     private async Task<byte[]> Key(byte[] salt)
     {
       var key = Encoding.UTF8.GetBytes(configuration["CryptoKey"]);
-      Rfc2898DeriveBytes k1 = new Rfc2898DeriveBytes(key, salt, 1000, HashAlgorithmName.SHA256);
+      Rfc2898DeriveBytes k1 = new(key, salt, 1000, HashAlgorithmName.SHA256);
       return k1.GetBytes(32);
     }
 
     public async Task<byte[]> EncryptSecret(string secret)
     {
-      using RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider();
+      using RNGCryptoServiceProvider rngCsp = new();
 
       var iv = new byte[16];
       var salt = new byte[64];
@@ -82,19 +72,13 @@ namespace supercompose
         ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
         // Create the streams used for encryption.
-        using (MemoryStream msEncrypt = new MemoryStream())
-        {
-          using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-          {
-            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
-            {
-              //Write all data to the stream.
-              swEncrypt.Write(secret);
-            }
+        await using MemoryStream msEncrypt = new();
+        await using CryptoStream csEncrypt = new(msEncrypt, encryptor, CryptoStreamMode.Write);
+        await using StreamWriter swEncrypt = new(csEncrypt);
+        //Write all data to the stream.
+        await swEncrypt.WriteAsync(secret);
 
-            encrypted = msEncrypt.ToArray();
-          }
-        }
+        encrypted = msEncrypt.ToArray();
       }
 
       var container = new EncryptedContainer
@@ -106,7 +90,7 @@ namespace supercompose
         Salt = salt
       };
 
-      using (MemoryStream ms = new MemoryStream())
+      await using (MemoryStream ms = new())
       {
         Serializer.Serialize(ms, container);
 
@@ -116,13 +100,10 @@ namespace supercompose
 
     public async Task<string> DecryptSecret(byte[] secret)
     {
-      using MemoryStream ms = new MemoryStream(secret);
+      await using MemoryStream ms = new(secret);
       var container = Serializer.Deserialize<EncryptedContainer>(ms);
 
-      if (container == null)
-      {
-        throw new InvalidOperationException("Secret is not a valid container");
-      }
+      if (container == null) throw new InvalidOperationException("Secret is not a valid container");
 
       var key = await Key(container.Salt);
 
@@ -135,16 +116,11 @@ namespace supercompose
         ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
         // Create the streams used for decryption.
-        using (MemoryStream msDecrypt = new MemoryStream(secret))
-        {
-          using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-          {
-            using (StreamReader srDecrypt = new StreamReader(csDecrypt))
-            {
-              return srDecrypt.ReadToEnd();
-            }
-          }
-        }
+        await using MemoryStream msDecrypt = new(container.Data);
+        await using CryptoStream csDecrypt = new(msDecrypt, decryptor, CryptoStreamMode.Read);
+        using StreamReader srDecrypt = new(csDecrypt);
+
+        return await srDecrypt.ReadToEndAsync();
       }
     }
   }

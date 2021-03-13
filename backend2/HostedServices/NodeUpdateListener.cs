@@ -113,7 +113,7 @@ namespace backend2.HostedServices
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Error while processing message");
+        logger.LogError(ex, "Error while processing node update");
       }
     }
   }
