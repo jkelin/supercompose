@@ -70,6 +70,43 @@ namespace backend2.Services
       return client;
     }
 
+    public async Task<(string result, string error, int status)> RunCommand(SshClient ssh, string command,
+      TimeSpan timeout, CancellationToken ct = default)
+    {
+      logger.BeginScope(new
+      {
+        command
+      });
+      try
+      {
+        logger.LogDebug("Running command");
+        using var cmd = ssh.RunCommand(command);
+        cmd.CommandTimeout = timeout;
+
+        var tcs = new TaskCompletionSource<IAsyncResult>();
+
+        cmd.BeginExecute((x) => tcs.SetResult(x));
+        await using var registration = ct.Register(() => cmd.CancelAsync());
+
+        await tcs.Task; // TODO there should be some tests around all this code and cancellation especially
+
+        ct.ThrowIfCancellationRequested();
+
+        logger.LogDebug("Command finished with {status}", cmd.ExitStatus);
+        return (cmd.Result, cmd.Error, cmd.ExitStatus);
+      }
+      catch (SshException ex)
+      {
+        logger.BeginScope(new
+        {
+          command
+        });
+        logger.LogWarning("Error while running command {message}", ex.Message);
+
+        throw;
+      }
+    }
+
     private async Task<ConnectionInfo> PrepareConnectionInfo(ConnectionParams conn, TimeSpan timeout)
     {
       var authMethods = new List<AuthenticationMethod>();

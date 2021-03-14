@@ -32,6 +32,8 @@ namespace supercompose
 
     [GraphQLIgnore] public byte[] PrivateKey { get; set; }
 
+    public bool? ReconciliationFailed { get; set; }
+
     public NodePendingChange? PendingChange { get; set; }
 
     public Guid? TenantId { get; set; }

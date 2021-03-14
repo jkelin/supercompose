@@ -22,6 +22,8 @@ namespace backend2.Context
 
     [Required] public string Message { get; set; } = "";
 
+    [Required] public DateTime Time { get; set; }
+
 
     public Guid? NodeId { get; set; }
     public virtual Node? Node { get; set; }

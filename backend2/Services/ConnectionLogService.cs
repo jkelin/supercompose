@@ -27,23 +27,24 @@ namespace backend2.Services
         NodeId = currentScope.Value?.NodeId,
         DeploymentId = currentScope.Value?.DeploymentId,
         ComposeId = currentScope.Value?.ComposeId,
-        TenantId = currentScope.Value?.TenantId
+        TenantId = currentScope.Value?.TenantId,
+        Time = DateTime.UtcNow
       });
     }
 
-    public async ValueTask Info(string message, Exception? exception = null)
+    public void Info(string message, Exception? exception = null)
     {
-      await Log(ConnectionLogSeverity.Info, message, exception);
+      var _ = Log(ConnectionLogSeverity.Info, message, exception);
     }
 
-    public async ValueTask Error(string message, Exception? exception = null)
+    public void Error(string message, Exception? exception = null)
     {
-      await Log(ConnectionLogSeverity.Error, message, exception);
+      var _ = Log(ConnectionLogSeverity.Error, message, exception);
     }
 
-    public async ValueTask Warning(string message, Exception? exception = null)
+    public void Warning(string message, Exception? exception = null)
     {
-      await Log(ConnectionLogSeverity.Warning, message, exception);
+      var _ = Log(ConnectionLogSeverity.Warning, message, exception);
     }
 
     public IDisposable BeginScope(Guid? nodeId = null,

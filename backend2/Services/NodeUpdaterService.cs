@@ -6,11 +6,16 @@ using backend2.HostedServices;
 using backend2.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ProtoBuf.WellKnownTypes;
+using Renci.SshNet;
 using StackExchange.Redis;
 using supercompose;
 
 namespace backend2.Services
 {
+  /// <summary>
+  /// This is a core component that performs pending updates for individual nodes
+  /// </summary>
   public class NodeUpdaterService
   {
     public static readonly TimeSpan NodeCheckInterval = TimeSpan.FromHours(1);
@@ -60,46 +65,183 @@ namespace backend2.Services
         ct.ThrowIfCancellationRequested();
 
         if (node == null) break;
-        if (node.PendingChange == null && node.Enabled == false) break;
-        if (!DoesNodeHaveAnyPendingChanges(node)) break;
 
         using var _ = logger.BeginScope(new {nodeId});
         using var _2 = connectionLog.BeginScope(node.Id);
 
-        logger.LogDebug("Pending changes detected, opening connection");
+        SshClient? ssh = null;
+        SftpClient? sftp = null;
 
-        var connectionParams = new ConnectionParams
-        (
-          node.Host,
-          node.Username,
-          node.Port!.Value,
-          node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
-          node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
-        );
+        // Open SSH connection only if it's actually needed
+        async ValueTask<SshClient> ConnectSsh()
+        {
+          return ssh ??= await OpenSsh(node, ct);
+        }
+
+        async ValueTask<SftpClient> ConnectSftp()
+        {
+          return sftp ??= await OpenSftp(node, ct);
+        }
 
         try
         {
-          await connectionLog.Info("Connecting");
-          using var ssh = await connectionService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+          while (true)
+          {
+            if (node.ReconciliationFailed == true)
+            {
+              break;
+            }
+            else if (node.PendingChange == NodePendingChange.Enable && node.Enabled == false)
+            {
+              await EnableNode(node, await ConnectSsh(), ct);
+              continue;
+            }
+            else if (node.PendingChange == NodePendingChange.Disable && node.Enabled == true)
+            {
+              await DisableNode(node, ct);
+              continue;
+            }
+            else if (node.Enabled == false)
+            {
+              break;
+            }
+            else
+            {
+              foreach (var deployment in node.Deployments.Where(x => x.PendingChange != null))
+              {
+                //TODO
+              }
+
+              foreach (var deployment in node.Deployments.Where(x =>
+                x.Enabled == true && x.LastCheck + NodeCheckInterval > DateTime.UtcNow))
+              {
+                // TODO
+              }
+            }
+
+            break;
+          }
         }
         catch (NodeConnectionFailedException ex)
         {
           logger.LogDebug("Node connection failed");
-          await connectionLog.Error($"Node connection failed because {ex.Kind}", ex);
+          connectionLog.Error($"Node connection failed because {ex.Kind}", ex);
+        }
+        finally
+        {
+          sftp?.Dispose();
+          ssh?.Dispose();
         }
       }
     }
 
-    private static bool DoesNodeHaveAnyPendingChanges(Node node)
+    private async Task<SshClient> OpenSsh(Node node, CancellationToken ct)
     {
-      if (node.PendingChange != null) return true;
-      if (node.Deployments.Any(x => x.PendingChange != null)) return true;
-      if (node.Deployments.Any(x => x.Enabled == true && x.LastCheck == null)) return true;
-      if (node.Deployments.Any(x =>
-        x.Enabled == true && x.LastCheck != null && x.LastCheck + NodeCheckInterval < DateTime.UtcNow))
-        return true;
+      logger.LogDebug("Pending changes detected, opening ssh connection");
 
-      return false;
+      var connectionParams = new ConnectionParams
+      (
+        node.Host,
+        node.Username,
+        node.Port!.Value,
+        node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
+        node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
+      );
+
+      connectionLog.Info($"Connecting SSH to {node.Username}@{node.Host}:{node.Port}");
+      using var ssh = await connectionService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+
+      ct.ThrowIfCancellationRequested();
+
+      return ssh;
+    }
+
+    private async Task<SftpClient> OpenSftp(Node node, CancellationToken ct)
+    {
+      logger.LogDebug("Pending changes detected, opening sftp connection");
+
+      var connectionParams = new ConnectionParams
+      (
+        node.Host,
+        node.Username,
+        node.Port!.Value,
+        node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
+        node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
+      );
+
+      connectionLog.Info($"Connecting SFTP to {node.Username}@{node.Host}:{node.Port}");
+      using var sftp = await connectionService.CreateSftpConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+
+      ct.ThrowIfCancellationRequested();
+
+      return sftp;
+    }
+
+    private async Task<(string result, string error, int status)> RunCommand(SshClient ssh, string command,
+      CancellationToken ct)
+    {
+      connectionLog.Info($"Running command: {command}");
+
+      var result = await connectionService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
+
+      if (result.status != 0) connectionLog.Info($"Command failed with status: {result.status}");
+
+      return result;
+    }
+
+    private async Task EnableNode(Node node, SshClient ssh, CancellationToken ct)
+    {
+      connectionLog.Info("Enabling node");
+
+      var systemctlVersion = await RunCommand(ssh, "systemctl --version", ct);
+      if (systemctlVersion.status != 0)
+      {
+        logger.LogDebug("systemd unavailable");
+        connectionLog.Error("systemd unavailable, stopping node configuration");
+        node.ReconciliationFailed = true;
+        await ctx.SaveChangesAsync();
+        return;
+      }
+
+      var dockerVersion = await RunCommand(ssh, "docker --version", ct);
+      if (dockerVersion.status != 0)
+      {
+        logger.LogDebug("docker unavailable");
+        connectionLog.Error("docker unavailable, stopping node configuration");
+        node.ReconciliationFailed = true;
+        await ctx.SaveChangesAsync();
+        return;
+      }
+
+      var dockerComposeVersion = await RunCommand(ssh, "docker-compose --version", ct);
+      if (dockerVersion.status != 0)
+      {
+        logger.LogDebug("docker-compose unavailable");
+        connectionLog.Error("docker-compose unavailable, stopping node configuration");
+        node.ReconciliationFailed = true;
+        await ctx.SaveChangesAsync();
+        return;
+      }
+
+      // TODO determine what to do if there is a race condition and node PendingChange gets updated in the meantime
+      node.PendingChange = null;
+      node.Enabled = true;
+
+      foreach (var deployment in node.Deployments) deployment.LastCheck = null;
+
+      await ctx.SaveChangesAsync();
+    }
+
+    private async Task DisableNode(Node node, CancellationToken ct)
+    {
+      connectionLog.Info("Disabling node");
+
+      node.PendingChange = null;
+      node.Enabled = false;
+
+      foreach (var deployment in node.Deployments) deployment.LastCheck = null;
+
+      await ctx.SaveChangesAsync();
     }
   }
 }
