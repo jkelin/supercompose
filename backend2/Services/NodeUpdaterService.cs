@@ -245,55 +245,36 @@ namespace backend2.Services
       var last = deployment.LastDeployedComposeVersion;
       var current = deployment.Compose.Current;
 
-      if (last?.ServiceEnabled == true && deployment.LastDeployedAsEnabled == true &&
-          (deployment.Enabled == false ||
-           deployment.Enabled == true && current.ServiceEnabled == false))
-      {
-        connectionLog.Info($"Stopping old service");
-        await StopSystemdService(deployment, last, ssh, ct);
-      }
+      var lastSvc = last?.ServiceEnabled ?? false;
+      var lastEnabled = deployment?.LastDeployedAsEnabled ?? false;
 
-      if (current.ServiceEnabled == true && deployment.Enabled)
-      {
-        connectionLog.Info($"Starting service");
-        await StartSystemdService(deployment, current, ssh, ct);
-      }
+      var currentSvc = current?.ServiceEnabled ?? false;
+      var currentEnabled = deployment?.Enabled ?? false;
 
-      // TODO draw this shit out it's way too complicated
-      if (last != null)
+      if (last == null)
       {
-        if (deployment.Enabled && deployment.LastDeployedAsEnabled == true)
+        if (currentEnabled)
         {
-        }
-
-        if (deployment.Enabled)
-        {
-          if (current.ServiceEnabled == true && last.ServiceEnabled != true && deployment.LastDeployedAsEnabled == true)
-          {
-            await StopDockerCompose(deployment, last, ssh, ct);
+          if (currentSvc)
             await StartSystemdService(deployment, current, ssh, ct);
-          }
-
-          if (current.ServiceEnabled == true && last.ServiceEnabled != true && deployment.LastDeployedAsEnabled == true)
-          {
-            await StopDockerCompose(deployment, last, ssh, ct);
-            await StartSystemdService(deployment, current, ssh, ct);
-          }
+          else
+            await StartDockerCompose(deployment, current, ssh, ct);
         }
       }
-
-      if (current.ServiceEnabled != true)
+      else
       {
-        if (deployment.Enabled)
+        // Stop last state when it was enabled and there is a change in service
+        if (lastEnabled && lastSvc != currentSvc)
         {
-          connectionLog.Info($"Starting using docker-compose");
-          await StartDockerCompose(deployment, current, ssh, ct);
+          if (lastSvc)
+            await StopSystemdService(deployment, last, ssh, ct);
+          else
+            await StopDockerCompose(deployment, current, ssh, ct);
         }
-        else
-        {
-          connectionLog.Info($"Stopping using docker-compose");
-          await StopDockerCompose(deployment, current, ssh, ct);
-        }
+
+        // We don't have to worry about the old state at this point. Only redeploy if there are changes.
+        if (currentSvc) await StartSystemdService(deployment, current, ssh, ct);
+        else await StartDockerCompose(deployment, current, ssh, ct);
       }
     }
 
@@ -332,6 +313,7 @@ namespace backend2.Services
     private async Task StopDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
       CancellationToken ct)
     {
+      // TODO add working directory
       var startCommand =
         await RunCommand(ssh, $"/usr/local/bin/docker-compose down", ct);
 
@@ -342,6 +324,7 @@ namespace backend2.Services
     private async Task StartDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
       CancellationToken ct)
     {
+      // TODO add working directory
       var startCommand =
         await RunCommand(ssh, $"/usr/local/bin/docker-compose up -d --remove-orphans", ct);
 
