@@ -218,5 +218,30 @@ namespace backend2.Services
     {
       using var client = await CreateSshConnection(conn, TimeSpan.FromSeconds(5), ct);
     }
+
+    public async Task<byte[]> ReadFile(SftpClient sftp, string path, CancellationToken ct)
+    {
+      logger.LogDebug("Opening {path} for reading", path);
+      await using var readFs = sftp.OpenRead(path);
+      await using var ms = new MemoryStream();
+      await readFs.CopyToAsync(ms, ct);
+
+      return ms.ToArray();
+    }
+
+    public async Task WriteFile(SftpClient sftp, string path, ReadOnlyMemory<byte> contents)
+    {
+      logger.LogDebug("Opening {path} for writing", path);
+      await using var writeFs = sftp.OpenWrite(path);
+
+      logger.LogDebug("Writing {bytes}B", contents.Length);
+      await writeFs.WriteAsync(contents);
+    }
+
+    public async Task EnsureDirectoryExists(SftpClient sftp, string path, CancellationToken ct)
+    {
+      logger.LogDebug("Ensuring directory exists", path);
+      await Task.Factory.StartNew(() => sftp.CreateDirectory(path), ct);
+    }
   }
 }

@@ -33,7 +33,6 @@ namespace backend2.Services
       {
         Id = composeId,
         Name = name,
-        PendingDelete = false,
         CurrentId = versionId
       });
 
@@ -94,13 +93,26 @@ namespace backend2.Services
 
       if (compose == null) return;
 
-      var nodeIds = compose.Deployments.Select(x => x.NodeId);
+      var version = new ComposeVersion
+      {
+        Id = Guid.NewGuid(),
+        Content = compose.Current.Content,
+        Directory = compose.Current.Directory,
+        ServiceEnabled = compose.Current.ServiceEnabled,
+        ServiceName = compose.Current.ServiceName,
+        PendingDelete = true,
+        ComposeId = compose.Id
+      };
 
-      ctx.Composes.Remove(compose);
+      await ctx.ComposeVersions.AddAsync(version);
+      compose.CurrentId = version.Id;
+
+      foreach (var deployment in compose.Deployments) deployment.Enabled = false;
 
       await ctx.SaveChangesAsync();
 
-      foreach (var nodeId in nodeIds) await nodeUpdater.NotifyAboutNodeChange(nodeId.Value);
+      foreach (var nodeId in compose.Deployments.Select(x => x.NodeId))
+        await nodeUpdater.NotifyAboutNodeChange(nodeId.Value);
     }
 
     private string ServiceNameFromCompose(string name)

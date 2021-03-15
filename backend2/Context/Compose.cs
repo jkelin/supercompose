@@ -16,8 +16,6 @@ namespace supercompose
 
     [Required] [MaxLength(255)] public string Name { get; set; }
 
-    [Required] public bool? PendingDelete { get; set; }
-
     [Required] public Guid? CurrentId { get; set; }
 
     public Guid? TenantId { get; set; }

@@ -102,7 +102,7 @@ namespace supercompose.Migrations
                       .IsRequired()
                       .HasColumnType("boolean");
 
-            b.Property<Guid?>("LastDeployedVersionId")
+            b.Property<Guid?>("LastDeployedComposeVersionId")
                       .IsRequired()
                       .HasColumnType("uuid");
 
@@ -112,7 +112,7 @@ namespace supercompose.Migrations
 
             b.HasKey("Id");
 
-            b.HasIndex("LastDeployedVersionId");
+            b.HasIndex("LastDeployedComposeVersionId");
 
             b.HasIndex("NodeId");
 
@@ -213,9 +213,9 @@ namespace supercompose.Migrations
                       .OnDelete(DeleteBehavior.Cascade)
                       .IsRequired();
 
-            b.HasOne("backend2.ComposeVersion", "LastDeployedVersion")
+            b.HasOne("backend2.ComposeVersion", "LastDeployedComposeVersion")
                       .WithMany("Deployments")
-                      .HasForeignKey("LastDeployedVersionId")
+                      .HasForeignKey("LastDeployedComposeVersionId")
                       .OnDelete(DeleteBehavior.Cascade)
                       .IsRequired();
 
@@ -227,7 +227,7 @@ namespace supercompose.Migrations
 
             b.Navigation("Compose");
 
-            b.Navigation("LastDeployedVersion");
+            b.Navigation("LastDeployedComposeVersion");
 
             b.Navigation("Node");
           });

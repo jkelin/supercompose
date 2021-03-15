@@ -8,12 +8,6 @@ using HotChocolate;
 
 namespace supercompose
 {
-  public enum NodePendingChange
-  {
-    Enable,
-    Disable
-  }
-
   public partial class Node
   {
     [Required] [Key] public Guid? Id { get; set; }
@@ -34,7 +28,7 @@ namespace supercompose
 
     public bool? ReconciliationFailed { get; set; }
 
-    public NodePendingChange? PendingChange { get; set; }
+    [Required] public Guid Version { get; set; } = Guid.NewGuid();
 
     public Guid? TenantId { get; set; }
 

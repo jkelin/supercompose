@@ -36,8 +36,7 @@ namespace backend2.Services
         Id = Guid.NewGuid(),
         Node = node,
         Compose = compose,
-        Enabled = true,
-        LastDeployedVersionId = compose.CurrentId
+        Enabled = true
       };
 
       await ctx.Deployments.AddAsync(deployment);
@@ -57,6 +56,7 @@ namespace backend2.Services
       if (deployment.Enabled == false) return;
 
       deployment.Enabled = false;
+      deployment.ReconciliationFailed = null;
       await ctx.SaveChangesAsync();
 
       await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);
@@ -71,6 +71,7 @@ namespace backend2.Services
       if (deployment.Enabled == true) return;
 
       deployment.Enabled = true;
+      deployment.ReconciliationFailed = null;
       await ctx.SaveChangesAsync();
 
       await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);

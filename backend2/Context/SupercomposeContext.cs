@@ -84,9 +84,9 @@ namespace supercompose
           .HasForeignKey(d => d.ComposeId)
           .OnDelete(DeleteBehavior.Cascade);
 
-        entity.HasOne(d => d.LastDeployedVersion)
+        entity.HasOne(d => d.LastDeployedComposeVersion)
           .WithMany(p => p.Deployments)
-          .HasForeignKey(d => d.LastDeployedVersionId);
+          .HasForeignKey(d => d.LastDeployedComposeVersionId);
 
         entity.HasOne(d => d.Node)
           .WithMany(p => p.Deployments)
