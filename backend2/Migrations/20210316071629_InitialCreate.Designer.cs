@@ -7,11 +7,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using supercompose;
 
-namespace supercompose.Migrations
+namespace backend2.Migrations
 {
     [DbContext(typeof(SupercomposeContext))]
-    [Migration("20210308202022_AddDefers")]
-    partial class AddDefers
+    [Migration("20210316071629_InitialCreate")]
+    partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -22,6 +22,47 @@ namespace supercompose.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63)
                 .HasAnnotation("ProductVersion", "5.0.3")
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+            modelBuilder.Entity("backend2.Context.ConnectionLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ComposeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DeploymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("NodeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Time")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComposeId");
+
+                    b.HasIndex("DeploymentId");
+
+                    b.HasIndex("NodeId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("ConnectionLogs");
+                });
 
             modelBuilder.Entity("supercompose.Compose", b =>
                 {
@@ -37,10 +78,6 @@ namespace supercompose.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
-
-                    b.Property<bool?>("PendingDelete")
-                        .IsRequired()
-                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("uuid");
@@ -73,6 +110,9 @@ namespace supercompose.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("PendingDelete")
+                        .HasColumnType("boolean");
+
                     b.Property<bool?>("ServiceEnabled")
                         .IsRequired()
                         .HasColumnType("boolean");
@@ -98,17 +138,27 @@ namespace supercompose.Migrations
                         .IsRequired()
                         .HasColumnType("uuid");
 
-                    b.Property<bool?>("Enabled")
-                        .IsRequired()
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastCheck")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool?>("LastDeployedAsEnabled")
                         .HasColumnType("boolean");
 
                     b.Property<Guid?>("LastDeployedComposeVersionId")
-                        .IsRequired()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LastDeployedNodeVersion")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("NodeId")
                         .IsRequired()
                         .HasColumnType("uuid");
+
+                    b.Property<bool?>("ReconciliationFailed")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -152,6 +202,9 @@ namespace supercompose.Migrations
                     b.Property<byte[]>("PrivateKey")
                         .HasColumnType("bytea");
 
+                    b.Property<bool?>("ReconciliationFailed")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("uuid");
 
@@ -159,6 +212,9 @@ namespace supercompose.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<Guid>("Version")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -176,6 +232,37 @@ namespace supercompose.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("backend2.Context.ConnectionLog", b =>
+                {
+                    b.HasOne("supercompose.Compose", "Compose")
+                        .WithMany("ConnectionLogs")
+                        .HasForeignKey("ComposeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("supercompose.Deployment", "Deployment")
+                        .WithMany("ConnectionLogs")
+                        .HasForeignKey("DeploymentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("supercompose.Node", "Node")
+                        .WithMany("ConnectionLogs")
+                        .HasForeignKey("NodeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("supercompose.Tenant", "Tenant")
+                        .WithMany("ConnectionLogs")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Compose");
+
+                    b.Navigation("Deployment");
+
+                    b.Navigation("Node");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("supercompose.Compose", b =>
@@ -216,9 +303,7 @@ namespace supercompose.Migrations
 
                     b.HasOne("supercompose.ComposeVersion", "LastDeployedComposeVersion")
                         .WithMany("Deployments")
-                        .HasForeignKey("LastDeployedComposeVersionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("LastDeployedComposeVersionId");
 
                     b.HasOne("supercompose.Node", "Node")
                         .WithMany("Deployments")
@@ -247,6 +332,8 @@ namespace supercompose.Migrations
                 {
                     b.Navigation("ComposeVersions");
 
+                    b.Navigation("ConnectionLogs");
+
                     b.Navigation("Deployments");
                 });
 
@@ -257,14 +344,23 @@ namespace supercompose.Migrations
                     b.Navigation("Deployments");
                 });
 
+            modelBuilder.Entity("supercompose.Deployment", b =>
+                {
+                    b.Navigation("ConnectionLogs");
+                });
+
             modelBuilder.Entity("supercompose.Node", b =>
                 {
+                    b.Navigation("ConnectionLogs");
+
                     b.Navigation("Deployments");
                 });
 
             modelBuilder.Entity("supercompose.Tenant", b =>
                 {
                     b.Navigation("Composes");
+
+                    b.Navigation("ConnectionLogs");
 
                     b.Navigation("Nodes");
                 });

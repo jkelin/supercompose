@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace supercompose.Migrations
+namespace backend2.Migrations
 {
   public partial class InitialCreate : Migration
   {
@@ -30,6 +30,8 @@ namespace supercompose.Migrations
           Username = table.Column<string>("character varying(255)", maxLength: 255, nullable: false),
           Password = table.Column<byte[]>("bytea", nullable: true),
           PrivateKey = table.Column<byte[]>("bytea", nullable: true),
+          ReconciliationFailed = table.Column<bool>("boolean", nullable: true),
+          Version = table.Column<Guid>("uuid", nullable: false),
           TenantId = table.Column<Guid>("uuid", nullable: true)
         },
         constraints: table =>
@@ -52,7 +54,8 @@ namespace supercompose.Migrations
           Directory = table.Column<string>("text", nullable: false),
           ServiceName = table.Column<string>("character varying(255)", maxLength: 255, nullable: true),
           ServiceEnabled = table.Column<bool>("boolean", nullable: false),
-          ComposeId = table.Column<Guid>("uuid", nullable: false)
+          ComposeId = table.Column<Guid>("uuid", nullable: false),
+          PendingDelete = table.Column<bool>("boolean", nullable: false)
         },
         constraints: table => { table.PrimaryKey("PK_ComposeVersions", x => x.Id); });
 
@@ -62,7 +65,6 @@ namespace supercompose.Migrations
         {
           Id = table.Column<Guid>("uuid", nullable: false),
           Name = table.Column<string>("character varying(255)", maxLength: 255, nullable: false),
-          PendingDelete = table.Column<bool>("boolean", nullable: false),
           CurrentId = table.Column<Guid>("uuid", nullable: false),
           TenantId = table.Column<Guid>("uuid", nullable: true)
         },
@@ -90,8 +92,12 @@ namespace supercompose.Migrations
           Id = table.Column<Guid>("uuid", nullable: false),
           Enabled = table.Column<bool>("boolean", nullable: false),
           ComposeId = table.Column<Guid>("uuid", nullable: false),
-          LastDeployedVersionId = table.Column<Guid>("uuid", nullable: false),
-          NodeId = table.Column<Guid>("uuid", nullable: false)
+          LastDeployedComposeVersionId = table.Column<Guid>("uuid", nullable: true),
+          NodeId = table.Column<Guid>("uuid", nullable: false),
+          LastCheck = table.Column<DateTime>("timestamp without time zone", nullable: true),
+          LastDeployedNodeVersion = table.Column<Guid>("uuid", nullable: true),
+          LastDeployedAsEnabled = table.Column<bool>("boolean", nullable: true),
+          ReconciliationFailed = table.Column<bool>("boolean", nullable: true)
         },
         constraints: table =>
         {
@@ -103,17 +109,59 @@ namespace supercompose.Migrations
             "Id",
             onDelete: ReferentialAction.Cascade);
           table.ForeignKey(
-            "FK_Deployments_ComposeVersions_LastDeployedVersionId",
-            x => x.LastDeployedVersionId,
+            "FK_Deployments_ComposeVersions_LastDeployedComposeVersionId",
+            x => x.LastDeployedComposeVersionId,
             "ComposeVersions",
             "Id",
-            onDelete: ReferentialAction.Cascade);
+            onDelete: ReferentialAction.Restrict);
           table.ForeignKey(
             "FK_Deployments_Nodes_NodeId",
             x => x.NodeId,
             "Nodes",
             "Id",
             onDelete: ReferentialAction.Cascade);
+        });
+
+      migrationBuilder.CreateTable(
+        "ConnectionLogs",
+        table => new
+        {
+          Id = table.Column<Guid>("uuid", nullable: false),
+          Severity = table.Column<int>("integer", nullable: false),
+          Message = table.Column<string>("text", nullable: false),
+          Time = table.Column<DateTime>("timestamp without time zone", nullable: false),
+          NodeId = table.Column<Guid>("uuid", nullable: true),
+          DeploymentId = table.Column<Guid>("uuid", nullable: true),
+          TenantId = table.Column<Guid>("uuid", nullable: true),
+          ComposeId = table.Column<Guid>("uuid", nullable: true)
+        },
+        constraints: table =>
+        {
+          table.PrimaryKey("PK_ConnectionLogs", x => x.Id);
+          table.ForeignKey(
+            "FK_ConnectionLogs_Composes_ComposeId",
+            x => x.ComposeId,
+            "Composes",
+            "Id",
+            onDelete: ReferentialAction.SetNull);
+          table.ForeignKey(
+            "FK_ConnectionLogs_Deployments_DeploymentId",
+            x => x.DeploymentId,
+            "Deployments",
+            "Id",
+            onDelete: ReferentialAction.SetNull);
+          table.ForeignKey(
+            "FK_ConnectionLogs_Nodes_NodeId",
+            x => x.NodeId,
+            "Nodes",
+            "Id",
+            onDelete: ReferentialAction.SetNull);
+          table.ForeignKey(
+            "FK_ConnectionLogs_Tenants_TenantId",
+            x => x.TenantId,
+            "Tenants",
+            "Id",
+            onDelete: ReferentialAction.SetNull);
         });
 
       migrationBuilder.CreateIndex(
@@ -133,13 +181,33 @@ namespace supercompose.Migrations
         "ComposeId");
 
       migrationBuilder.CreateIndex(
+        "IX_ConnectionLogs_ComposeId",
+        "ConnectionLogs",
+        "ComposeId");
+
+      migrationBuilder.CreateIndex(
+        "IX_ConnectionLogs_DeploymentId",
+        "ConnectionLogs",
+        "DeploymentId");
+
+      migrationBuilder.CreateIndex(
+        "IX_ConnectionLogs_NodeId",
+        "ConnectionLogs",
+        "NodeId");
+
+      migrationBuilder.CreateIndex(
+        "IX_ConnectionLogs_TenantId",
+        "ConnectionLogs",
+        "TenantId");
+
+      migrationBuilder.CreateIndex(
         "IX_Deployments_ComposeId_NodeId",
         "Deployments",
         new[] {"ComposeId", "NodeId"},
         unique: true);
 
       migrationBuilder.CreateIndex(
-        "IX_Deployments_LastDeployedVersionId",
+        "IX_Deployments_LastDeployedComposeVersionId",
         "Deployments",
         "LastDeployedComposeVersionId");
 
@@ -160,6 +228,9 @@ namespace supercompose.Migrations
         "Composes",
         principalColumn: "Id",
         onDelete: ReferentialAction.Cascade);
+
+      migrationBuilder.Sql(
+        "ALTER TABLE \"Composes\" ALTER CONSTRAINT \"FK_Composes_ComposeVersions_CurrentId\" DEFERRABLE INITIALLY DEFERRED;");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
@@ -167,6 +238,12 @@ namespace supercompose.Migrations
       migrationBuilder.DropForeignKey(
         "FK_Composes_ComposeVersions_CurrentId",
         "Composes");
+
+      migrationBuilder.Sql(
+        "ALTER TABLE \"Composes\" ALTER CONSTRAINT \"FK_Composes_ComposeVersions_CurrentId\" DEFERRABLE INITIALLY IMMEDIATE;");
+
+      migrationBuilder.DropTable(
+        "ConnectionLogs");
 
       migrationBuilder.DropTable(
         "Deployments");

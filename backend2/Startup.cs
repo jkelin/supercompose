@@ -99,8 +99,6 @@ namespace supercompose
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env,
       SupercomposeContext ctx, ILogger<Startup> logger)
     {
-      Migrate(ctx, logger).Wait();
-
       if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
       app.UseRouting();
@@ -113,24 +111,6 @@ namespace supercompose
         endpoints.MapGraphQL();
         endpoints.MapControllers();
       });
-    }
-
-    private async Task Migrate(SupercomposeContext ctx, ILogger<Startup> logger)
-    {
-      for (var i = 0; i < 10; i++)
-        if (await ctx.Database.CanConnectAsync())
-        {
-          await ctx.Database.MigrateAsync();
-          return;
-        }
-        else
-        {
-          logger.LogInformation("Could not connect to database, delaying");
-          await Task.Delay(500);
-        }
-
-      throw new ApplicationException(
-        "Could not migrate database because connection to database could not be established");
     }
   }
 }

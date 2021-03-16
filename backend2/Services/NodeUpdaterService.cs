@@ -198,7 +198,6 @@ namespace backend2.Services
       CancellationToken ct)
     {
       var current = deployment.Compose.Current;
-      var composePath = current.Directory + "docker-compose.yml";
 
       try
       {
@@ -206,7 +205,7 @@ namespace backend2.Services
         await connectionService.EnsureDirectoryExists(sftp, current.Directory, ct);
 
         connectionLog.Info($"Updating docker-compose.yml");
-        await UpdateFile(sftp, composePath, current.Content, ct);
+        await UpdateFile(sftp, current.ComposePath, current.Content, ct);
         ct.ThrowIfCancellationRequested();
       }
       catch (SftpPermissionDeniedException ex)
@@ -217,13 +216,11 @@ namespace backend2.Services
       }
 
       if (current.ServiceEnabled == true)
-      {
-        var servicePath = $"/etc/systemd/system/{current.ServiceName}.service";
         try
         {
-          var serviceFile = GenerateSystemdServicePath(deployment);
+          var serviceFile = GenerateSystemdServiceFile(deployment);
           connectionLog.Info($"Updating systemd service");
-          await UpdateFile(sftp, servicePath, serviceFile, ct);
+          await UpdateFile(sftp, current.ServicePath, serviceFile, ct);
           ct.ThrowIfCancellationRequested();
 
           var reloadResult = await RunCommand(ssh, "systemctl daemon-reload", ct);
@@ -237,7 +234,6 @@ namespace backend2.Services
           deployment.ReconciliationFailed = true;
           await ctx.SaveChangesAsync(ct);
         }
-      }
     }
 
     private async Task EnsureServiceInCorrectState(Deployment deployment, SshClient ssh, CancellationToken ct)
@@ -313,9 +309,8 @@ namespace backend2.Services
     private async Task StopDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
       CancellationToken ct)
     {
-      // TODO add working directory
       var startCommand =
-        await RunCommand(ssh, $"/usr/local/bin/docker-compose down", ct);
+        await RunCommand(ssh, $"/usr/local/bin/docker-compose --file '{compose.ComposePath}' down", ct);
 
       if (startCommand.status != 0)
         throw new DeploymentReconciliationFailedException($"Docker-compose failed to stop");
@@ -324,19 +319,12 @@ namespace backend2.Services
     private async Task StartDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
       CancellationToken ct)
     {
-      // TODO add working directory
       var startCommand =
-        await RunCommand(ssh, $"/usr/local/bin/docker-compose up -d --remove-orphans", ct);
+        await RunCommand(ssh, $"/usr/local/bin/docker-compose --file '{compose.ComposePath}' up -d --remove-orphans",
+          ct);
 
       if (startCommand.status != 0)
         throw new DeploymentReconciliationFailedException("Docker-compose failed to start");
-    }
-
-    private static string GenerateSystemdServicePath(Deployment deployment)
-    {
-      var cleanName = new Regex("[^a-zA-Z_-]*").Replace(deployment.Compose.Name, "-").ToLower();
-      cleanName = new Regex("--*").Replace(cleanName, "-");
-      return $"/etc/systemd/system/{cleanName}.service";
     }
 
     private static string GenerateSystemdServiceFile(Deployment deployment)
