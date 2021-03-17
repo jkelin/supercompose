@@ -27,6 +27,8 @@ namespace supercompose
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+      modelBuilder.HasPostgresEnum<ConnectionLogSeverity>();
+
       modelBuilder.HasPostgresExtension("uuid-ossp")
         .HasAnnotation("Relational:Collation", "en_US.UTF-8");
 

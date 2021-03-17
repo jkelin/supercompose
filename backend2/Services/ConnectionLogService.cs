@@ -19,7 +19,8 @@ namespace backend2.Services
       this.mediator = mediator;
     }
 
-    private async ValueTask Log(ConnectionLogSeverity severity, string message, Exception? exception = null)
+    private async ValueTask Log(ConnectionLogSeverity severity, string message, Exception? exception = null,
+      Dictionary<string, dynamic>? metadata = null)
     {
       await mediator.Publish(new SaveConnectionLog
       {
@@ -31,25 +32,26 @@ namespace backend2.Services
           DeploymentId = currentScope.Value?.DeploymentId,
           ComposeId = currentScope.Value?.ComposeId,
           TenantId = currentScope.Value?.TenantId,
-          Time = DateTime.UtcNow
-          // TODO log exception
+          Time = DateTime.UtcNow,
+          Error = exception != null ? $"{exception.GetType().Name}: {exception.Message}" : null,
+          Metadata = metadata
         }
       });
     }
 
-    public void Info(string message, Exception? exception = null)
+    public void Info(string message, Exception? exception = null, Dictionary<string, dynamic>? metadata = null)
     {
-      var _ = Log(ConnectionLogSeverity.Info, message, exception);
+      var _ = Log(ConnectionLogSeverity.Info, message, exception, metadata);
     }
 
-    public void Error(string message, Exception? exception = null)
+    public void Error(string message, Exception? exception = null, Dictionary<string, dynamic>? metadata = null)
     {
-      var _ = Log(ConnectionLogSeverity.Error, message, exception);
+      var _ = Log(ConnectionLogSeverity.Error, message, exception, metadata);
     }
 
-    public void Warning(string message, Exception? exception = null)
+    public void Warning(string message, Exception? exception = null, Dictionary<string, dynamic>? metadata = null)
     {
-      var _ = Log(ConnectionLogSeverity.Warning, message, exception);
+      var _ = Log(ConnectionLogSeverity.Warning, message, exception, metadata);
     }
 
     public IDisposable BeginScope(Guid? nodeId = null,

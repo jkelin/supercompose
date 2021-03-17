@@ -195,9 +195,18 @@ namespace backend2.Services
     {
       connectionLog.Info($"Reading file {path}");
       var targetBytes = Encoding.UTF8.GetBytes(contents.Replace("\r\n", "\n"));
-      var current = await connectionService.ReadFile(sftp, path, ct);
 
-      if (!current.SequenceEqual(targetBytes))
+      var shouldWrite = true;
+      try
+      {
+        var current = await connectionService.ReadFile(sftp, path, ct);
+        shouldWrite = !current.SequenceEqual(targetBytes);
+      }
+      catch (SftpPathNotFoundException)
+      {
+      }
+
+      if (shouldWrite)
       {
         connectionLog.Info($"File outdated, updating {path}");
         await connectionService.WriteFile(sftp, path, targetBytes);
@@ -349,16 +358,16 @@ namespace backend2.Services
     {
       return $@"
 [Unit]
-Description=${deployment.Compose.Name} service with docker compose managed by supercompose
+Description={deployment.Compose.Name} service with docker compose managed by supercompose
 Requires=docker.service
 After=docker.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=true
-WorkingDirectory=/etc/docker/compose/${deployment.Compose.Current.Directory}
-ExecStart=/usr/local/bin/docker-compose up -d --remove-orphans
-ExecStop=/usr/local/bin/docker-compose down
+WorkingDirectory={deployment.Compose.Current.Directory}
+ExecStart=/usr/bin/docker-compose up -d --remove-orphans
+ExecStop=/usr/bin/docker-compose down
 
 [Install]
 WantedBy=multi-user.target";

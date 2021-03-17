@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace supercompose
 {
@@ -37,6 +38,11 @@ namespace supercompose
         if (await ctx.Database.CanConnectAsync())
         {
           await ctx.Database.MigrateAsync();
+
+          await using var conn = (NpgsqlConnection) ctx.Database.GetDbConnection();
+          conn.Open();
+          conn.ReloadTypes();
+
           return;
         }
         else

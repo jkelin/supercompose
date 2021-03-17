@@ -232,7 +232,7 @@ namespace backend2.Services
     public async Task WriteFile(SftpClient sftp, string path, ReadOnlyMemory<byte> contents)
     {
       logger.LogDebug("Opening {path} for writing", path);
-      await using var writeFs = sftp.OpenWrite(path);
+      await using var writeFs = sftp.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
 
       logger.LogDebug("Writing {bytes}B", contents.Length);
       await writeFs.WriteAsync(contents);
@@ -241,7 +241,22 @@ namespace backend2.Services
     public async Task EnsureDirectoryExists(SftpClient sftp, string path, CancellationToken ct)
     {
       logger.LogDebug("Ensuring directory exists", path);
-      await Task.Factory.StartNew(() => sftp.CreateDirectory(path), ct);
+      var dir = "";
+
+      foreach (string segment in path.Split('/'))
+      {
+        dir += "/" + segment;
+
+        // Ignoring leading/ending/multiple slashes
+        if (string.IsNullOrWhiteSpace(dir)) continue;
+
+        var dirExists = await Task.Run(() => sftp.Exists(dir), ct);
+        if (!dirExists)
+        {
+          logger.LogDebug("Creating dir", dir);
+          await Task.Run(() => sftp.CreateDirectory(dir), ct);
+        }
+      }
     }
   }
 }

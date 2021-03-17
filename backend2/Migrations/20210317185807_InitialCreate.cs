@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace backend2.Migrations
@@ -8,6 +9,7 @@ namespace backend2.Migrations
     protected override void Up(MigrationBuilder migrationBuilder)
     {
       migrationBuilder.AlterDatabase()
+        .Annotation("Npgsql:Enum:connection_log_severity", "info,error,warning")
         .Annotation("Npgsql:PostgresExtension:uuid-ossp", ",,");
 
       migrationBuilder.CreateTable(
@@ -130,6 +132,8 @@ namespace backend2.Migrations
           Severity = table.Column<int>("integer", nullable: false),
           Message = table.Column<string>("text", nullable: false),
           Time = table.Column<DateTime>("timestamp without time zone", nullable: false),
+          Error = table.Column<string>("text", nullable: true),
+          Metadata = table.Column<Dictionary<string, object>>("jsonb", nullable: true),
           NodeId = table.Column<Guid>("uuid", nullable: true),
           DeploymentId = table.Column<Guid>("uuid", nullable: true),
           TenantId = table.Column<Guid>("uuid", nullable: true),
@@ -238,9 +242,6 @@ namespace backend2.Migrations
       migrationBuilder.DropForeignKey(
         "FK_Composes_ComposeVersions_CurrentId",
         "Composes");
-
-      migrationBuilder.Sql(
-        "ALTER TABLE \"Composes\" ALTER CONSTRAINT \"FK_Composes_ComposeVersions_CurrentId\" DEFERRABLE INITIALLY IMMEDIATE;");
 
       migrationBuilder.DropTable(
         "ConnectionLogs");

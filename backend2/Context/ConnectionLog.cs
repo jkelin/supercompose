@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using supercompose;
@@ -23,6 +24,10 @@ namespace backend2.Context
     [Required] public string Message { get; set; } = "";
 
     [Required] public DateTime Time { get; set; }
+
+    public string? Error { get; set; }
+
+    [Column(TypeName = "jsonb")] public Dictionary<string, dynamic>? Metadata { get; set; }
 
 
     public Guid? NodeId { get; set; }
