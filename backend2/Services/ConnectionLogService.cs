@@ -4,31 +4,36 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using backend2.Context;
+using MediatR;
 using supercompose;
 
 namespace backend2.Services
 {
   public class ConnectionLogService
   {
-    private readonly SupercomposeContext ctx;
+    private readonly IMediator mediator;
     private readonly AsyncLocal<Scope?> currentScope = new();
 
-    public ConnectionLogService(SupercomposeContext ctx)
+    public ConnectionLogService(IMediator mediator)
     {
-      this.ctx = ctx;
+      this.mediator = mediator;
     }
 
     private async ValueTask Log(ConnectionLogSeverity severity, string message, Exception? exception = null)
     {
-      await ctx.ConnectionLogs.SingleInsertAsync(new ConnectionLog
+      await mediator.Publish(new SaveConnectionLog
       {
-        Severity = severity,
-        Message = message,
-        NodeId = currentScope.Value?.NodeId,
-        DeploymentId = currentScope.Value?.DeploymentId,
-        ComposeId = currentScope.Value?.ComposeId,
-        TenantId = currentScope.Value?.TenantId,
-        Time = DateTime.UtcNow
+        Log = new ConnectionLog
+        {
+          Severity = severity,
+          Message = message,
+          NodeId = currentScope.Value?.NodeId,
+          DeploymentId = currentScope.Value?.DeploymentId,
+          ComposeId = currentScope.Value?.ComposeId,
+          TenantId = currentScope.Value?.TenantId,
+          Time = DateTime.UtcNow
+          // TODO log exception
+        }
       });
     }
 

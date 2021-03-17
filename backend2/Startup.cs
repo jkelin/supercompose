@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using backend2;
 using backend2.HostedServices;
 using backend2.Services;
 using HotChocolate;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -55,8 +57,6 @@ namespace supercompose
 
       services.AddControllers();
 
-      // If you need dependency injection with your query object add your query type as a services.
-      // services.AddSingleton<Query>();
       services
         .AddScoped<Query>()
         .AddScoped<Mutation>()
@@ -68,12 +68,16 @@ namespace supercompose
         .AddScoped<ConnectionLogService>()
         .AddScoped<NodeService>();
 
-      services.AddHostedService<NodeUpdateListener>();
+      services
+        .AddHostedService<NodeUpdateListener>()
+        .AddHostedService<ConnectionLogProcessor>();
 
       services
         .AddRouting();
 
       services.AddLogging();
+
+      services.AddMediatR(typeof(Startup));
 
       services.AddGraphQLServer()
         .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = env.IsDevelopment())

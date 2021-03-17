@@ -55,29 +55,47 @@ namespace backend2.Services
 
     public async Task ProcessNodeUpdates(Guid nodeId, CancellationToken ct)
     {
-      while (!ct.IsCancellationRequested)
+      try
       {
-        var deployments = await ctx.Deployments
-          .Where(x => x.NodeId == nodeId)
-          .Where(Deployment.ShouldUpdateProjection)
-          .Include(x => x.Node)
-          .Include(x => x.LastDeployedComposeVersion)
-          .Include(x => x.Compose)
-          .ThenInclude(x => x.Current)
-          .ToListAsync(ct);
+        while (!ct.IsCancellationRequested)
+        {
+          var deployments = await ctx.Deployments
+            .Where(x => x.NodeId == nodeId)
+            .Where(Deployment.ShouldUpdateProjection)
+            .Include(x => x.Node)
+            .Include(x => x.LastDeployedComposeVersion)
+            .Include(x => x.Compose)
+            .ThenInclude(x => x.Current)
+            .ToListAsync(ct);
 
-        if (deployments.Count == 0) return;
+          if (deployments.Count == 0) return;
 
-        var node = deployments.First().Node;
-        using var ssh = await OpenSsh(node, ct);
+          var node = deployments.First().Node;
+          using var ssh = await OpenSsh(node, ct);
 
-        if (deployments.Any(x => x.LastDeployedNodeVersion != node.Version))
-          if (!await VerifyNode(node, ssh, ct))
-            return;
+          if (deployments.Any(x => x.LastDeployedNodeVersion != node.Version))
+            if (!await VerifyNode(node, ssh, ct))
+              return;
 
-        using var sftp = await OpenSftp(node, ct);
+          using var sftp = await OpenSftp(node, ct);
 
-        foreach (var deployment in deployments) await ApplyDeployment(deployment, ssh, sftp, ct);
+          foreach (var deployment in deployments) await ApplyDeployment(deployment, ssh, sftp, ct);
+        }
+      }
+      catch (TaskCanceledException)
+      {
+      }
+      catch (NodeConnectionFailedException ex)
+      {
+        connectionLog.Error($"Node connection failed", ex);
+      }
+      catch (SshException ex)
+      {
+        connectionLog.Error($"SSH error", ex);
+      }
+      catch (Exception ex)
+      {
+        connectionLog.Error($"Unknown error", ex);
       }
     }
 
@@ -95,7 +113,7 @@ namespace backend2.Services
       );
 
       connectionLog.Info($"Connecting SSH to {node.Username}@{node.Host}:{node.Port}");
-      using var ssh = await connectionService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+      var ssh = await connectionService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
 
       ct.ThrowIfCancellationRequested();
 
@@ -116,7 +134,7 @@ namespace backend2.Services
       );
 
       connectionLog.Info($"Connecting SFTP to {node.Username}@{node.Host}:{node.Port}");
-      using var sftp = await connectionService.CreateSftpConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+      var sftp = await connectionService.CreateSftpConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
 
       ct.ThrowIfCancellationRequested();
 
