@@ -299,6 +299,12 @@ namespace backend2.Services
         if (currentSvc) await StartSystemdService(deployment, current, ssh, ct);
         else await StartDockerCompose(deployment, current, ssh, ct);
       }
+
+      deployment.LastDeployedComposeVersion = current;
+      deployment.LastDeployedAsEnabled = currentEnabled;
+      deployment.LastDeployedNodeVersion = deployment.Node.Version;
+      deployment.LastCheck = DateTime.UtcNow;
+      await ctx.SaveChangesAsync(ct);
     }
 
     private async Task StopSystemdService(Deployment deployment, ComposeVersion compose, SshClient ssh,

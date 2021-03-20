@@ -1,25 +1,49 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using supercompose;
 using Xunit;
 
 namespace BackendTests
 {
-  public class CryptoServiceTests
+  public class CryptoServiceTests : IClassFixture<WebApplicationFactory<Startup>>
   {
-    public static IConfigurationRoot GetIConfigurationRoot()
+    private readonly WebApplicationFactory<Startup> factory;
+
+    public CryptoServiceTests(WebApplicationFactory<Startup> factory)
     {
-      return new ConfigurationBuilder()
-        .AddJsonFile("appsettings.json", true)
-        .AddEnvironmentVariables()
-        .Build();
+      this.factory = factory.WithWebHostBuilder(builder =>
+      {
+        builder.ConfigureAppConfiguration((context, conf) =>
+        {
+          var projectDir = Directory.GetCurrentDirectory();
+          var configPath = Path.Combine(projectDir, "appsettings.json");
+          conf.Sources.Clear();
+          conf.AddJsonFile(configPath);
+        });
+      });
+
+      Program.Migrate(this.factory.Services).Wait();
     }
 
-    private readonly CryptoService crypto = new(GetIConfigurationRoot());
+    //public static IConfigurationRoot GetIConfigurationRoot()
+    //{
+    //  return new ConfigurationBuilder()
+    //    .AddJsonFile("appsettings.json", true)
+    //    .AddEnvironmentVariables()
+    //    .Build();
+    //}
+
+    //private readonly CryptoService crypto = new(GetIConfigurationRoot());
 
     public const string TestPkey = @"
 -----BEGIN RSA PRIVATE KEY-----
@@ -45,6 +69,10 @@ FPMvduLHybgz/CAzmQGL/N/x11HoAehLlivXxXxEEg==
     [InlineData(TestPkey)]
     public async Task EncryptAndDecrypt(string dataIn)
     {
+      using var scope = factory.Services.CreateScope();
+
+      var crypto = scope.ServiceProvider.GetRequiredService<CryptoService>();
+
       var encrypted = await crypto.EncryptSecret(dataIn);
 
       encrypted.Should().NotBeSameAs(Encoding.UTF8.GetBytes(dataIn), "Encryption should do something with the data");

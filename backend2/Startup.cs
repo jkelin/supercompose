@@ -4,11 +4,13 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using backend2;
+using backend2.Context;
 using backend2.HostedServices;
 using backend2.Services;
 using HotChocolate;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
@@ -97,6 +99,13 @@ namespace supercompose
       services.AddDbContext<SupercomposeContext>(options =>
         options.UseNpgsql(
           configuration.GetConnectionString("SupercomposeContext")));
+
+      services.AddDbContext<KeysContext>(options =>
+        options.UseNpgsql(
+          configuration.GetConnectionString("KeysContext")));
+
+      services.AddDataProtection()
+        .PersistKeysToDbContext<KeysContext>();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

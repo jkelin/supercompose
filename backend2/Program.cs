@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using backend2.Context;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,12 +16,7 @@ namespace supercompose
     {
       var host = CreateHostBuilder(args).Build();
 
-      using (var scope = host.Services.CreateScope())
-      {
-        using var ctx = scope.ServiceProvider.GetRequiredService<SupercomposeContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        Migrate(ctx, logger).Wait();
-      }
+      Migrate(host.Services).Wait();
 
       host.Run();
     }
@@ -32,8 +28,20 @@ namespace supercompose
         .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
     }
 
-    private static async Task Migrate(SupercomposeContext ctx, ILogger logger)
+    public static async Task Migrate(IServiceProvider provider)
     {
+      using var scope = provider.CreateScope();
+      await Task.WhenAll(
+        Migrate<SupercomposeContext>(scope),
+        Migrate<KeysContext>(scope)
+      );
+    }
+
+    private static async Task Migrate<TCtx>(IServiceScope scope) where TCtx : DbContext
+    {
+      await using var ctx = scope.ServiceProvider.GetRequiredService<TCtx>();
+      var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
       for (var i = 0; i < 10; i++)
         if (await ctx.Database.CanConnectAsync())
         {
