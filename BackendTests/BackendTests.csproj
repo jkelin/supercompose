@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\backend2\backend2.csproj" />
+    <ProjectReference Include="..\backend\backend.csproj" />
   </ItemGroup>
 
   <ItemGroup>
