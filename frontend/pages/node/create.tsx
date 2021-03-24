@@ -11,7 +11,8 @@ import {
 } from 'components';
 import { DashboardLayout, useToast as useToast } from 'containers';
 import {
-  TestConnectionError,
+  NodeConnectionFailed,
+  SuccessfulNodeCreation,
   useCreateNodeMutation,
   useTestConnectionMutation,
 } from 'data';
@@ -52,7 +53,7 @@ export default function CreateNode() {
     form.errors.username?.type === 'global' && form.errors.username?.message;
 
   const handleErrors = useCallback(
-    (err: TestConnectionError) => {
+    (err: NodeConnectionFailed) => {
       if (err.field) {
         form.setError(err.field as any, {
           type: 'specific',
@@ -82,12 +83,12 @@ export default function CreateNode() {
       fetchPolicy: 'no-cache',
     });
 
-    if (resp?.data?.createNode.__typename == 'Node') {
+    if (resp?.data?.createNode?.__typename == 'SuccessfulNodeCreation') {
       apollo.cache.modify({
         fields: {
           nodes(existingNodesRefs = [], { readField }) {
             const newNodeRef = apollo.cache.writeFragment({
-              data: resp?.data?.createNode,
+              data: (resp?.data?.createNode as SuccessfulNodeCreation)?.node,
               fragment: gql`
                 fragment NewNode on Node {
                   id
@@ -107,7 +108,7 @@ export default function CreateNode() {
         kind: 'success',
         title: 'Node created',
       });
-      router.push(`/node/${resp?.data?.createNode.id}`);
+      router.push(`/node/${resp?.data?.createNode!.node.id}`);
     } else {
       handleErrors(resp?.data?.createNode as any);
     }

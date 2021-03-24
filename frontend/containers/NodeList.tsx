@@ -45,21 +45,29 @@ const NodeCard: React.FC<{
   );
 };
 
-export const NodeList: React.FC<{}> = (props) => {
+export const useNodeList = (): [Node[], { loading: boolean }] => {
   const nodes = useGetNodesQuery();
 
   const nodeList = nodes?.data?.nodes;
-  const sorted = useMemo(() => orderBy(nodeList, 'name'), [nodeList]);
+
+  return [
+    useMemo(() => orderBy(nodeList, 'name'), [nodeList]) as any,
+    { loading: nodes.loading },
+  ];
+};
+
+export const NodeList: React.FC<{}> = (props) => {
+  const [nodes, nodeQuery] = useNodeList();
 
   return (
     <ul className="flex flex-col">
       <CreateCard key="create" href="/node/create">
         Create node
       </CreateCard>
-      {nodes && nodes.loading && <div>Loading</div>}
-      {sorted?.map((node, i) => (
+      {nodeQuery && nodeQuery.loading && <div>Loading</div>}
+      {nodes?.map((node, i) => (
         <React.Fragment key={node.id}>
-          {i !== nodes!.data!.nodes!.length && <div className="h-4" />}
+          {i !== nodes.length && <div className="h-4" />}
           <NodeCard node={node} />
         </React.Fragment>
       ))}

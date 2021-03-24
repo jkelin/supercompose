@@ -6,13 +6,11 @@ mutation testConnection(
   $privateKey: String
 ) {
   testConnection(
-    node: {
-      host: $host
-      port: $port
-      username: $username
-      password: $password
-      privateKey: $privateKey
-    }
+    host: $host
+    port: $port
+    username: $username
+    password: $password
+    privateKey: $privateKey
   ) {
     error
     field

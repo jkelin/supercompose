@@ -5,17 +5,18 @@ mutation createCompose(
   $compose: String!
 ) {
   createCompose(
-    compose: {
-      name: $name
-      directory: $directory
-      serviceEnabled: $serviceEnabled
-      compose: $compose
-    }
+    name: $name
+    directory: $directory
+    serviceEnabled: $serviceEnabled
+    compose: $compose
   ) {
     id
     name
-    directory
-    serviceEnabled
-    content
+    current {
+      id
+      directory
+      serviceEnabled
+      content
+    }
   }
 }

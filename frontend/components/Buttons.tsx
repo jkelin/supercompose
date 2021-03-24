@@ -7,8 +7,9 @@ import { Spinner } from './Icons';
 type ButtonKind =
   | 'primary'
   | 'primary-danger'
+  | 'primary-outline'
   | 'secondary'
-  | 'secondary-danger';
+  | 'danger-outline';
 
 function buttonClassName(opts: {
   isLoading?: boolean;
@@ -22,11 +23,18 @@ function buttonClassName(opts: {
       opts.isLoading && 'bg-gray-400 disabled cursor-wait',
       opts.className,
     );
-  } else if (opts.kind === 'secondary-danger') {
+  } else if (opts.kind === 'danger-outline') {
     return classNames(
       'select-none border border-red-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-red-600 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500',
       !opts.isLoading && 'bg-white ',
       opts.isLoading && 'bg-red-400 disabled cursor-wait',
+      opts.className,
+    );
+  } else if (opts.kind === 'primary-outline') {
+    return classNames(
+      'select-none border border-indigo-600 rounded-md shadow-sm py-2 px-4 flex justify-center text-sm font-medium text-indigo-600 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500',
+      !opts.isLoading && 'bg-white ',
+      opts.isLoading && 'bg-indigo-400 disabled cursor-wait',
       opts.className,
     );
   } else if (opts.kind === 'primary') {

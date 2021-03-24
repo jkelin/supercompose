@@ -1,0 +1,23 @@
+mutation disableDeployment($deployment: Uuid!) {
+  disableDeployment(deployment: $deployment) {
+    id
+    enabled
+    compose {
+      id
+      name
+      current {
+        id
+        serviceEnabled
+        serviceName
+        directory
+      }
+    }
+    node {
+      id
+      name
+      host
+      port
+      username
+    }
+  }
+}

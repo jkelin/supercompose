@@ -25,7 +25,7 @@ export const YamlEditorField = forwardRef<
   );
 });
 
-export const defaultComposeYaml = `version: "3.9"
+export const defaultComposeYaml = `version: "3.0"
 services:
   redis:
     image: redis

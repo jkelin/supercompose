@@ -15,125 +15,351 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-};
-
-export type Compose = {
-  __typename?: 'Compose';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  content: Scalars['String'];
-  directory: Scalars['String'];
-  serviceEnabled: Scalars['Boolean'];
-  serviceName?: Maybe<Scalars['String']>;
-  deployments: Array<Deployment>;
-};
-
-export type Deployment = {
-  __typename?: 'Deployment';
-  id: Scalars['ID'];
-  node: Node;
-  compose: Compose;
-  enabled: Scalars['Boolean'];
-};
-
-export type Node = {
-  __typename?: 'Node';
-  id: Scalars['ID'];
-  name: Scalars['String'];
-  host: Scalars['String'];
-  port: Scalars['Int'];
-  username: Scalars['String'];
-  deployments: Array<Deployment>;
-};
-
-export type TestConnectionError = {
-  __typename?: 'TestConnectionError';
-  error: Scalars['String'];
-  field?: Maybe<Scalars['String']>;
+  Uuid: any;
 };
 
 export type Query = {
   __typename?: 'Query';
-  compose: Compose;
-  composes: Array<Compose>;
-  node: Node;
   nodes: Array<Node>;
+  node?: Maybe<Node>;
+  composes: Array<Compose>;
+  compose?: Maybe<Compose>;
   deployments: Array<Deployment>;
-  deployment: Deployment;
+  deployment?: Maybe<Deployment>;
 };
 
-export type QueryComposeArgs = {
-  id: Scalars['ID'];
+export type QueryNodesArgs = {
+  where?: Maybe<NodeFilterInput>;
+  order?: Maybe<Array<NodeSortInput>>;
 };
 
 export type QueryNodeArgs = {
-  id: Scalars['ID'];
+  where?: Maybe<NodeFilterInput>;
+};
+
+export type QueryComposesArgs = {
+  where?: Maybe<ComposeFilterInput>;
+};
+
+export type QueryComposeArgs = {
+  where?: Maybe<ComposeFilterInput>;
+};
+
+export type QueryDeploymentsArgs = {
+  where?: Maybe<DeploymentFilterInput>;
 };
 
 export type QueryDeploymentArgs = {
-  id: Scalars['ID'];
+  where?: Maybe<DeploymentFilterInput>;
 };
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createCompose: Compose;
-  updateCompose: Compose;
-  deleteCompose: Scalars['Boolean'];
   createNode: CreateNodeResult;
-  testConnection?: Maybe<TestConnectionError>;
-  createDeployment: Deployment;
-};
-
-export type MutationCreateComposeArgs = {
-  compose: ComposeInput;
-};
-
-export type MutationUpdateComposeArgs = {
-  compose: ComposeInput;
-  id: Scalars['ID'];
-};
-
-export type MutationDeleteComposeArgs = {
-  id: Scalars['ID'];
+  testConnection?: Maybe<NodeConnectionFailed>;
+  updateNode?: Maybe<Node>;
+  deleteNode: Scalars['Boolean'];
+  createCompose?: Maybe<Compose>;
+  updateCompose?: Maybe<Compose>;
+  deleteCompose: Scalars['Boolean'];
+  createDeployment?: Maybe<Deployment>;
+  enableDeployment?: Maybe<Deployment>;
+  disableDeployment?: Maybe<Deployment>;
 };
 
 export type MutationCreateNodeArgs = {
-  node: CreateNodeInput;
+  name: Scalars['String'];
+  host: Scalars['String'];
+  username: Scalars['String'];
+  port: Scalars['Int'];
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
 };
 
 export type MutationTestConnectionArgs = {
-  node: TestConnectionInput;
+  host: Scalars['String'];
+  username: Scalars['String'];
+  port: Scalars['Int'];
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
 };
 
-export type MutationCreateDeploymentArgs = {
-  node: Scalars['ID'];
-  compose: Scalars['ID'];
+export type MutationUpdateNodeArgs = {
+  id: Scalars['Uuid'];
+  name: Scalars['String'];
+  host: Scalars['String'];
+  username: Scalars['String'];
+  port: Scalars['Int'];
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
 };
 
-export type ComposeInput = {
+export type MutationDeleteNodeArgs = {
+  id: Scalars['Uuid'];
+};
+
+export type MutationCreateComposeArgs = {
   name: Scalars['String'];
   directory: Scalars['String'];
   serviceEnabled: Scalars['Boolean'];
   compose: Scalars['String'];
 };
 
-export type CreateNodeResult = Node | TestConnectionError;
-
-export type CreateNodeInput = {
-  host?: Maybe<Scalars['String']>;
-  port?: Maybe<Scalars['Int']>;
-  username?: Maybe<Scalars['String']>;
-  password?: Maybe<Scalars['String']>;
-  privateKey?: Maybe<Scalars['String']>;
-  name: Scalars['String'];
+export type MutationUpdateComposeArgs = {
+  id: Scalars['Uuid'];
+  name?: Maybe<Scalars['String']>;
+  directory?: Maybe<Scalars['String']>;
+  serviceEnabled?: Maybe<Scalars['Boolean']>;
+  compose?: Maybe<Scalars['String']>;
 };
 
-export type TestConnectionInput = {
-  host?: Maybe<Scalars['String']>;
-  port?: Maybe<Scalars['Int']>;
-  username?: Maybe<Scalars['String']>;
-  password?: Maybe<Scalars['String']>;
-  privateKey?: Maybe<Scalars['String']>;
+export type MutationDeleteComposeArgs = {
+  id: Scalars['Uuid'];
+};
+
+export type MutationCreateDeploymentArgs = {
+  node: Scalars['Uuid'];
+  compose: Scalars['Uuid'];
+};
+
+export type MutationEnableDeploymentArgs = {
+  deployment: Scalars['Uuid'];
+};
+
+export type MutationDisableDeploymentArgs = {
+  deployment: Scalars['Uuid'];
+};
+
+export type SuccessfulNodeCreation = {
+  __typename?: 'SuccessfulNodeCreation';
+  node: Node;
+};
+
+export type NodeConnectionFailed = {
+  __typename?: 'NodeConnectionFailed';
+  error: Scalars['String'];
+  field?: Maybe<Scalars['String']>;
+};
+
+export type NodeFilterInput = {
+  and?: Maybe<Array<NodeFilterInput>>;
+  or?: Maybe<Array<NodeFilterInput>>;
+  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  enabled?: Maybe<BooleanOperationFilterInput>;
+  name?: Maybe<StringOperationFilterInput>;
+  host?: Maybe<StringOperationFilterInput>;
+  port?: Maybe<ComparableNullableOfInt32OperationFilterInput>;
+  username?: Maybe<StringOperationFilterInput>;
+  tenantId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  tenant?: Maybe<TenantFilterInput>;
+  deployments?: Maybe<ListFilterInputTypeOfDeploymentFilterInput>;
+};
+
+export type NodeSortInput = {
+  id?: Maybe<SortEnumType>;
+  enabled?: Maybe<SortEnumType>;
+  name?: Maybe<SortEnumType>;
+  host?: Maybe<SortEnumType>;
+  port?: Maybe<SortEnumType>;
+  username?: Maybe<SortEnumType>;
+  tenantId?: Maybe<SortEnumType>;
+  tenant?: Maybe<TenantSortInput>;
+};
+
+export type ComposeFilterInput = {
+  and?: Maybe<Array<ComposeFilterInput>>;
+  or?: Maybe<Array<ComposeFilterInput>>;
+  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  name?: Maybe<StringOperationFilterInput>;
+  pendingDelete?: Maybe<BooleanOperationFilterInput>;
+  currentId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  tenantId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  current?: Maybe<ComposeVersionFilterInput>;
+  tenant?: Maybe<TenantFilterInput>;
+  composeVersions?: Maybe<ListFilterInputTypeOfComposeVersionFilterInput>;
+  deployments?: Maybe<ListFilterInputTypeOfDeploymentFilterInput>;
+};
+
+export type DeploymentFilterInput = {
+  and?: Maybe<Array<DeploymentFilterInput>>;
+  or?: Maybe<Array<DeploymentFilterInput>>;
+  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  enabled?: Maybe<BooleanOperationFilterInput>;
+  composeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  lastDeployedVersionId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  nodeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  compose?: Maybe<ComposeFilterInput>;
+  lastDeployedVersion?: Maybe<ComposeVersionFilterInput>;
+  node?: Maybe<NodeFilterInput>;
+};
+
+export type ComparableNullableOfGuidOperationFilterInput = {
+  eq?: Maybe<Scalars['Uuid']>;
+  neq?: Maybe<Scalars['Uuid']>;
+  in?: Maybe<Array<Maybe<Scalars['Uuid']>>>;
+  nin?: Maybe<Array<Maybe<Scalars['Uuid']>>>;
+  gt?: Maybe<Scalars['Uuid']>;
+  ngt?: Maybe<Scalars['Uuid']>;
+  gte?: Maybe<Scalars['Uuid']>;
+  ngte?: Maybe<Scalars['Uuid']>;
+  lt?: Maybe<Scalars['Uuid']>;
+  nlt?: Maybe<Scalars['Uuid']>;
+  lte?: Maybe<Scalars['Uuid']>;
+  nlte?: Maybe<Scalars['Uuid']>;
+};
+
+export type BooleanOperationFilterInput = {
+  eq?: Maybe<Scalars['Boolean']>;
+  neq?: Maybe<Scalars['Boolean']>;
+};
+
+export type StringOperationFilterInput = {
+  and?: Maybe<Array<StringOperationFilterInput>>;
+  or?: Maybe<Array<StringOperationFilterInput>>;
+  eq?: Maybe<Scalars['String']>;
+  neq?: Maybe<Scalars['String']>;
+  contains?: Maybe<Scalars['String']>;
+  ncontains?: Maybe<Scalars['String']>;
+  in?: Maybe<Array<Maybe<Scalars['String']>>>;
+  nin?: Maybe<Array<Maybe<Scalars['String']>>>;
+  startsWith?: Maybe<Scalars['String']>;
+  nstartsWith?: Maybe<Scalars['String']>;
+  endsWith?: Maybe<Scalars['String']>;
+  nendsWith?: Maybe<Scalars['String']>;
+};
+
+export type ComparableNullableOfInt32OperationFilterInput = {
+  eq?: Maybe<Scalars['Int']>;
+  neq?: Maybe<Scalars['Int']>;
+  in?: Maybe<Array<Maybe<Scalars['Int']>>>;
+  nin?: Maybe<Array<Maybe<Scalars['Int']>>>;
+  gt?: Maybe<Scalars['Int']>;
+  ngt?: Maybe<Scalars['Int']>;
+  gte?: Maybe<Scalars['Int']>;
+  ngte?: Maybe<Scalars['Int']>;
+  lt?: Maybe<Scalars['Int']>;
+  nlt?: Maybe<Scalars['Int']>;
+  lte?: Maybe<Scalars['Int']>;
+  nlte?: Maybe<Scalars['Int']>;
+};
+
+export type TenantFilterInput = {
+  and?: Maybe<Array<TenantFilterInput>>;
+  or?: Maybe<Array<TenantFilterInput>>;
+  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  composes?: Maybe<ListFilterInputTypeOfComposeFilterInput>;
+  nodes?: Maybe<ListFilterInputTypeOfNodeFilterInput>;
+};
+
+export type ListFilterInputTypeOfDeploymentFilterInput = {
+  all?: Maybe<DeploymentFilterInput>;
+  none?: Maybe<DeploymentFilterInput>;
+  some?: Maybe<DeploymentFilterInput>;
+  any?: Maybe<Scalars['Boolean']>;
+};
+
+export enum SortEnumType {
+  Asc = 'ASC',
+  Desc = 'DESC',
+}
+
+export type TenantSortInput = {
+  id?: Maybe<SortEnumType>;
+};
+
+export type ComposeVersionFilterInput = {
+  and?: Maybe<Array<ComposeVersionFilterInput>>;
+  or?: Maybe<Array<ComposeVersionFilterInput>>;
+  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  content?: Maybe<StringOperationFilterInput>;
+  directory?: Maybe<StringOperationFilterInput>;
+  serviceName?: Maybe<StringOperationFilterInput>;
+  serviceEnabled?: Maybe<BooleanOperationFilterInput>;
+  composeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  composeNavigation?: Maybe<ComposeFilterInput>;
+  compose?: Maybe<ComposeFilterInput>;
+  deployments?: Maybe<ListFilterInputTypeOfDeploymentFilterInput>;
+};
+
+export type ListFilterInputTypeOfComposeVersionFilterInput = {
+  all?: Maybe<ComposeVersionFilterInput>;
+  none?: Maybe<ComposeVersionFilterInput>;
+  some?: Maybe<ComposeVersionFilterInput>;
+  any?: Maybe<Scalars['Boolean']>;
+};
+
+export type ListFilterInputTypeOfComposeFilterInput = {
+  all?: Maybe<ComposeFilterInput>;
+  none?: Maybe<ComposeFilterInput>;
+  some?: Maybe<ComposeFilterInput>;
+  any?: Maybe<Scalars['Boolean']>;
+};
+
+export type ListFilterInputTypeOfNodeFilterInput = {
+  all?: Maybe<NodeFilterInput>;
+  none?: Maybe<NodeFilterInput>;
+  some?: Maybe<NodeFilterInput>;
+  any?: Maybe<Scalars['Boolean']>;
+};
+
+export type CreateNodeResult = SuccessfulNodeCreation | NodeConnectionFailed;
+
+export type Deployment = {
+  __typename?: 'Deployment';
+  id: Scalars['Uuid'];
+  enabled: Scalars['Boolean'];
+  composeId: Scalars['Uuid'];
+  lastDeployedVersionId: Scalars['Uuid'];
+  nodeId: Scalars['Uuid'];
+  compose?: Maybe<Compose>;
+  lastDeployedVersion?: Maybe<ComposeVersion>;
+  node?: Maybe<Node>;
+};
+
+export type Compose = {
+  __typename?: 'Compose';
+  id: Scalars['Uuid'];
+  name: Scalars['String'];
+  pendingDelete: Scalars['Boolean'];
+  currentId: Scalars['Uuid'];
+  tenantId?: Maybe<Scalars['Uuid']>;
+  current?: Maybe<ComposeVersion>;
+  tenant?: Maybe<Tenant>;
+  composeVersions?: Maybe<Array<Maybe<ComposeVersion>>>;
+  deployments?: Maybe<Array<Maybe<Deployment>>>;
+};
+
+export type Node = {
+  __typename?: 'Node';
+  id: Scalars['Uuid'];
+  enabled: Scalars['Boolean'];
+  name: Scalars['String'];
+  host: Scalars['String'];
+  port: Scalars['Int'];
+  username: Scalars['String'];
+  tenantId?: Maybe<Scalars['Uuid']>;
+  tenant?: Maybe<Tenant>;
+  deployments?: Maybe<Array<Maybe<Deployment>>>;
+};
+
+export type Tenant = {
+  __typename?: 'Tenant';
+  id: Scalars['Uuid'];
+  composes?: Maybe<Array<Maybe<Compose>>>;
+  nodes?: Maybe<Array<Maybe<Node>>>;
+};
+
+export type ComposeVersion = {
+  __typename?: 'ComposeVersion';
+  id: Scalars['Uuid'];
+  content: Scalars['String'];
+  directory: Scalars['String'];
+  serviceName?: Maybe<Scalars['String']>;
+  serviceEnabled: Scalars['Boolean'];
+  composeId: Scalars['Uuid'];
+  composeNavigation?: Maybe<Compose>;
+  compose?: Maybe<Compose>;
+  deployments?: Maybe<Array<Maybe<Deployment>>>;
 };
 
 export type CreateComposeMutationVariables = Exact<{
@@ -144,22 +370,32 @@ export type CreateComposeMutationVariables = Exact<{
 }>;
 
 export type CreateComposeMutation = { __typename?: 'Mutation' } & {
-  createCompose: { __typename?: 'Compose' } & Pick<
-    Compose,
-    'id' | 'name' | 'directory' | 'serviceEnabled' | 'content'
+  createCompose?: Maybe<
+    { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+        current?: Maybe<
+          { __typename?: 'ComposeVersion' } & Pick<
+            ComposeVersion,
+            'id' | 'directory' | 'serviceEnabled' | 'content'
+          >
+        >;
+      }
   >;
 };
 
 export type CreateDeploymentMutationVariables = Exact<{
-  compose: Scalars['ID'];
-  node: Scalars['ID'];
+  compose: Scalars['Uuid'];
+  node: Scalars['Uuid'];
 }>;
 
 export type CreateDeploymentMutation = { __typename?: 'Mutation' } & {
-  createDeployment: { __typename?: 'Deployment' } & Pick<Deployment, 'id'> & {
-      compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
-      node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
-    };
+  createDeployment?: Maybe<
+    { __typename?: 'Deployment' } & Pick<Deployment, 'id'> & {
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>
+        >;
+        node?: Maybe<{ __typename?: 'Node' } & Pick<Node, 'id' | 'name'>>;
+      }
+  >;
 };
 
 export type CreateNodeMutationVariables = Exact<{
@@ -173,24 +409,80 @@ export type CreateNodeMutationVariables = Exact<{
 
 export type CreateNodeMutation = { __typename?: 'Mutation' } & {
   createNode:
-    | ({ __typename?: 'Node' } & Pick<
-        Node,
-        'id' | 'name' | 'host' | 'username'
-      >)
-    | ({ __typename?: 'TestConnectionError' } & Pick<
-        TestConnectionError,
+    | ({ __typename?: 'SuccessfulNodeCreation' } & {
+        node: { __typename?: 'Node' } & Pick<
+          Node,
+          'id' | 'name' | 'host' | 'username'
+        >;
+      })
+    | ({ __typename?: 'NodeConnectionFailed' } & Pick<
+        NodeConnectionFailed,
         'error' | 'field'
       >);
 };
 
 export type DeleteComposeMutationVariables = Exact<{
-  id: Scalars['ID'];
+  id: Scalars['Uuid'];
 }>;
 
 export type DeleteComposeMutation = { __typename?: 'Mutation' } & Pick<
   Mutation,
   'deleteCompose'
 >;
+
+export type DisableDeploymentMutationVariables = Exact<{
+  deployment: Scalars['Uuid'];
+}>;
+
+export type DisableDeploymentMutation = { __typename?: 'Mutation' } & {
+  disableDeployment?: Maybe<
+    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
+        >;
+      }
+  >;
+};
+
+export type EnableDeploymentMutationVariables = Exact<{
+  deployment: Scalars['Uuid'];
+}>;
+
+export type EnableDeploymentMutation = { __typename?: 'Mutation' } & {
+  enableDeployment?: Maybe<
+    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
+        >;
+      }
+  >;
+};
 
 export type TestConnectionMutationVariables = Exact<{
   host: Scalars['String'];
@@ -202,15 +494,15 @@ export type TestConnectionMutationVariables = Exact<{
 
 export type TestConnectionMutation = { __typename?: 'Mutation' } & {
   testConnection?: Maybe<
-    { __typename?: 'TestConnectionError' } & Pick<
-      TestConnectionError,
+    { __typename?: 'NodeConnectionFailed' } & Pick<
+      NodeConnectionFailed,
       'error' | 'field'
     >
   >;
 };
 
 export type UpdateComposeMutationVariables = Exact<{
-  id: Scalars['ID'];
+  id: Scalars['Uuid'];
   name: Scalars['String'];
   directory: Scalars['String'];
   serviceEnabled: Scalars['Boolean'];
@@ -218,20 +510,32 @@ export type UpdateComposeMutationVariables = Exact<{
 }>;
 
 export type UpdateComposeMutation = { __typename?: 'Mutation' } & {
-  updateCompose: { __typename?: 'Compose' } & Pick<
-    Compose,
-    'id' | 'name' | 'directory' | 'serviceEnabled' | 'serviceName' | 'content'
+  updateCompose?: Maybe<
+    { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+        current?: Maybe<
+          { __typename?: 'ComposeVersion' } & Pick<
+            ComposeVersion,
+            'id' | 'directory' | 'serviceEnabled' | 'serviceName' | 'content'
+          >
+        >;
+      }
   >;
 };
 
 export type GetComposeByIdQueryVariables = Exact<{
-  id: Scalars['ID'];
+  id: Scalars['Uuid'];
 }>;
 
 export type GetComposeByIdQuery = { __typename?: 'Query' } & {
-  compose: { __typename?: 'Compose' } & Pick<
-    Compose,
-    'id' | 'name' | 'content' | 'directory' | 'serviceName' | 'serviceEnabled'
+  compose?: Maybe<
+    { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+        current?: Maybe<
+          { __typename?: 'ComposeVersion' } & Pick<
+            ComposeVersion,
+            'id' | 'content' | 'directory' | 'serviceName' | 'serviceEnabled'
+          >
+        >;
+      }
   >;
 };
 
@@ -242,20 +546,30 @@ export type GetComposesQuery = { __typename?: 'Query' } & {
 };
 
 export type GetDeploymentByIdQueryVariables = Exact<{
-  id: Scalars['ID'];
+  id: Scalars['Uuid'];
 }>;
 
 export type GetDeploymentByIdQuery = { __typename?: 'Query' } & {
-  deployment: { __typename?: 'Deployment' } & Pick<
-    Deployment,
-    'id' | 'enabled'
-  > & {
-      compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
-      node: { __typename?: 'Node' } & Pick<
-        Node,
-        'id' | 'name' | 'host' | 'port' | 'username'
-      >;
-    };
+  deployment?: Maybe<
+    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
+        >;
+      }
+  >;
 };
 
 export type GetDeploymentsQueryVariables = Exact<{ [key: string]: never }>;
@@ -263,25 +577,29 @@ export type GetDeploymentsQueryVariables = Exact<{ [key: string]: never }>;
 export type GetDeploymentsQuery = { __typename?: 'Query' } & {
   deployments: Array<
     { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
-        node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
-        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
+        node?: Maybe<{ __typename?: 'Node' } & Pick<Node, 'id' | 'name'>>;
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>
+        >;
       }
   >;
 };
 
 export type GetNodeByIdQueryVariables = Exact<{
-  id: Scalars['ID'];
+  id: Scalars['Uuid'];
 }>;
 
 export type GetNodeByIdQuery = { __typename?: 'Query' } & {
-  node: { __typename?: 'Node' } & Pick<
-    Node,
-    'id' | 'name' | 'host' | 'username' | 'port'
-  > & {
-      deployments: Array<
-        { __typename?: 'Deployment' } & Pick<Deployment, 'id'>
-      >;
-    };
+  node?: Maybe<
+    { __typename?: 'Node' } & Pick<
+      Node,
+      'id' | 'name' | 'host' | 'username' | 'port'
+    > & {
+        deployments?: Maybe<
+          Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
+        >;
+      }
+  >;
 };
 
 export type GetNodesQueryVariables = Exact<{ [key: string]: never }>;
@@ -300,18 +618,19 @@ export const CreateComposeDocument = gql`
     $compose: String!
   ) {
     createCompose(
-      compose: {
-        name: $name
-        directory: $directory
-        serviceEnabled: $serviceEnabled
-        compose: $compose
-      }
+      name: $name
+      directory: $directory
+      serviceEnabled: $serviceEnabled
+      compose: $compose
     ) {
       id
       name
-      directory
-      serviceEnabled
-      content
+      current {
+        id
+        directory
+        serviceEnabled
+        content
+      }
     }
   }
 `;
@@ -360,7 +679,7 @@ export type CreateComposeMutationOptions = Apollo.BaseMutationOptions<
   CreateComposeMutationVariables
 >;
 export const CreateDeploymentDocument = gql`
-  mutation createDeployment($compose: ID!, $node: ID!) {
+  mutation createDeployment($compose: Uuid!, $node: Uuid!) {
     createDeployment(compose: $compose, node: $node) {
       id
       compose {
@@ -426,22 +745,22 @@ export const CreateNodeDocument = gql`
     $privateKey: String
   ) {
     createNode(
-      node: {
-        name: $name
-        host: $host
-        port: $port
-        username: $username
-        password: $password
-        privateKey: $privateKey
-      }
+      name: $name
+      host: $host
+      port: $port
+      username: $username
+      password: $password
+      privateKey: $privateKey
     ) {
-      ... on Node {
-        id
-        name
-        host
-        username
+      ... on SuccessfulNodeCreation {
+        node {
+          id
+          name
+          host
+          username
+        }
       }
-      ... on TestConnectionError {
+      ... on NodeConnectionFailed {
         error
         field
       }
@@ -495,7 +814,7 @@ export type CreateNodeMutationOptions = Apollo.BaseMutationOptions<
   CreateNodeMutationVariables
 >;
 export const DeleteComposeDocument = gql`
-  mutation deleteCompose($id: ID!) {
+  mutation deleteCompose($id: Uuid!) {
     deleteCompose(id: $id)
   }
 `;
@@ -540,6 +859,138 @@ export type DeleteComposeMutationOptions = Apollo.BaseMutationOptions<
   DeleteComposeMutation,
   DeleteComposeMutationVariables
 >;
+export const DisableDeploymentDocument = gql`
+  mutation disableDeployment($deployment: Uuid!) {
+    disableDeployment(deployment: $deployment) {
+      id
+      enabled
+      compose {
+        id
+        name
+        current {
+          id
+          serviceEnabled
+          serviceName
+          directory
+        }
+      }
+      node {
+        id
+        name
+        host
+        port
+        username
+      }
+    }
+  }
+`;
+export type DisableDeploymentMutationFn = Apollo.MutationFunction<
+  DisableDeploymentMutation,
+  DisableDeploymentMutationVariables
+>;
+
+/**
+ * __useDisableDeploymentMutation__
+ *
+ * To run a mutation, you first call `useDisableDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDisableDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [disableDeploymentMutation, { data, loading, error }] = useDisableDeploymentMutation({
+ *   variables: {
+ *      deployment: // value for 'deployment'
+ *   },
+ * });
+ */
+export function useDisableDeploymentMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    DisableDeploymentMutation,
+    DisableDeploymentMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    DisableDeploymentMutation,
+    DisableDeploymentMutationVariables
+  >(DisableDeploymentDocument, baseOptions);
+}
+export type DisableDeploymentMutationHookResult = ReturnType<
+  typeof useDisableDeploymentMutation
+>;
+export type DisableDeploymentMutationResult = Apollo.MutationResult<DisableDeploymentMutation>;
+export type DisableDeploymentMutationOptions = Apollo.BaseMutationOptions<
+  DisableDeploymentMutation,
+  DisableDeploymentMutationVariables
+>;
+export const EnableDeploymentDocument = gql`
+  mutation enableDeployment($deployment: Uuid!) {
+    enableDeployment(deployment: $deployment) {
+      id
+      enabled
+      compose {
+        id
+        name
+        current {
+          id
+          serviceEnabled
+          serviceName
+          directory
+        }
+      }
+      node {
+        id
+        name
+        host
+        port
+        username
+      }
+    }
+  }
+`;
+export type EnableDeploymentMutationFn = Apollo.MutationFunction<
+  EnableDeploymentMutation,
+  EnableDeploymentMutationVariables
+>;
+
+/**
+ * __useEnableDeploymentMutation__
+ *
+ * To run a mutation, you first call `useEnableDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnableDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [enableDeploymentMutation, { data, loading, error }] = useEnableDeploymentMutation({
+ *   variables: {
+ *      deployment: // value for 'deployment'
+ *   },
+ * });
+ */
+export function useEnableDeploymentMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    EnableDeploymentMutation,
+    EnableDeploymentMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    EnableDeploymentMutation,
+    EnableDeploymentMutationVariables
+  >(EnableDeploymentDocument, baseOptions);
+}
+export type EnableDeploymentMutationHookResult = ReturnType<
+  typeof useEnableDeploymentMutation
+>;
+export type EnableDeploymentMutationResult = Apollo.MutationResult<EnableDeploymentMutation>;
+export type EnableDeploymentMutationOptions = Apollo.BaseMutationOptions<
+  EnableDeploymentMutation,
+  EnableDeploymentMutationVariables
+>;
 export const TestConnectionDocument = gql`
   mutation testConnection(
     $host: String!
@@ -549,13 +1000,11 @@ export const TestConnectionDocument = gql`
     $privateKey: String
   ) {
     testConnection(
-      node: {
-        host: $host
-        port: $port
-        username: $username
-        password: $password
-        privateKey: $privateKey
-      }
+      host: $host
+      port: $port
+      username: $username
+      password: $password
+      privateKey: $privateKey
     ) {
       error
       field
@@ -609,7 +1058,7 @@ export type TestConnectionMutationOptions = Apollo.BaseMutationOptions<
 >;
 export const UpdateComposeDocument = gql`
   mutation updateCompose(
-    $id: ID!
+    $id: Uuid!
     $name: String!
     $directory: String!
     $serviceEnabled: Boolean!
@@ -617,19 +1066,20 @@ export const UpdateComposeDocument = gql`
   ) {
     updateCompose(
       id: $id
-      compose: {
-        name: $name
-        directory: $directory
-        serviceEnabled: $serviceEnabled
-        compose: $compose
-      }
+      name: $name
+      directory: $directory
+      serviceEnabled: $serviceEnabled
+      compose: $compose
     ) {
       id
       name
-      directory
-      serviceEnabled
-      serviceName
-      content
+      current {
+        id
+        directory
+        serviceEnabled
+        serviceName
+        content
+      }
     }
   }
 `;
@@ -679,14 +1129,17 @@ export type UpdateComposeMutationOptions = Apollo.BaseMutationOptions<
   UpdateComposeMutationVariables
 >;
 export const GetComposeByIdDocument = gql`
-  query getComposeById($id: ID!) {
-    compose(id: $id) {
+  query getComposeById($id: Uuid!) {
+    compose(where: { id: { eq: $id } }) {
       id
       name
-      content
-      directory
-      serviceName
-      serviceEnabled
+      current {
+        id
+        content
+        directory
+        serviceName
+        serviceEnabled
+      }
     }
   }
 `;
@@ -794,13 +1247,19 @@ export type GetComposesQueryResult = Apollo.QueryResult<
   GetComposesQueryVariables
 >;
 export const GetDeploymentByIdDocument = gql`
-  query getDeploymentById($id: ID!) {
-    deployment(id: $id) {
+  query getDeploymentById($id: Uuid!) {
+    deployment(where: { id: { eq: $id } }) {
       id
       enabled
       compose {
         id
         name
+        current {
+          id
+          serviceEnabled
+          serviceName
+          directory
+        }
       }
       node {
         id
@@ -926,8 +1385,8 @@ export type GetDeploymentsQueryResult = Apollo.QueryResult<
   GetDeploymentsQueryVariables
 >;
 export const GetNodeByIdDocument = gql`
-  query getNodeById($id: ID!) {
-    node(id: $id) {
+  query getNodeById($id: Uuid!) {
+    node(where: { id: { eq: $id } }) {
       id
       name
       host
