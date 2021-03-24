@@ -245,6 +245,8 @@ namespace backend2.Services
 
       foreach (string segment in path.Split('/'))
       {
+        if (string.IsNullOrEmpty(segment)) continue;
+
         dir += "/" + segment;
 
         // Ignoring leading/ending/multiple slashes

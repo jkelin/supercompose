@@ -7,11 +7,14 @@ import {
   useComposeList,
   useToast,
 } from 'containers';
+import { ConnectionLogs } from 'containers/ConnectionLogs';
 import {
+  GetDeploymentConnectionLogsDocument,
   useCreateDeploymentMutation,
   useDisableDeploymentMutation,
   useEnableDeploymentMutation,
   useGetDeploymentByIdQuery,
+  useGetDeploymentConnectionLogsQuery,
   useGetDeploymentsQuery,
   useGetNodeByIdQuery,
 } from 'data';
@@ -26,16 +29,33 @@ const DeploymentDetail: NextPage<{}> = (props) => {
     variables: { id: router.query.id as string },
   });
 
+  const connectionLogsQuery = useGetDeploymentConnectionLogsQuery({
+    variables: { id: router.query.id as string },
+    pollInterval: 1000,
+  });
+
   const [enableDeployment] = useEnableDeploymentMutation({
     variables: {
       deployment: router.query.id,
     },
+    refetchQueries: [
+      {
+        query: GetDeploymentConnectionLogsDocument,
+        variables: { id: router.query.id as string },
+      },
+    ],
   });
 
   const [disableDeployment] = useDisableDeploymentMutation({
     variables: {
       deployment: router.query.id,
     },
+    refetchQueries: [
+      {
+        query: GetDeploymentConnectionLogsDocument,
+        variables: { id: router.query.id as string },
+      },
+    ],
   });
 
   if (deploymentQuery.loading) {
@@ -50,8 +70,12 @@ const DeploymentDetail: NextPage<{}> = (props) => {
 
   const deployment = deploymentQuery.data!.deployment!;
 
-  const onDisable = async () => disableDeployment();
-  const onEnable = async () => enableDeployment();
+  const onDisable = async () => {
+    await disableDeployment();
+  };
+  const onEnable = async () => {
+    await enableDeployment();
+  };
 
   return (
     <DashboardLayout>
@@ -106,6 +130,7 @@ const DeploymentDetail: NextPage<{}> = (props) => {
             </NamedCodePill>
           </div>
         </div>
+        <ConnectionLogs connectionLogsQuery={connectionLogsQuery} />
       </div>
     </DashboardLayout>
   );

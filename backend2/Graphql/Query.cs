@@ -62,10 +62,19 @@ namespace supercompose
       return ctx.Deployments;
     }
 
+    [UseProjection]
+    [UseFiltering]
+    [UseSorting]
+    public DbSet<ConnectionLog> GetConnectionLogs(
+      [Service] SupercomposeContext ctx)
+    {
+      return ctx.ConnectionLogs;
+    }
+
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
-    public DbSet<ConnectionLog> GetConnectionLogs(
+    public DbSet<ConnectionLog> GetConnectionLog(
       [Service] SupercomposeContext ctx)
     {
       return ctx.ConnectionLogs;
