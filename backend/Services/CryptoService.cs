@@ -7,6 +7,7 @@ using ProtoBuf;
 using System.Security.Cryptography;
 using System.IO;
 using Microsoft.AspNetCore.DataProtection;
+using Exception = System.Exception;
 
 namespace supercompose
 {
@@ -29,8 +30,8 @@ namespace supercompose
     public async Task<string> DecryptSecret(byte[] encrypted)
     {
       var protector = protectorProvider.CreateProtector("crypto-service");
-      var bytes = await Task.Run(() => protector.Unprotect(encrypted));
 
+      var bytes = await Task.Run(() => protector.Unprotect(encrypted));
       return Encoding.UTF8.GetString(bytes);
     }
   }

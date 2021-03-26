@@ -143,6 +143,18 @@ export type MutationDisableDeploymentArgs = {
   deployment: Scalars['Uuid'];
 };
 
+export type Subscription = {
+  __typename?: 'Subscription';
+  onConnectionLog: ConnectionLog;
+};
+
+export type SubscriptionOnConnectionLogArgs = {
+  deploymentId?: Maybe<Scalars['Uuid']>;
+  nodeId?: Maybe<Scalars['Uuid']>;
+  composeId?: Maybe<Scalars['Uuid']>;
+  after?: Maybe<Scalars['DateTime']>;
+};
+
 export type SuccessfulNodeCreation = {
   __typename?: 'SuccessfulNodeCreation';
   node: Node;
@@ -509,6 +521,8 @@ export type ObjectFilterInput = {
   or?: Maybe<Array<ObjectFilterInput>>;
 };
 
+export type CreateNodeResult = SuccessfulNodeCreation | NodeConnectionFailed;
+
 export type ConnectionLog = {
   __typename?: 'ConnectionLog';
   id: Scalars['Uuid'];
@@ -573,8 +587,6 @@ export type Node = {
   deployments?: Maybe<Array<Maybe<Deployment>>>;
   connectionLogs?: Maybe<Array<Maybe<ConnectionLog>>>;
 };
-
-export type CreateNodeResult = SuccessfulNodeCreation | NodeConnectionFailed;
 
 export enum ConnectionLogSeverity {
   Info = 'INFO',
@@ -869,6 +881,18 @@ export type GetNodesQueryVariables = Exact<{ [key: string]: never }>;
 export type GetNodesQuery = { __typename?: 'Query' } & {
   nodes: Array<
     { __typename?: 'Node' } & Pick<Node, 'id' | 'name' | 'host' | 'username'>
+  >;
+};
+
+export type OnConnectionLogSubscriptionVariables = Exact<{
+  deploymentId?: Maybe<Scalars['Uuid']>;
+  after: Scalars['DateTime'];
+}>;
+
+export type OnConnectionLogSubscription = { __typename?: 'Subscription' } & {
+  onConnectionLog: { __typename?: 'ConnectionLog' } & Pick<
+    ConnectionLog,
+    'id' | 'error' | 'message' | 'severity' | 'time'
   >;
 };
 
@@ -1823,3 +1847,47 @@ export type GetNodesQueryResult = Apollo.QueryResult<
   GetNodesQuery,
   GetNodesQueryVariables
 >;
+export const OnConnectionLogDocument = gql`
+  subscription onConnectionLog($deploymentId: Uuid, $after: DateTime!) {
+    onConnectionLog(deploymentId: $deploymentId, after: $after) {
+      id
+      error
+      message
+      severity
+      time
+    }
+  }
+`;
+
+/**
+ * __useOnConnectionLogSubscription__
+ *
+ * To run a query within a React component, call `useOnConnectionLogSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnConnectionLogSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnConnectionLogSubscription({
+ *   variables: {
+ *      deploymentId: // value for 'deploymentId'
+ *      after: // value for 'after'
+ *   },
+ * });
+ */
+export function useOnConnectionLogSubscription(
+  baseOptions: Apollo.SubscriptionHookOptions<
+    OnConnectionLogSubscription,
+    OnConnectionLogSubscriptionVariables
+  >,
+) {
+  return Apollo.useSubscription<
+    OnConnectionLogSubscription,
+    OnConnectionLogSubscriptionVariables
+  >(OnConnectionLogDocument, baseOptions);
+}
+export type OnConnectionLogSubscriptionHookResult = ReturnType<
+  typeof useOnConnectionLogSubscription
+>;
+export type OnConnectionLogSubscriptionResult = Apollo.SubscriptionResult<OnConnectionLogSubscription>;

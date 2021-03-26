@@ -7,6 +7,7 @@ using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using backend2.Context;
+using HotChocolate.Subscriptions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -38,19 +39,22 @@ namespace backend2
       return Task.CompletedTask;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken ct)
     {
-      while (!stoppingToken.IsCancellationRequested)
+      while (!ct.IsCancellationRequested)
       {
-        if (!Reset.IsSet) await Reset.WaitAsync(stoppingToken);
-        if (stoppingToken.IsCancellationRequested) break;
+        if (!Reset.IsSet) await Reset.WaitAsync(ct);
+        if (ct.IsCancellationRequested) break;
         Reset.Reset();
 
         var current = Interlocked.Exchange(ref _queue, ImmutableQueue<SaveConnectionLog>.Empty);
 
         using var scope = provider.CreateScope();
         await using var ctx = scope.ServiceProvider.GetRequiredService<SupercomposeContext>();
-        await ctx.ConnectionLogs.BulkInsertAsync(current.Select(x => x.Log), stoppingToken);
+        var eventSender = scope.ServiceProvider.GetRequiredService<ITopicEventSender>();
+
+        await ctx.ConnectionLogs.BulkInsertAsync(current.Select(x => x.Log), ct);
+        foreach (var log in current) await eventSender.SendAsync("connectionLogCreated", log.Log, ct);
       }
     }
   }

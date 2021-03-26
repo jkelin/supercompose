@@ -214,7 +214,7 @@ namespace backend2.Services
       }
     }
 
-    public async Task TestConnection(ConnectionParams conn, CancellationToken ct)
+    public async Task TestConnection(ConnectionParams conn, CancellationToken ct = default)
     {
       using var client = await CreateSshConnection(conn, TimeSpan.FromSeconds(5), ct);
     }

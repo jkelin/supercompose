@@ -1,0 +1,9 @@
+subscription onConnectionLog($deploymentId: Uuid, $after: DateTime!) {
+  onConnectionLog(deploymentId: $deploymentId, after: $after) {
+    id
+    error
+    message
+    severity
+    time
+  }
+}

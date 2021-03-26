@@ -10,6 +10,7 @@ import {
 import { ConnectionLogs } from 'containers/ConnectionLogs';
 import {
   GetDeploymentConnectionLogsDocument,
+  OnConnectionLogDocument,
   useCreateDeploymentMutation,
   useDisableDeploymentMutation,
   useEnableDeploymentMutation,
@@ -17,11 +18,12 @@ import {
   useGetDeploymentConnectionLogsQuery,
   useGetDeploymentsQuery,
   useGetNodeByIdQuery,
+  useOnConnectionLogSubscription,
 } from 'data';
 import { create, divide } from 'lodash';
 import { NextPage } from 'next';
 import { useRouter } from 'next/dist/client/router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect } from 'react';
 
 const DeploymentDetail: NextPage<{}> = (props) => {
   const router = useRouter();
@@ -31,8 +33,38 @@ const DeploymentDetail: NextPage<{}> = (props) => {
 
   const connectionLogsQuery = useGetDeploymentConnectionLogsQuery({
     variables: { id: router.query.id as string },
-    pollInterval: 1000,
   });
+
+  useLayoutEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      !connectionLogsQuery ||
+      !connectionLogsQuery.subscribeToMore
+    ) {
+      return;
+    }
+
+    connectionLogsQuery.subscribeToMore({
+      variables: {
+        deploymentId: router.query.id,
+        after: new Date().toISOString(),
+      }, //
+      document: OnConnectionLogDocument,
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data || !subscriptionData.data.connectionLogs) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          connectionLogs: [
+            ...prev.connectionLogs,
+            subscriptionData.data.connectionLogs,
+          ] as any,
+        };
+      },
+    });
+  }, [connectionLogsQuery, router.query.id]);
 
   const [enableDeployment] = useEnableDeploymentMutation({
     variables: {

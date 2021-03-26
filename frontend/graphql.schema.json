@@ -6,7 +6,9 @@
     "mutationType": {
       "name": "Mutation"
     },
-    "subscriptionType": null,
+    "subscriptionType": {
+      "name": "Subscription"
+    },
     "types": [
       {
         "kind": "OBJECT",
@@ -975,6 +977,82 @@
         "fields": null,
         "inputFields": null,
         "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "Subscription",
+        "description": null,
+        "fields": [
+          {
+            "name": "onConnectionLog",
+            "description": null,
+            "args": [
+              {
+                "name": "deploymentId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Uuid",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "nodeId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Uuid",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "composeId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Uuid",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "after",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "DateTime",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "ConnectionLog",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
       },
@@ -4749,6 +4827,27 @@
         "possibleTypes": null
       },
       {
+        "kind": "UNION",
+        "name": "CreateNodeResult",
+        "description": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": [
+          {
+            "kind": "OBJECT",
+            "name": "SuccessfulNodeCreation",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "NodeConnectionFailed",
+            "ofType": null
+          }
+        ]
+      },
+      {
         "kind": "OBJECT",
         "name": "ConnectionLog",
         "description": null,
@@ -5487,27 +5586,6 @@
         "interfaces": [],
         "enumValues": null,
         "possibleTypes": null
-      },
-      {
-        "kind": "UNION",
-        "name": "CreateNodeResult",
-        "description": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": [
-          {
-            "kind": "OBJECT",
-            "name": "SuccessfulNodeCreation",
-            "ofType": null
-          },
-          {
-            "kind": "OBJECT",
-            "name": "NodeConnectionFailed",
-            "ofType": null
-          }
-        ]
       },
       {
         "kind": "SCALAR",

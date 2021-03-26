@@ -19,8 +19,17 @@ services:
       - POSTGRESQL_USERNAME=postgres
       - POSTGRESQL_PASSWORD=postgres
       - POSTGRESQL_database=supercompose
+  rabbitmq:
+    image: bitnami/rabbitmq:3.8
+    ports:
+      - 5672:5672
+    volumes:
+      - rabbitmq-data:/bitnami
+    environment:
+      - RABBITMQ_USERNAME=rabbitmq
+      - RABBITMQ_PASSWORD=rabbitmq
 
-    
 volumes:
   postgres-data:
   redis-data:
+  rabbitmq-data:

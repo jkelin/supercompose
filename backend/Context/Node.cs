@@ -8,7 +8,7 @@ using HotChocolate;
 
 namespace supercompose
 {
-  public partial class Node
+  public record Node
   {
     [Required] [Key] public Guid? Id { get; set; }
 

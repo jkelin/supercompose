@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using backend2.Exceptions;
 using Renci.SshNet.Common;
+using Z.EntityFramework.Plus;
 
 namespace backend2.Services
 {
@@ -61,6 +62,7 @@ namespace backend2.Services
         {
           var deployments = await ctx.Deployments
             .Where(x => x.NodeId == nodeId)
+            .Where(x => x.Node.ReconciliationFailed != true)
             .Where(Deployment.ShouldUpdateProjection)
             .Include(x => x.Node)
             .Include(x => x.LastDeployedComposeVersion)
@@ -88,14 +90,19 @@ namespace backend2.Services
       catch (NodeConnectionFailedException ex)
       {
         connectionLog.Error($"Node connection failed", ex);
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
       }
       catch (SshException ex)
       {
         connectionLog.Error($"SSH error", ex);
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
       }
       catch (Exception ex)
       {
+        logger.LogError(ex, "Unknown error when reconciling node {nodeId}", nodeId);
         connectionLog.Error($"Unknown error", ex);
+
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
       }
     }
 

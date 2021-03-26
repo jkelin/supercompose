@@ -28,8 +28,7 @@ namespace supercompose
       ConnectionParams conn
     )
     {
-      using var cts = new CancellationTokenSource();
-      await connectionService.TestConnection(conn, cts.Token);
+      await connectionService.TestConnection(conn);
 
       var node = new Node
       {
@@ -39,8 +38,8 @@ namespace supercompose
         Name = name,
         Port = conn.port,
         Username = conn.username,
-        Password = conn.password == null ? null : await crypto.EncryptSecret(conn.password),
-        PrivateKey = conn.privateKey == null ? null : await crypto.EncryptSecret(conn.privateKey)
+        Password = string.IsNullOrWhiteSpace(conn.password) ? null : await crypto.EncryptSecret(conn.password),
+        PrivateKey = string.IsNullOrWhiteSpace(conn.privateKey) ? null : await crypto.EncryptSecret(conn.privateKey)
       };
 
       await ctx.Nodes.AddAsync(node);
