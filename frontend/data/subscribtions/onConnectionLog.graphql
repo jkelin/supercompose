@@ -1,5 +1,5 @@
 subscription onConnectionLog($deploymentId: Uuid, $after: DateTime!) {
-  onConnectionLog(deploymentId: $deploymentId, after: $after) {
+  connectionLogs: onConnectionLog(deploymentId: $deploymentId, after: $after) {
     id
     error
     message

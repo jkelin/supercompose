@@ -1006,7 +1006,7 @@ export type OnConnectionLogSubscriptionVariables = Exact<{
 }>;
 
 export type OnConnectionLogSubscription = { __typename?: 'Subscription' } & {
-  onConnectionLog: { __typename?: 'ConnectionLog' } & Pick<
+  connectionLogs: { __typename?: 'ConnectionLog' } & Pick<
     ConnectionLog,
     'id' | 'error' | 'message' | 'severity' | 'time'
   >;
@@ -2216,7 +2216,10 @@ export type GetNodesQueryResult = Apollo.QueryResult<
 >;
 export const OnConnectionLogDocument = gql`
   subscription onConnectionLog($deploymentId: Uuid, $after: DateTime!) {
-    onConnectionLog(deploymentId: $deploymentId, after: $after) {
+    connectionLogs: onConnectionLog(
+      deploymentId: $deploymentId
+      after: $after
+    ) {
       id
       error
       message

@@ -31,41 +31,6 @@ const DeploymentDetail: NextPage<{}> = (props) => {
     variables: { id: router.query.id as string },
   });
 
-  const connectionLogsQuery = useGetDeploymentConnectionLogsQuery({
-    variables: { id: router.query.id as string },
-  });
-
-  useLayoutEffect(() => {
-    if (
-      typeof window === 'undefined' ||
-      !connectionLogsQuery ||
-      !connectionLogsQuery.subscribeToMore
-    ) {
-      return;
-    }
-
-    connectionLogsQuery.subscribeToMore({
-      variables: {
-        deploymentId: router.query.id,
-        after: new Date().toISOString(),
-      }, //
-      document: OnConnectionLogDocument,
-      updateQuery: (prev, { subscriptionData }) => {
-        if (!subscriptionData.data || !subscriptionData.data.connectionLogs) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          connectionLogs: [
-            ...prev.connectionLogs,
-            subscriptionData.data.connectionLogs,
-          ] as any,
-        };
-      },
-    });
-  }, [connectionLogsQuery, router.query.id]);
-
   const [enableDeployment] = useEnableDeploymentMutation({
     variables: {
       deployment: router.query.id,
@@ -160,12 +125,13 @@ const DeploymentDetail: NextPage<{}> = (props) => {
             <NamedCodePill label="Compose directory">
               {deployment?.compose?.current?.directory}
             </NamedCodePill>
+            <div className="mt-3 mr-6" />
             <NamedCodePill label="Sync. error">
               {deployment?.reconciliationFailed ? 'true' : 'false'}
             </NamedCodePill>
           </div>
         </div>
-        <ConnectionLogs connectionLogsQuery={connectionLogsQuery} />
+        <ConnectionLogs deploymentId={router.query.id as any} />
       </div>
     </DashboardLayout>
   );
