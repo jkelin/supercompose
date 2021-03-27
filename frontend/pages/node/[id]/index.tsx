@@ -118,6 +118,10 @@ const NodeDetail: NextPage<{}> = (props) => {
             <NamedCodePill label="Enabled">
               {node?.enabled ? 'true' : 'false'}
             </NamedCodePill>
+            <div className="mt-1 mr-6" />
+            <NamedCodePill label="Sync. error">
+              {node?.reconciliationFailed ? 'true' : 'false'}
+            </NamedCodePill>
           </div>
 
           <div className="mt-5 pb-1 mb-1 border-b border-gray-200">

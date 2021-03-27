@@ -5,6 +5,7 @@ mutation enableNode($node: Uuid!) {
     host
     username
     enabled
+    reconciliationFailed
     port
     deployments {
       id

@@ -160,6 +160,9 @@ const DeploymentDetail: NextPage<{}> = (props) => {
             <NamedCodePill label="Compose directory">
               {deployment?.compose?.current?.directory}
             </NamedCodePill>
+            <NamedCodePill label="Sync. error">
+              {deployment?.reconciliationFailed ? 'true' : 'false'}
+            </NamedCodePill>
           </div>
         </div>
         <ConnectionLogs connectionLogsQuery={connectionLogsQuery} />

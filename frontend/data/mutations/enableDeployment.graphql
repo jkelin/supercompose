@@ -2,6 +2,7 @@ mutation enableDeployment($deployment: Uuid!) {
   enableDeployment(deployment: $deployment) {
     id
     enabled
+    reconciliationFailed
     compose {
       id
       name

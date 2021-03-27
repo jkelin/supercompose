@@ -6,6 +6,7 @@ query getNodeById($id: Uuid!) {
     username
     enabled
     port
+    reconciliationFailed
     deployments {
       id
     }

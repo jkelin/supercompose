@@ -22,6 +22,7 @@ mutation updateNode(
         name
         host
         username
+        reconciliationFailed
       }
     }
     ... on NodeConnectionFailed {

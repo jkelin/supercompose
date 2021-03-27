@@ -20,6 +20,7 @@ mutation createNode(
         name
         host
         username
+        reconciliationFailed
       }
     }
     ... on NodeConnectionFailed {

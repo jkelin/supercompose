@@ -692,7 +692,7 @@ export type CreateNodeMutation = { __typename?: 'Mutation' } & {
     | ({ __typename?: 'SuccessfulNodeCreation' } & {
         node: { __typename?: 'Node' } & Pick<
           Node,
-          'id' | 'name' | 'host' | 'username'
+          'id' | 'name' | 'host' | 'username' | 'reconciliationFailed'
         >;
       })
     | { __typename?: 'SuccessfulNodeUpdate' }
@@ -726,7 +726,10 @@ export type DisableDeploymentMutationVariables = Exact<{
 
 export type DisableDeploymentMutation = { __typename?: 'Mutation' } & {
   disableDeployment?: Maybe<
-    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+    { __typename?: 'Deployment' } & Pick<
+      Deployment,
+      'id' | 'enabled' | 'reconciliationFailed'
+    > & {
         compose?: Maybe<
           { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
               current?: Maybe<
@@ -755,7 +758,13 @@ export type DisableNodeMutation = { __typename?: 'Mutation' } & {
   disableNode?: Maybe<
     { __typename?: 'Node' } & Pick<
       Node,
-      'id' | 'name' | 'host' | 'username' | 'enabled' | 'port'
+      | 'id'
+      | 'name'
+      | 'host'
+      | 'username'
+      | 'enabled'
+      | 'reconciliationFailed'
+      | 'port'
     > & {
         deployments?: Maybe<
           Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
@@ -770,7 +779,10 @@ export type EnableDeploymentMutationVariables = Exact<{
 
 export type EnableDeploymentMutation = { __typename?: 'Mutation' } & {
   enableDeployment?: Maybe<
-    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+    { __typename?: 'Deployment' } & Pick<
+      Deployment,
+      'id' | 'enabled' | 'reconciliationFailed'
+    > & {
         compose?: Maybe<
           { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
               current?: Maybe<
@@ -799,7 +811,13 @@ export type EnableNodeMutation = { __typename?: 'Mutation' } & {
   enableNode?: Maybe<
     { __typename?: 'Node' } & Pick<
       Node,
-      'id' | 'name' | 'host' | 'username' | 'enabled' | 'port'
+      | 'id'
+      | 'name'
+      | 'host'
+      | 'username'
+      | 'enabled'
+      | 'reconciliationFailed'
+      | 'port'
     > & {
         deployments?: Maybe<
           Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
@@ -863,7 +881,7 @@ export type UpdateNodeMutation = { __typename?: 'Mutation' } & {
     | ({ __typename?: 'SuccessfulNodeUpdate' } & {
         node: { __typename?: 'Node' } & Pick<
           Node,
-          'id' | 'name' | 'host' | 'username'
+          'id' | 'name' | 'host' | 'username' | 'reconciliationFailed'
         >;
       })
     | ({ __typename?: 'NodeConnectionFailed' } & Pick<
@@ -901,7 +919,10 @@ export type GetDeploymentByIdQueryVariables = Exact<{
 
 export type GetDeploymentByIdQuery = { __typename?: 'Query' } & {
   deployment?: Maybe<
-    { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
+    { __typename?: 'Deployment' } & Pick<
+      Deployment,
+      'id' | 'enabled' | 'reconciliationFailed'
+    > & {
         compose?: Maybe<
           { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
               current?: Maybe<
@@ -956,7 +977,13 @@ export type GetNodeByIdQuery = { __typename?: 'Query' } & {
   node?: Maybe<
     { __typename?: 'Node' } & Pick<
       Node,
-      'id' | 'name' | 'host' | 'username' | 'enabled' | 'port'
+      | 'id'
+      | 'name'
+      | 'host'
+      | 'username'
+      | 'enabled'
+      | 'port'
+      | 'reconciliationFailed'
     > & {
         deployments?: Maybe<
           Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
@@ -1133,6 +1160,7 @@ export const CreateNodeDocument = gql`
           name
           host
           username
+          reconciliationFailed
         }
       }
       ... on NodeConnectionFailed {
@@ -1285,6 +1313,7 @@ export const DisableDeploymentDocument = gql`
     disableDeployment(deployment: $deployment) {
       id
       enabled
+      reconciliationFailed
       compose {
         id
         name
@@ -1354,6 +1383,7 @@ export const DisableNodeDocument = gql`
       host
       username
       enabled
+      reconciliationFailed
       port
       deployments {
         id
@@ -1407,6 +1437,7 @@ export const EnableDeploymentDocument = gql`
     enableDeployment(deployment: $deployment) {
       id
       enabled
+      reconciliationFailed
       compose {
         id
         name
@@ -1476,6 +1507,7 @@ export const EnableNodeDocument = gql`
       host
       username
       enabled
+      reconciliationFailed
       port
       deployments {
         id
@@ -1689,6 +1721,7 @@ export const UpdateNodeDocument = gql`
           name
           host
           username
+          reconciliationFailed
         }
       }
       ... on NodeConnectionFailed {
@@ -1868,6 +1901,7 @@ export const GetDeploymentByIdDocument = gql`
     deployment(where: { id: { eq: $id } }) {
       id
       enabled
+      reconciliationFailed
       compose {
         id
         name
@@ -2073,6 +2107,7 @@ export const GetNodeByIdDocument = gql`
       username
       enabled
       port
+      reconciliationFailed
       deployments {
         id
       }
