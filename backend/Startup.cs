@@ -104,6 +104,7 @@ namespace supercompose
         .AddMutationType<Mutation>()
         .AddSubscriptionType<Subscription>()
         .AddType<Mutation.SuccessfulNodeCreation>()
+        .AddType<Mutation.SuccessfulNodeUpdate>()
         .AddType<Mutation.NodeConnectionFailed>();
 
       //services.AddRedisQueryStorage(s => s.GetRequiredService<IConnectionMultiplexer>().GetDatabase());

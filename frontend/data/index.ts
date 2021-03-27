@@ -68,9 +68,9 @@ export type QueryConnectionLogArgs = {
 
 export type Mutation = {
   __typename?: 'Mutation';
-  createNode: CreateNodeResult;
+  createNode: NodeResult;
   testConnection?: Maybe<NodeConnectionFailed>;
-  updateNode?: Maybe<Node>;
+  updateNode?: Maybe<NodeResult>;
   deleteNode: Scalars['Boolean'];
   createCompose?: Maybe<Compose>;
   updateCompose?: Maybe<Compose>;
@@ -95,6 +95,7 @@ export type MutationTestConnectionArgs = {
   port: Scalars['Int'];
   password?: Maybe<Scalars['String']>;
   privateKey?: Maybe<Scalars['String']>;
+  nodeId?: Maybe<Scalars['Uuid']>;
 };
 
 export type MutationUpdateNodeArgs = {
@@ -157,6 +158,11 @@ export type SubscriptionOnConnectionLogArgs = {
 
 export type SuccessfulNodeCreation = {
   __typename?: 'SuccessfulNodeCreation';
+  node: Node;
+};
+
+export type SuccessfulNodeUpdate = {
+  __typename?: 'SuccessfulNodeUpdate';
   node: Node;
 };
 
@@ -521,7 +527,10 @@ export type ObjectFilterInput = {
   or?: Maybe<Array<ObjectFilterInput>>;
 };
 
-export type CreateNodeResult = SuccessfulNodeCreation | NodeConnectionFailed;
+export type NodeResult =
+  | SuccessfulNodeCreation
+  | SuccessfulNodeUpdate
+  | NodeConnectionFailed;
 
 export type ConnectionLog = {
   __typename?: 'ConnectionLog';
@@ -676,6 +685,7 @@ export type CreateNodeMutation = { __typename?: 'Mutation' } & {
           'id' | 'name' | 'host' | 'username'
         >;
       })
+    | { __typename?: 'SuccessfulNodeUpdate' }
     | ({ __typename?: 'NodeConnectionFailed' } & Pick<
         NodeConnectionFailed,
         'error' | 'field'
@@ -751,6 +761,7 @@ export type TestConnectionMutationVariables = Exact<{
   username: Scalars['String'];
   password?: Maybe<Scalars['String']>;
   privateKey?: Maybe<Scalars['String']>;
+  nodeId?: Maybe<Scalars['Uuid']>;
 }>;
 
 export type TestConnectionMutation = { __typename?: 'Mutation' } & {
@@ -780,6 +791,32 @@ export type UpdateComposeMutation = { __typename?: 'Mutation' } & {
           >
         >;
       }
+  >;
+};
+
+export type UpdateNodeMutationVariables = Exact<{
+  id: Scalars['Uuid'];
+  name: Scalars['String'];
+  host: Scalars['String'];
+  port: Scalars['Int'];
+  username: Scalars['String'];
+  password?: Maybe<Scalars['String']>;
+  privateKey?: Maybe<Scalars['String']>;
+}>;
+
+export type UpdateNodeMutation = { __typename?: 'Mutation' } & {
+  updateNode?: Maybe<
+    | { __typename?: 'SuccessfulNodeCreation' }
+    | ({ __typename?: 'SuccessfulNodeUpdate' } & {
+        node: { __typename?: 'Node' } & Pick<
+          Node,
+          'id' | 'name' | 'host' | 'username'
+        >;
+      })
+    | ({ __typename?: 'NodeConnectionFailed' } & Pick<
+        NodeConnectionFailed,
+        'error' | 'field'
+      >)
   >;
 };
 
@@ -1284,6 +1321,7 @@ export const TestConnectionDocument = gql`
     $username: String!
     $password: String
     $privateKey: String
+    $nodeId: Uuid
   ) {
     testConnection(
       host: $host
@@ -1291,6 +1329,7 @@ export const TestConnectionDocument = gql`
       username: $username
       password: $password
       privateKey: $privateKey
+      nodeId: $nodeId
     ) {
       error
       field
@@ -1320,6 +1359,7 @@ export type TestConnectionMutationFn = Apollo.MutationFunction<
  *      username: // value for 'username'
  *      password: // value for 'password'
  *      privateKey: // value for 'privateKey'
+ *      nodeId: // value for 'nodeId'
  *   },
  * });
  */
@@ -1413,6 +1453,87 @@ export type UpdateComposeMutationResult = Apollo.MutationResult<UpdateComposeMut
 export type UpdateComposeMutationOptions = Apollo.BaseMutationOptions<
   UpdateComposeMutation,
   UpdateComposeMutationVariables
+>;
+export const UpdateNodeDocument = gql`
+  mutation updateNode(
+    $id: Uuid!
+    $name: String!
+    $host: String!
+    $port: Int!
+    $username: String!
+    $password: String
+    $privateKey: String
+  ) {
+    updateNode(
+      id: $id
+      name: $name
+      host: $host
+      port: $port
+      username: $username
+      password: $password
+      privateKey: $privateKey
+    ) {
+      ... on SuccessfulNodeUpdate {
+        node {
+          id
+          name
+          host
+          username
+        }
+      }
+      ... on NodeConnectionFailed {
+        error
+        field
+      }
+    }
+  }
+`;
+export type UpdateNodeMutationFn = Apollo.MutationFunction<
+  UpdateNodeMutation,
+  UpdateNodeMutationVariables
+>;
+
+/**
+ * __useUpdateNodeMutation__
+ *
+ * To run a mutation, you first call `useUpdateNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateNodeMutation, { data, loading, error }] = useUpdateNodeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      name: // value for 'name'
+ *      host: // value for 'host'
+ *      port: // value for 'port'
+ *      username: // value for 'username'
+ *      password: // value for 'password'
+ *      privateKey: // value for 'privateKey'
+ *   },
+ * });
+ */
+export function useUpdateNodeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    UpdateNodeMutation,
+    UpdateNodeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<UpdateNodeMutation, UpdateNodeMutationVariables>(
+    UpdateNodeDocument,
+    baseOptions,
+  );
+}
+export type UpdateNodeMutationHookResult = ReturnType<
+  typeof useUpdateNodeMutation
+>;
+export type UpdateNodeMutationResult = Apollo.MutationResult<UpdateNodeMutation>;
+export type UpdateNodeMutationOptions = Apollo.BaseMutationOptions<
+  UpdateNodeMutation,
+  UpdateNodeMutationVariables
 >;
 export const GetComposeByIdDocument = gql`
   query getComposeById($id: Uuid!) {

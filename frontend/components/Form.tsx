@@ -133,6 +133,7 @@ export const TextField = forwardRef<
   {
     name: string;
     className?: string;
+    placeholder?: string;
   }
 >(function TextField(props, ref) {
   const error = useFormError(props.name);
@@ -143,6 +144,7 @@ export const TextField = forwardRef<
       name={props.name}
       id={props.name}
       ref={ref}
+      placeholder={props.placeholder}
       className={classNames(
         'flex-grow block w-full min-w-0 rounded-md sm:text-sm',
         props.className,

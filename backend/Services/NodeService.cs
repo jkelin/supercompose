@@ -1,9 +1,13 @@
 using System;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using backend2;
 using backend2.Services;
 using backend2.Util;
+using Microsoft.EntityFrameworkCore;
+using Z.EntityFramework.Plus;
 
 namespace supercompose
 {
@@ -60,14 +64,57 @@ namespace supercompose
       string? privateKey
     )
     {
-      throw new NotImplementedException();
+      var node = await ctx.Nodes.FirstOrDefaultAsync(x => x.Id == id);
+
+      if (node == null) throw new NodeNotFoundException();
+
+      node.Name = name ?? node.Name;
+      node.Host = host ?? node.Host;
+      node.Username = username ?? node.Username;
+      node.Port = port ?? node.Port;
+
+      string? newPassword = null;
+      string? newPrivateKey = null;
+
+      if (!string.IsNullOrWhiteSpace(password))
+      {
+        newPassword = password;
+        if (string.IsNullOrWhiteSpace(privateKey)) newPrivateKey = null;
+      }
+
+      if (!string.IsNullOrWhiteSpace(privateKey))
+      {
+        newPrivateKey = privateKey;
+        if (string.IsNullOrWhiteSpace(password)) newPassword = null;
+      }
+
+      if (newPassword != null || newPrivateKey != null)
+      {
+        node.Password = newPassword != null ? await crypto.EncryptSecret(newPassword) : null;
+        node.PrivateKey = newPrivateKey != null ? await crypto.EncryptSecret(newPrivateKey) : null;
+      }
+
+      node.Version = Guid.NewGuid();
+
+      await connectionService.TestConnection(
+        new ConnectionParams(
+          node.Host,
+          node.Username,
+          node.Port!.Value,
+          null, null
+        ),
+        id
+      );
+
+      await ctx.SaveChangesAsync();
+      await nodeUpdater.NotifyAboutNodeChange(id);
     }
 
     public async Task Delete(
       Guid id
     )
     {
-      throw new NotImplementedException();
+      await ctx.Nodes.Where(x => x.Id == id).DeleteAsync();
     }
   }
 }

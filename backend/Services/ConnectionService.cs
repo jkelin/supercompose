@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using backend2.Util;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Renci.SshNet;
 using Renci.SshNet.Common;
@@ -18,10 +19,14 @@ namespace backend2.Services
   public class ConnectionService
   {
     private readonly ILogger<ConnectionService> logger;
+    private readonly SupercomposeContext ctx;
+    private readonly CryptoService crypto;
 
-    public ConnectionService(ILogger<ConnectionService> logger)
+    public ConnectionService(ILogger<ConnectionService> logger, SupercomposeContext ctx, CryptoService crypto)
     {
       this.logger = logger;
+      this.ctx = ctx;
+      this.crypto = crypto;
     }
 
     /// <exception cref="NodeConnectionFailedException"></exception>
@@ -214,8 +219,22 @@ namespace backend2.Services
       }
     }
 
-    public async Task TestConnection(ConnectionParams conn, CancellationToken ct = default)
+    public async Task TestConnection(ConnectionParams conn, Guid? nodeId = null, CancellationToken ct = default)
     {
+      if (nodeId != null)
+      {
+        var node = await ctx.Nodes.FirstOrDefaultAsync(x => x.Id == nodeId, ct);
+
+        if (node == null) throw new NodeNotFoundException();
+
+        if (string.IsNullOrWhiteSpace(conn.password) && string.IsNullOrWhiteSpace(conn.privateKey))
+          conn = conn with
+          {
+            password = node.Password != null ? await crypto.DecryptSecret(node.Password) : null,
+            privateKey = node.PrivateKey != null ? await crypto.DecryptSecret(node.PrivateKey) : null
+          };
+      }
+
       using var client = await CreateSshConnection(conn, TimeSpan.FromSeconds(5), ct);
     }
 

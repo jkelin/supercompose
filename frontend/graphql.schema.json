@@ -412,7 +412,7 @@
               "name": null,
               "ofType": {
                 "kind": "UNION",
-                "name": "CreateNodeResult",
+                "name": "NodeResult",
                 "ofType": null
               }
             },
@@ -489,6 +489,18 @@
                 "type": {
                   "kind": "SCALAR",
                   "name": "String",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "nodeId",
+                "description": null,
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Uuid",
                   "ofType": null
                 },
                 "defaultValue": null,
@@ -614,8 +626,8 @@
               }
             ],
             "type": {
-              "kind": "OBJECT",
-              "name": "Node",
+              "kind": "UNION",
+              "name": "NodeResult",
               "ofType": null
             },
             "isDeprecated": false,
@@ -1059,6 +1071,33 @@
       {
         "kind": "OBJECT",
         "name": "SuccessfulNodeCreation",
+        "description": null,
+        "fields": [
+          {
+            "name": "node",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Node",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "SuccessfulNodeUpdate",
         "description": null,
         "fields": [
           {
@@ -4827,8 +4866,18 @@
         "possibleTypes": null
       },
       {
+        "kind": "SCALAR",
+        "name": "Uuid",
+        "description": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "UNION",
-        "name": "CreateNodeResult",
+        "name": "NodeResult",
         "description": null,
         "fields": null,
         "inputFields": null,
@@ -4838,6 +4887,11 @@
           {
             "kind": "OBJECT",
             "name": "SuccessfulNodeCreation",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "SuccessfulNodeUpdate",
             "ofType": null
           },
           {
@@ -5584,16 +5638,6 @@
         ],
         "inputFields": null,
         "interfaces": [],
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "SCALAR",
-        "name": "Uuid",
-        "description": null,
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
         "enumValues": null,
         "possibleTypes": null
       },

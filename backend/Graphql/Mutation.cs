@@ -36,17 +36,22 @@ namespace supercompose
       this.conn = conn;
     }
 
-    [UnionType("CreateNodeResult")]
-    public interface ICreateNodeResult
+    [UnionType("NodeResult")]
+    public interface INodeResult
     {
     }
 
-    public class SuccessfulNodeCreation : ICreateNodeResult
+    public class SuccessfulNodeCreation : INodeResult
     {
       public Node Node { get; set; }
     }
 
-    public class NodeConnectionFailed : ICreateNodeResult
+    public class SuccessfulNodeUpdate : INodeResult
+    {
+      public Node Node { get; set; }
+    }
+
+    public class NodeConnectionFailed : INodeResult
     {
       public string Error { get; set; }
 
@@ -94,7 +99,7 @@ namespace supercompose
       }
     }
 
-    public async Task<ICreateNodeResult> CreateNode(
+    public async Task<INodeResult> CreateNode(
       [Required] [MaxLength(255)] string name,
       [Required] [MaxLength(255)] string host,
       [Required] [MaxLength(255)] string username,
@@ -121,12 +126,13 @@ namespace supercompose
       [Range(1, 65535)] int port,
       string? password,
       string? privateKey,
+      Guid? nodeId,
       CancellationToken ct
     )
     {
       try
       {
-        await conn.TestConnection(new ConnectionParams(host, username, port, password, privateKey), ct);
+        await conn.TestConnection(new ConnectionParams(host, username, port, password, privateKey), nodeId, ct);
       }
       catch (NodeConnectionFailedException ex)
       {
@@ -136,9 +142,7 @@ namespace supercompose
       return null;
     }
 
-    [UseFirstOrDefault]
-    [UseProjection]
-    public async Task<IQueryable<Node>> UpdateNode(
+    public async Task<INodeResult> UpdateNode(
       [Required] Guid id,
       [MaxLength(255)] string name,
       [MaxLength(255)] string host,
@@ -148,17 +152,24 @@ namespace supercompose
       string? privateKey
     )
     {
-      await nodeService.Update(
-        id,
-        name,
-        host,
-        username,
-        port,
-        password,
-        privateKey
-      );
+      try
+      {
+        await nodeService.Update(
+          id,
+          name,
+          host,
+          username,
+          port,
+          password,
+          privateKey
+        );
 
-      return ctx.Nodes.Where(x => x.Id == id);
+        return await ctx.Nodes.Where(x => x.Id == id).Select(x => new SuccessfulNodeUpdate {Node = x}).FirstAsync();
+      }
+      catch (NodeConnectionFailedException ex)
+      {
+        return NodeConnectionFailed.FromNodeConnectionFailedException(ex);
+      }
     }
 
     public async Task<bool> DeleteNode([Required] Guid id)

@@ -4,6 +4,7 @@ mutation testConnection(
   $username: String!
   $password: String
   $privateKey: String
+  $nodeId: Uuid
 ) {
   testConnection(
     host: $host
@@ -11,6 +12,7 @@ mutation testConnection(
     username: $username
     password: $password
     privateKey: $privateKey
+    nodeId: $nodeId
   ) {
     error
     field

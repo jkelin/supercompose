@@ -1,0 +1,32 @@
+mutation updateNode(
+  $id: Uuid!
+  $name: String!
+  $host: String!
+  $port: Int!
+  $username: String!
+  $password: String
+  $privateKey: String
+) {
+  updateNode(
+    id: $id
+    name: $name
+    host: $host
+    port: $port
+    username: $username
+    password: $password
+    privateKey: $privateKey
+  ) {
+    ... on SuccessfulNodeUpdate {
+      node {
+        id
+        name
+        host
+        username
+      }
+    }
+    ... on NodeConnectionFailed {
+      error
+      field
+    }
+  }
+}
