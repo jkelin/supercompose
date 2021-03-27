@@ -2,6 +2,7 @@ import { gql, useApolloClient } from '@apollo/react-hooks';
 import classNames from 'classnames';
 import {
   ActionButton,
+  ConfirmationModal,
   FieldContainer,
   LinkButton,
   NumberField,
@@ -17,6 +18,8 @@ import {
   useUpdateNodeMutation,
   useTestConnectionMutation,
   useGetNodeByIdQuery,
+  GetNodesDocument,
+  useDeleteNodeMutation,
 } from 'data';
 import { useRouter } from 'next/dist/client/router';
 import Head from 'next/head';
@@ -45,6 +48,10 @@ const EditNodeForm: React.FC<{
   const router = useRouter();
   const [testConnection] = useTestConnectionMutation();
   const [updateNode] = useUpdateNodeMutation();
+  const [deleteNode] = useDeleteNodeMutation({
+    refetchQueries: [{ query: GetNodesDocument }],
+    awaitRefetchQueries: true,
+  });
   const toast = useToast();
 
   const form = useForm<FormData>({
@@ -96,26 +103,6 @@ const EditNodeForm: React.FC<{
     });
 
     if (resp?.data?.updateNode?.__typename == 'SuccessfulNodeUpdate') {
-      // apollo.cache.modify({
-      //   fields: {
-      //     nodes(existingNodesRefs = [], { readField }) {
-      //       const nodeRef = apollo.cache.writeFragment({
-      //         data: (resp?.data?.updateNode as SuccessfulNodeUpdate)?.node,
-      //         fragment: gql`
-      //           fragment NewNode on Node {
-      //             id
-      //             host
-      //             username
-      //             name
-      //           }
-      //         `,
-      //       });
-
-      //       return [...existingNodesRefs, nodeRef];
-      //     },
-      //   },
-      // });
-
       toast({
         kind: 'success',
         title: 'Node updated',
@@ -153,6 +140,18 @@ const EditNodeForm: React.FC<{
       form.handleSubmit(undefined as any)();
     }
   }, [form, testConnection, router.query.id, handleErrors]);
+
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const onNodeDelete = useCallback(async () => {
+    await deleteNode({ variables: { id: node.id } });
+
+    toast({
+      kind: 'success',
+      title: 'Node deleted',
+    });
+    router.push(`/dashboard`);
+  }, [deleteNode, node.id, toast, router]);
 
   return (
     <DashboardLayout>
@@ -251,6 +250,13 @@ const EditNodeForm: React.FC<{
                 Cancel
               </LinkButton>
               <div className="flex-grow"></div>
+              <ActionButton
+                onClick={() => setIsDeleting(true)}
+                kind="danger-outline"
+              >
+                Delete
+              </ActionButton>
+              <span className="ml-4"></span>
               <ActionButton onClick={onTestConnection} kind="secondary">
                 Test Connection
               </ActionButton>
@@ -260,6 +266,21 @@ const EditNodeForm: React.FC<{
           </div>
         </form>
       </FormProvider>
+
+      <ConfirmationModal
+        isOpen={isDeleting}
+        onClose={() => setIsDeleting(false)}
+        kind="danger"
+        onConfirm={onNodeDelete}
+        confirm="Delete"
+        title="Confirm Node deletion"
+      >
+        Are you sure you wish to delete Node <strong>{node.name}</strong>? This
+        node will be permanently removed from Supercompose.
+        <br />
+        <br />
+        This action cannot be undone.
+      </ConfirmationModal>
     </DashboardLayout>
   );
 };
