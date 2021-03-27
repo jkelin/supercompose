@@ -9,6 +9,8 @@ import {
 } from 'containers';
 import {
   useCreateDeploymentMutation,
+  useDisableNodeMutation,
+  useEnableNodeMutation,
   useGetDeploymentsQuery,
   useGetNodeByIdQuery,
 } from 'data';
@@ -48,6 +50,18 @@ const NodeDetail: NextPage<{}> = (props) => {
     [createDeployment, node, router, toast],
   );
 
+  const [enableNode] = useEnableNodeMutation({
+    variables: {
+      node: router.query.id,
+    },
+  });
+
+  const [disableNode] = useDisableNodeMutation({
+    variables: {
+      node: router.query.id,
+    },
+  });
+
   if (nodeQuery.loading) {
     return (
       <DashboardLayout>
@@ -67,9 +81,31 @@ const NodeDetail: NextPage<{}> = (props) => {
             <div className="text-sm text-gray-600">Node</div>
           </div>
 
-          <LinkButton kind="primary" href={`/node/${node?.id}/edit`}>
-            Update
-          </LinkButton>
+          <div className="flex flex-row">
+            {node?.enabled && (
+              <ActionButton
+                className="mr-4"
+                kind="danger-outline"
+                onClick={disableNode}
+              >
+                Disable
+              </ActionButton>
+            )}
+
+            {!node?.enabled && (
+              <ActionButton
+                className="mr-4"
+                kind="primary-outline"
+                onClick={enableNode}
+              >
+                Enable
+              </ActionButton>
+            )}
+
+            <LinkButton kind="primary" href={`/node/${node?.id}/edit`}>
+              Update
+            </LinkButton>
+          </div>
         </div>
         <div className="px-4 py-5 sm:p-6">
           <div className="flex flex-wrap">
@@ -78,6 +114,10 @@ const NodeDetail: NextPage<{}> = (props) => {
             <NamedCodePill label="Port">{node?.port}</NamedCodePill>
             <div className="mt-1 mr-6" />
             <NamedCodePill label="Username">{node?.username}</NamedCodePill>
+            <div className="mt-1 mr-6" />
+            <NamedCodePill label="Enabled">
+              {node?.enabled ? 'true' : 'false'}
+            </NamedCodePill>
           </div>
 
           <div className="mt-5 pb-1 mb-1 border-b border-gray-200">

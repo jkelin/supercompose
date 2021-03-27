@@ -8,10 +8,12 @@ using supercompose;
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using backend.Exceptions;
 using backend2.Exceptions;
 using Renci.SshNet.Common;
 using Z.EntityFramework.Plus;
@@ -86,6 +88,11 @@ namespace backend2.Services
       }
       catch (TaskCanceledException)
       {
+      }
+      catch (NodeReconciliationFailedException ex)
+      {
+        connectionLog.Error("Node reconciliation failed", ex);
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
       }
       catch (NodeConnectionFailedException ex)
       {
@@ -162,16 +169,13 @@ namespace backend2.Services
 
     private async Task<bool> VerifyNode(Node node, SshClient ssh, CancellationToken ct)
     {
-      connectionLog.Info("Enabling node");
+      connectionLog.Info("Verifying node");
 
       var systemctlVersion = await RunCommand(ssh, "systemctl --version", ct);
       if (systemctlVersion.status != 0)
       {
         logger.LogDebug("systemd unavailable");
-        connectionLog.Error("systemd unavailable, stopping node configuration");
-        node.ReconciliationFailed = true;
-        await ctx.SaveChangesAsync();
-        return false;
+        throw new NodeReconciliationFailedException("systemd unavailable, stopping node configuration");
       }
 
       var dockerVersion = await RunCommand(ssh, "docker --version", ct);
@@ -179,9 +183,7 @@ namespace backend2.Services
       {
         logger.LogDebug("docker unavailable");
         connectionLog.Error("docker unavailable, stopping node configuration");
-        node.ReconciliationFailed = true;
-        await ctx.SaveChangesAsync();
-        return false;
+        throw new NodeReconciliationFailedException("docker unavailable, stopping node configuration");
       }
 
       var dockerComposeVersion = await RunCommand(ssh, "docker-compose --version", ct);
@@ -189,9 +191,7 @@ namespace backend2.Services
       {
         logger.LogDebug("docker-compose unavailable");
         connectionLog.Error("docker-compose unavailable, stopping node configuration");
-        node.ReconciliationFailed = true;
-        await ctx.SaveChangesAsync();
-        return false;
+        throw new NodeReconciliationFailedException("docker-compose unavailable, stopping node configuration");
       }
 
       return true;
@@ -223,54 +223,28 @@ namespace backend2.Services
     private async Task ApplyDeployment(Deployment deployment, SshClient ssh, SftpClient sftp, CancellationToken ct)
     {
       // TODO cleanup current version
-      connectionLog.BeginScope(deploymentId: deployment.Id);
-      await EnsureComposeAndServiceDeployment(deployment, ssh, sftp, ct);
-      await EnsureServiceInCorrectState(deployment, ssh, ct);
-    }
-
-    private async Task EnsureComposeAndServiceDeployment(Deployment deployment, SshClient ssh, SftpClient sftp,
-      CancellationToken ct)
-    {
-      var current = deployment.Compose.Current;
+      using var _ = connectionLog.BeginScope(deploymentId: deployment.Id);
 
       try
       {
-        connectionLog.Info($"Ensuring directory exists {current.Directory}");
-        await connectionService.EnsureDirectoryExists(sftp, current.Directory, ct);
+        await EnsureComposeAndServiceDeployment(deployment, ssh, sftp, ct);
+        await EnsureServiceInCorrectState(deployment, ssh, ct);
 
-        connectionLog.Info($"Updating docker-compose.yml");
-        await UpdateFile(sftp, current.ComposePath, current.Content, ct);
-        ct.ThrowIfCancellationRequested();
+        deployment.LastDeployedComposeVersionId = deployment.Compose.CurrentId;
+        deployment.LastDeployedNodeVersion = deployment.Node.Version;
+        await ctx.SaveChangesAsync();
       }
-      catch (SftpPermissionDeniedException ex)
+      catch (DeploymentReconciliationFailedException ex)
       {
-        connectionLog.Error($"Docker compose synchronization failed due to permission error:", ex);
+        connectionLog.Error($"Deployment reconciliation failed", ex);
         deployment.ReconciliationFailed = true;
         await ctx.SaveChangesAsync(ct);
       }
-
-      if (current.ServiceEnabled == true)
-        try
-        {
-          var serviceFile = GenerateSystemdServiceFile(deployment);
-          connectionLog.Info($"Updating systemd service");
-          await UpdateFile(sftp, current.ServicePath, serviceFile, ct);
-          ct.ThrowIfCancellationRequested();
-
-          var reloadResult = await RunCommand(ssh, "systemctl daemon-reload", ct);
-
-          if (reloadResult.status != 0)
-            connectionLog.Error($"Systemd service reload failed with code {reloadResult.status}");
-        }
-        catch (SftpPermissionDeniedException ex)
-        {
-          connectionLog.Error($"Service synchronization failed due to permission error:", ex);
-          deployment.ReconciliationFailed = true;
-          await ctx.SaveChangesAsync(ct);
-        }
     }
 
-    private async Task EnsureServiceInCorrectState(Deployment deployment, SshClient ssh, CancellationToken ct)
+    private record DeploymentState(bool DeploymentEnabled, bool UseService);
+
+    private (DeploymentState target, DeploymentState lastApplied) CalculateDeploymentState(Deployment deployment)
     {
       var last = deployment.LastDeployedComposeVersion;
       var current = deployment.Compose.Current;
@@ -278,37 +252,112 @@ namespace backend2.Services
       var lastSvc = last?.ServiceEnabled ?? false;
       var lastEnabled = deployment?.LastDeployedAsEnabled ?? false;
 
-      var currentSvc = current?.ServiceEnabled ?? false;
-      var currentEnabled = deployment?.Enabled ?? false;
+      var targetService = current?.ServiceEnabled ?? false;
+      var targetEnabled = deployment.Enabled && deployment.Node.Enabled;
 
-      if (last == null)
+      return (
+        new DeploymentState(targetEnabled, targetService),
+        new DeploymentState(lastEnabled, lastSvc)
+      );
+    }
+
+    private async Task EnsureComposeAndServiceDeployment(Deployment deployment, SshClient ssh, SftpClient sftp,
+      CancellationToken ct)
+    {
+      var targetCompose = deployment.Compose.Current;
+
+      var (target, last) = CalculateDeploymentState(deployment);
+
+      await EnsureDockerCompose(deployment, sftp, targetCompose, ct);
+
+      if (target.UseService) await EnsureSystemdService(deployment, ssh, sftp, targetCompose, ct);
+    }
+
+    private async Task EnsureDockerCompose(Deployment deployment, SftpClient sftp,
+      ComposeVersion targetCompose, CancellationToken ct)
+    {
+      try
       {
-        if (currentEnabled)
+        connectionLog.Info($"Ensuring directory exists {targetCompose.Directory}");
+        await connectionService.EnsureDirectoryExists(sftp, targetCompose.Directory, ct);
+        ct.ThrowIfCancellationRequested();
+      }
+      catch (SftpPermissionDeniedException ex)
+      {
+        throw new DeploymentReconciliationFailedException("Docker compose folder creation failed", ex);
+      }
+
+
+      try
+      {
+        connectionLog.Info($"Updating docker-compose.yml");
+        await UpdateFile(sftp, targetCompose.ComposePath, targetCompose.Content, ct);
+      }
+      catch (SftpPermissionDeniedException ex)
+      {
+        throw new DeploymentReconciliationFailedException(
+          "Docker-compose.yml synchronization failed due to permission error", ex);
+      }
+    }
+
+    private async Task EnsureSystemdService(Deployment deployment, SshClient ssh, SftpClient sftp,
+      ComposeVersion targetCompose, CancellationToken ct)
+    {
+      try
+      {
+        var serviceFile = GenerateSystemdServiceFile(deployment);
+        connectionLog.Info($"Updating systemd service");
+        await UpdateFile(sftp, targetCompose.ServicePath, serviceFile, ct);
+        ct.ThrowIfCancellationRequested();
+
+        var reloadResult = await RunCommand(ssh, "systemctl daemon-reload", ct);
+
+        if (reloadResult.status != 0)
+          throw new DeploymentReconciliationFailedException(
+            $"Systemd service reload failed with code  {reloadResult.status}");
+      }
+      catch (SftpPermissionDeniedException ex)
+      {
+        throw new DeploymentReconciliationFailedException(
+          "Systemd service failed to be synchronized due to permission error", ex);
+      }
+    }
+
+    private async Task EnsureServiceInCorrectState(Deployment deployment, SshClient ssh, CancellationToken ct)
+    {
+      var lastCompose = deployment.LastDeployedComposeVersion;
+      var targetCompose = deployment.Compose.Current;
+
+      var (target, last) = CalculateDeploymentState(deployment);
+
+      if (lastCompose == null)
+      {
+        if (target.DeploymentEnabled)
         {
-          if (currentSvc)
-            await StartSystemdService(deployment, current, ssh, ct);
+          if (target.UseService)
+            await StartSystemdService(deployment, targetCompose, ssh, ct);
           else
-            await StartDockerCompose(deployment, current, ssh, ct);
+            await StartDockerCompose(deployment, targetCompose, ssh, ct);
         }
       }
       else
       {
         // Stop last state when it was enabled and there is a change in service
-        if (lastEnabled && lastSvc != currentSvc)
+        if (last.DeploymentEnabled && last.UseService != target.UseService)
         {
-          if (lastSvc)
-            await StopSystemdService(deployment, last, ssh, ct);
+          if (last.UseService)
+            await StopSystemdService(deployment, lastCompose, ssh, ct);
           else
-            await StopDockerCompose(deployment, current, ssh, ct);
+            await StopDockerCompose(deployment, targetCompose, ssh, ct);
         }
 
         // We don't have to worry about the old state at this point. Only redeploy if there are changes.
-        if (currentSvc) await StartSystemdService(deployment, current, ssh, ct);
-        else await StartDockerCompose(deployment, current, ssh, ct);
+        if (target.UseService) await StartSystemdService(deployment, targetCompose, ssh, ct);
+        else await StartDockerCompose(deployment, targetCompose, ssh, ct);
       }
 
-      deployment.LastDeployedComposeVersion = current;
-      deployment.LastDeployedAsEnabled = currentEnabled;
+      deployment.LastDeployedComposeVersion = targetCompose;
+      deployment.LastDeployedAsEnabled = target.DeploymentEnabled;
       deployment.LastDeployedNodeVersion = deployment.Node.Version;
       deployment.LastCheck = DateTime.UtcNow;
       await ctx.SaveChangesAsync(ct);

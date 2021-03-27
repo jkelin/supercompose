@@ -12,7 +12,7 @@ namespace supercompose
   {
     [Required] [Key] public Guid? Id { get; set; }
 
-    [Required] public bool? Enabled { get; set; }
+    [Required] public bool Enabled { get; set; }
 
     [Required] [MaxLength(255)] public string Name { get; set; }
 

@@ -116,5 +116,37 @@ namespace supercompose
     {
       await ctx.Nodes.Where(x => x.Id == id).DeleteAsync();
     }
+
+    public async Task Disable(Guid nodeId)
+    {
+      var node = await ctx.Nodes.FirstOrDefaultAsync(x => x.Id == nodeId);
+
+      if (node == null) throw new NodeNotFoundException();
+
+      if (node.Enabled == false) return;
+
+      node.Enabled = false;
+      node.Version = Guid.NewGuid();
+      node.ReconciliationFailed = null;
+      await ctx.SaveChangesAsync();
+
+      await nodeUpdater.NotifyAboutNodeChange(nodeId);
+    }
+
+    public async Task Enable(Guid nodeId)
+    {
+      var node = await ctx.Nodes.FirstOrDefaultAsync(x => x.Id == nodeId);
+
+      if (node == null) throw new NodeNotFoundException();
+
+      if (node.Enabled == true) return;
+
+      node.Enabled = true;
+      node.Version = Guid.NewGuid();
+      node.ReconciliationFailed = null;
+      await ctx.SaveChangesAsync();
+
+      await nodeUpdater.NotifyAboutNodeChange(nodeId);
+    }
   }
 }

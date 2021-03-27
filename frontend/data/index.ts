@@ -78,6 +78,8 @@ export type Mutation = {
   createDeployment?: Maybe<Deployment>;
   enableDeployment?: Maybe<Deployment>;
   disableDeployment?: Maybe<Deployment>;
+  enableNode?: Maybe<Node>;
+  disableNode?: Maybe<Node>;
 };
 
 export type MutationCreateNodeArgs = {
@@ -142,6 +144,14 @@ export type MutationEnableDeploymentArgs = {
 
 export type MutationDisableDeploymentArgs = {
   deployment: Scalars['Uuid'];
+};
+
+export type MutationEnableNodeArgs = {
+  node: Scalars['Uuid'];
+};
+
+export type MutationDisableNodeArgs = {
+  node: Scalars['Uuid'];
 };
 
 export type Subscription = {
@@ -737,6 +747,23 @@ export type DisableDeploymentMutation = { __typename?: 'Mutation' } & {
   >;
 };
 
+export type DisableNodeMutationVariables = Exact<{
+  node: Scalars['Uuid'];
+}>;
+
+export type DisableNodeMutation = { __typename?: 'Mutation' } & {
+  disableNode?: Maybe<
+    { __typename?: 'Node' } & Pick<
+      Node,
+      'id' | 'name' | 'host' | 'username' | 'enabled' | 'port'
+    > & {
+        deployments?: Maybe<
+          Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
+        >;
+      }
+  >;
+};
+
 export type EnableDeploymentMutationVariables = Exact<{
   deployment: Scalars['Uuid'];
 }>;
@@ -759,6 +786,23 @@ export type EnableDeploymentMutation = { __typename?: 'Mutation' } & {
             Node,
             'id' | 'name' | 'host' | 'port' | 'username'
           >
+        >;
+      }
+  >;
+};
+
+export type EnableNodeMutationVariables = Exact<{
+  node: Scalars['Uuid'];
+}>;
+
+export type EnableNodeMutation = { __typename?: 'Mutation' } & {
+  enableNode?: Maybe<
+    { __typename?: 'Node' } & Pick<
+      Node,
+      'id' | 'name' | 'host' | 'username' | 'enabled' | 'port'
+    > & {
+        deployments?: Maybe<
+          Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
         >;
       }
   >;
@@ -912,7 +956,7 @@ export type GetNodeByIdQuery = { __typename?: 'Query' } & {
   node?: Maybe<
     { __typename?: 'Node' } & Pick<
       Node,
-      'id' | 'name' | 'host' | 'username' | 'port'
+      'id' | 'name' | 'host' | 'username' | 'enabled' | 'port'
     > & {
         deployments?: Maybe<
           Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
@@ -1302,6 +1346,62 @@ export type DisableDeploymentMutationOptions = Apollo.BaseMutationOptions<
   DisableDeploymentMutation,
   DisableDeploymentMutationVariables
 >;
+export const DisableNodeDocument = gql`
+  mutation disableNode($node: Uuid!) {
+    disableNode(node: $node) {
+      id
+      name
+      host
+      username
+      enabled
+      port
+      deployments {
+        id
+      }
+    }
+  }
+`;
+export type DisableNodeMutationFn = Apollo.MutationFunction<
+  DisableNodeMutation,
+  DisableNodeMutationVariables
+>;
+
+/**
+ * __useDisableNodeMutation__
+ *
+ * To run a mutation, you first call `useDisableNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useDisableNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [disableNodeMutation, { data, loading, error }] = useDisableNodeMutation({
+ *   variables: {
+ *      node: // value for 'node'
+ *   },
+ * });
+ */
+export function useDisableNodeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    DisableNodeMutation,
+    DisableNodeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<DisableNodeMutation, DisableNodeMutationVariables>(
+    DisableNodeDocument,
+    baseOptions,
+  );
+}
+export type DisableNodeMutationHookResult = ReturnType<
+  typeof useDisableNodeMutation
+>;
+export type DisableNodeMutationResult = Apollo.MutationResult<DisableNodeMutation>;
+export type DisableNodeMutationOptions = Apollo.BaseMutationOptions<
+  DisableNodeMutation,
+  DisableNodeMutationVariables
+>;
 export const EnableDeploymentDocument = gql`
   mutation enableDeployment($deployment: Uuid!) {
     enableDeployment(deployment: $deployment) {
@@ -1367,6 +1467,62 @@ export type EnableDeploymentMutationResult = Apollo.MutationResult<EnableDeploym
 export type EnableDeploymentMutationOptions = Apollo.BaseMutationOptions<
   EnableDeploymentMutation,
   EnableDeploymentMutationVariables
+>;
+export const EnableNodeDocument = gql`
+  mutation enableNode($node: Uuid!) {
+    enableNode(node: $node) {
+      id
+      name
+      host
+      username
+      enabled
+      port
+      deployments {
+        id
+      }
+    }
+  }
+`;
+export type EnableNodeMutationFn = Apollo.MutationFunction<
+  EnableNodeMutation,
+  EnableNodeMutationVariables
+>;
+
+/**
+ * __useEnableNodeMutation__
+ *
+ * To run a mutation, you first call `useEnableNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useEnableNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [enableNodeMutation, { data, loading, error }] = useEnableNodeMutation({
+ *   variables: {
+ *      node: // value for 'node'
+ *   },
+ * });
+ */
+export function useEnableNodeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    EnableNodeMutation,
+    EnableNodeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<EnableNodeMutation, EnableNodeMutationVariables>(
+    EnableNodeDocument,
+    baseOptions,
+  );
+}
+export type EnableNodeMutationHookResult = ReturnType<
+  typeof useEnableNodeMutation
+>;
+export type EnableNodeMutationResult = Apollo.MutationResult<EnableNodeMutation>;
+export type EnableNodeMutationOptions = Apollo.BaseMutationOptions<
+  EnableNodeMutation,
+  EnableNodeMutationVariables
 >;
 export const TestConnectionDocument = gql`
   mutation testConnection(
@@ -1915,6 +2071,7 @@ export const GetNodeByIdDocument = gql`
       name
       host
       username
+      enabled
       port
       deployments {
         id

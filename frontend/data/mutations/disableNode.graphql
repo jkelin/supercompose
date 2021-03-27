@@ -1,5 +1,5 @@
-query getNodeById($id: Uuid!) {
-  node(where: { id: { eq: $id } }) {
+mutation disableNode($node: Uuid!) {
+  disableNode(node: $node) {
     id
     name
     host

@@ -36,7 +36,7 @@ namespace supercompose
       get
       {
         return x => x.ReconciliationFailed != true &&
-                    (x.Enabled != x.LastDeployedAsEnabled || x.Enabled &&
+                    ((x.Enabled && x.Node.Enabled) != x.LastDeployedAsEnabled || x.Enabled &&
                       (x.Node.Version != x.LastDeployedNodeVersion ||
                        x.Compose.CurrentId != x.LastDeployedComposeVersionId ||
                        x.LastCheck + NodeCheckInterval < DateTime.UtcNow));

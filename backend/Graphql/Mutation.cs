@@ -256,5 +256,27 @@ namespace supercompose
 
       return ctx.Deployments.Where(x => x.Id == deployment);
     }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    public async Task<IQueryable<Node>> EnableNode(
+      [Required] Guid node
+    )
+    {
+      await nodeService.Enable(node);
+
+      return ctx.Nodes.Where(x => x.Id == node);
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    public async Task<IQueryable<Node>> DisableNode(
+      [Required] Guid node
+    )
+    {
+      await nodeService.Disable(node);
+
+      return ctx.Nodes.Where(x => x.Id == node);
+    }
   }
 }
