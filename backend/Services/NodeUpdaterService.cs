@@ -351,9 +351,17 @@ namespace backend2.Services
             await StopDockerCompose(deployment, targetCompose, ssh, ct);
         }
 
-        // We don't have to worry about the old state at this point. Only redeploy if there are changes.
-        if (target.UseService) await StartSystemdService(deployment, targetCompose, ssh, ct);
-        else await StartDockerCompose(deployment, targetCompose, ssh, ct);
+        if (target.DeploymentEnabled)
+        {
+          // We don't have to worry about the old state at this point. Only redeploy if there are changes.
+          if (target.UseService) await StartSystemdService(deployment, targetCompose, ssh, ct);
+          else await StartDockerCompose(deployment, targetCompose, ssh, ct);
+        }
+        else
+        {
+          if (target.UseService) await StopSystemdService(deployment, targetCompose, ssh, ct);
+          else await StopDockerCompose(deployment, targetCompose, ssh, ct);
+        }
       }
 
       deployment.LastDeployedComposeVersion = targetCompose;
