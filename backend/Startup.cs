@@ -81,7 +81,7 @@ namespace supercompose
       services.AddRouting();
       services.AddLogging();
       services.AddHealthChecks();
-      services.AddCors();
+      services.AddCors(x => x.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
       // Data protection
       services.AddDataProtection().PersistKeysToDbContext<KeysContext>();

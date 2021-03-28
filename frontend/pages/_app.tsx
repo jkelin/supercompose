@@ -34,10 +34,11 @@ const gqlHoC = withApollo(
     const wsLink =
       typeof window !== 'undefined' &&
       new WebSocketLink({
-        uri: SupercomposeConfig.BACKEND_URI.replace(
-          /^http:\/\//,
-          'ws://',
-        ).replace(/^https:\/\//, 'wss://'),
+        uri:
+          SupercomposeConfig.BACKEND_URI.replace(/^http:\/\//, 'ws://').replace(
+            /^https:\/\//,
+            'wss://',
+          ) + '/graphql',
         options: {
           reconnect: true,
         },
