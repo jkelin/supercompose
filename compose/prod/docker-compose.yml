@@ -6,6 +6,10 @@ services:
       - 3100:3000
     environment:
       - BACKEND_URI
+    logging:
+      driver: json-file
+      options:
+          max-size: 100m
   backend:
     build: ../../backend
     ports:
@@ -14,5 +18,9 @@ services:
       - ConnectionStrings__SupercomposeContext
       - ConnectionStrings__KeysContext
       - ConnectionStrings__Redis
+    logging:
+      driver: json-file
+      options:
+          max-size: 100m
 volumes:
   redis-data:
