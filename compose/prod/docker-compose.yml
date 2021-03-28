@@ -10,6 +10,7 @@ services:
       driver: json-file
       options:
           max-size: 100m
+    restart: always
   backend:
     build: ../../backend
     ports:
@@ -22,5 +23,6 @@ services:
       driver: json-file
       options:
           max-size: 100m
+    restart: always
 volumes:
   redis-data:
