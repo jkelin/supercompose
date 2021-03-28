@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RedLockNet;
+using Sentry;
 using StackExchange.Redis;
 using supercompose;
 
@@ -113,7 +114,8 @@ namespace backend2.HostedServices
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Error while processing node update");
+        logger.LogWarning(ex, "Error while processing node update");
+        SentrySdk.CaptureException(ex);
       }
     }
   }

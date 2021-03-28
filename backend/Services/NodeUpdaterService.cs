@@ -125,26 +125,28 @@ namespace backend2.Services
       {
         logger.LogInformation("Node reconciliation failed {why}", ex.Message);
         connectionLog.Error("Node reconciliation failed", ex);
-        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node { ReconciliationFailed = true }, ct);
       }
       catch (NodeConnectionFailedException ex)
       {
         logger.LogInformation("Node reconciliation failed {why}", ex.Message);
         connectionLog.Error($"Node connection failed", ex);
-        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node { ReconciliationFailed = true }, ct);
       }
       catch (SshException ex)
       {
         logger.LogInformation("Node reconciliation failed {why}", ex.Message);
         connectionLog.Error($"SSH error", ex);
-        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node { ReconciliationFailed = true }, ct);
       }
       catch (Exception ex)
       {
-        logger.LogError(ex, "Unknown error when reconciling node {nodeId}", nodeId);
+        logger.LogWarning(ex, "Unknown error when reconciling node {nodeId}", nodeId);
         connectionLog.Error($"Unknown error", ex);
 
-        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
+        await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node { ReconciliationFailed = true }, ct);
+
+        throw;
       }
     }
 

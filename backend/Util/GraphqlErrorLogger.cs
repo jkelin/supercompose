@@ -10,6 +10,7 @@ using HotChocolate.Language;
 using HotChocolate.Resolvers;
 using HotChocolate.Types;
 using Microsoft.Extensions.Logging;
+using Sentry;
 
 namespace supercompose
 {
@@ -38,22 +39,22 @@ namespace supercompose
       base.RequestError(context, exception);
     }
 
-    public override void SyntaxError(IRequestContext context, IError error)
-    {
-      if (error.Exception != null)
-        LogError(new EventId(3, "GraphQL Syntax Error"), error.Exception, context.Document, context.Variables);
+    //public override void SyntaxError(IRequestContext context, IError error)
+    //{
+    //  if (error.Exception != null)
+    //    LogError(new EventId(3, "GraphQL Syntax Error"), error.Exception, context.Document, context.Variables);
 
-      base.SyntaxError(context, error);
-    }
+    //  base.SyntaxError(context, error);
+    //}
 
-    public override void ValidationErrors(IRequestContext context, IReadOnlyList<IError> errors)
-    {
-      foreach (var error in errors)
-        if (error.Exception != null)
-          LogError(new EventId(2, "GraphQL Validation Error"), error.Exception, context.Document, context.Variables);
+    //public override void ValidationErrors(IRequestContext context, IReadOnlyList<IError> errors)
+    //{
+    //  foreach (var error in errors)
+    //    if (error.Exception != null)
+    //      LogError(new EventId(2, "GraphQL Validation Error"), error.Exception, context.Document, context.Variables);
 
-      base.ValidationErrors(context, errors);
-    }
+    //  base.ValidationErrors(context, errors);
+    //}
 
     public override void ResolverError(IMiddlewareContext context, IError error)
     {
@@ -78,18 +79,20 @@ namespace supercompose
       });
 
       if (field != null)
-        _logger.LogError(
+        _logger.LogWarning(
           eventId,
           exception,
           "GraphQL exception in field {name}",
           $"{field.DeclaringType.Name}.{field.Name}"
         );
       else
-        _logger.LogError(
+        _logger.LogWarning(
           eventId,
           exception,
           "GraphQL exception"
         );
+
+      SentrySdk.CaptureException(exception);
     }
   }
 }

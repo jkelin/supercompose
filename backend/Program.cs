@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using backend2.Context;
 using Microsoft.AspNetCore.Hosting;
@@ -25,7 +26,21 @@ namespace supercompose
     public static IHostBuilder CreateHostBuilder(string[] args)
     {
       return Host.CreateDefaultBuilder(args)
-        .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
+        .ConfigureWebHostDefaults(webBuilder =>
+        {
+          webBuilder.UseStartup<Startup>();
+          webBuilder.ConfigureLogging((c, l) =>
+          {
+            l.AddConfiguration(c.Configuration);
+            // Adding Sentry integration to Microsoft.Extensions.Logging
+            l.AddSentry(o =>
+            {
+              o.MinimumBreadcrumbLevel = LogLevel.Debug;
+              o.MaxBreadcrumbs = 50;
+              o.Debug = true;
+            });
+          });
+        });
     }
 
     public static async Task Migrate(IServiceProvider provider)
