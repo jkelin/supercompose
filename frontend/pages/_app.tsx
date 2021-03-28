@@ -28,7 +28,7 @@ const App = ({ Component, pageProps, apollo }: any) => (
 const gqlHoC = withApollo(
   (opts) => {
     const httpLink = createHttpLink({
-      uri: SupercomposeConfig.BACKEND_URI,
+      uri: SupercomposeConfig.BACKEND_URI + '/graphql',
     });
 
     const wsLink =
