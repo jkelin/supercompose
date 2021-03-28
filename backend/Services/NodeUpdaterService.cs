@@ -123,16 +123,19 @@ namespace backend2.Services
       }
       catch (NodeReconciliationFailedException ex)
       {
+        logger.LogInformation("Node reconciliation failed {why}", ex.Message);
         connectionLog.Error("Node reconciliation failed", ex);
         await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
       }
       catch (NodeConnectionFailedException ex)
       {
+        logger.LogInformation("Node reconciliation failed {why}", ex.Message);
         connectionLog.Error($"Node connection failed", ex);
         await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
       }
       catch (SshException ex)
       {
+        logger.LogInformation("Node reconciliation failed {why}", ex.Message);
         connectionLog.Error($"SSH error", ex);
         await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
       }
@@ -270,6 +273,8 @@ namespace backend2.Services
         deployment.LastCheck = DateTime.UtcNow;
         deployment.LastDeployedAsEnabled = target.DeploymentEnabled;
         await ctx.SaveChangesAsync(ct);
+
+        connectionLog.Info($"Deployment applied successfully");
       }
       catch (DeploymentReconciliationFailedException ex)
       {
@@ -342,7 +347,7 @@ namespace backend2.Services
     {
       try
       {
-        var serviceFile = GenerateSystemdServiceFile(deployment);
+        var serviceFile = await GenerateSystemdServiceFile(deployment, ssh, ct);
         connectionLog.Info($"Updating systemd service");
         await UpdateFile(sftp, targetCompose.ServicePath, serviceFile, ct);
         ct.ThrowIfCancellationRequested();
@@ -488,8 +493,17 @@ namespace backend2.Services
         throw new DeploymentReconciliationFailedException("Docker-compose failed to start");
     }
 
-    private static string GenerateSystemdServiceFile(Deployment deployment)
+    private async Task<string> GenerateSystemdServiceFile(Deployment deployment, SshClient ssh, CancellationToken ct)
     {
+      var whichDockerCompose = await RunCommand(ssh, "which docker-compose", ct);
+      if (whichDockerCompose.status != 0)
+      {
+        connectionLog.Error("Could not resolve docker-compose location which is needed for systemd service");
+        throw new NodeReconciliationFailedException("Could not resolve docker-compose location");
+      }
+
+      var dockerComposeLocation = whichDockerCompose.result.Trim();
+
       return $@"
 [Unit]
 Description={deployment.Compose.Name} service with docker compose managed by supercompose
@@ -500,11 +514,11 @@ After=docker.service
 Type=oneshot
 RemainAfterExit=true
 WorkingDirectory={deployment.Compose.Current.Directory}
-ExecStart=/usr/bin/docker-compose up -d --remove-orphans
-ExecStop=/usr/bin/docker-compose down
+ExecStart={dockerComposeLocation} up -d --remove-orphans
+ExecStop={dockerComposeLocation} down
 
 [Install]
-WantedBy=multi-user.target";
+WantedBy=multi-user.target".Trim().Replace("\r\n", "\n");
     }
   }
 }

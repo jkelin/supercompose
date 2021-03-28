@@ -251,10 +251,11 @@ namespace backend2.Services
     public async Task WriteFile(SftpClient sftp, string path, ReadOnlyMemory<byte> contents)
     {
       logger.LogDebug("Opening {path} for writing", path);
-      await using var writeFs = sftp.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+      await using var writeFs = sftp.Open(path, FileMode.Create, FileAccess.Write);
 
       logger.LogDebug("Writing {bytes}B", contents.Length);
       await writeFs.WriteAsync(contents);
+      await writeFs.FlushAsync();
     }
 
     public async Task EnsureDirectoryExists(SftpClient sftp, string path, CancellationToken ct)
