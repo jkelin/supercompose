@@ -1,0 +1,7 @@
+.idea
+.vscode
+.vs
+bin
+obj
+Dockerfile
+.git

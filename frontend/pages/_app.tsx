@@ -12,9 +12,10 @@ import { setContext } from '@apollo/client/link/context';
 import { WebSocketLink } from '@apollo/client/link/ws';
 
 import '../styles/globals.css';
-import { auth0, getToken } from 'lib/auth0';
+import { getToken } from 'lib/auth0';
 import axios from 'axios';
 import { ToastProvider } from 'containers';
+import { SupercomposeConfig } from 'lib/config';
 
 const App = ({ Component, pageProps, apollo }: any) => (
   <ApolloProvider client={apollo}>
@@ -26,21 +27,17 @@ const App = ({ Component, pageProps, apollo }: any) => (
 
 const gqlHoC = withApollo(
   (opts) => {
-    const gqlEp = process.env.BACKEND_URI
-      ? process.env.BACKEND_URI + '/graphql'
-      : '/api/graphql';
     const httpLink = createHttpLink({
-      uri: gqlEp,
+      uri: SupercomposeConfig.BACKEND_URI,
     });
 
     const wsLink =
       typeof window !== 'undefined' &&
       new WebSocketLink({
-        // uri:
-        //   window.location.origin
-        //     .replace(/^http:\/\//, 'ws://')
-        //     .replace(/^https:\/\//, 'wss://') + '/api/graphql',
-        uri: 'ws://localhost:5000/graphql', // TODO think up a way to proxy websockets or something
+        uri: SupercomposeConfig.BACKEND_URI.replace(
+          /^http:\/\//,
+          'ws://',
+        ).replace(/^https:\/\//, 'wss://'),
         options: {
           reconnect: true,
         },

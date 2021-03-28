@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  # redis:
+  #   image: "bitnami/redis:6.2"
+  #   volumes:
+  #     - redis-data:/bitnami/redis/data
+  #   environment:
+  #     - ALLOW_EMPTY_PASSWORD=yes
+  frontend:
+    build: ../../frontend
+    ports:
+      - 3100:3000
+    environment:
+      - BACKEND_URI
+  backend:
+    build: ../../backend
+    ports:
+      - 3101:5000
+    environment:
+      - ConnectionStrings__SupercomposeContext
+      - ConnectionStrings__KeysContext
+      - ConnectionStrings__Redis
+volumes:
+  redis-data:
