@@ -19,7 +19,7 @@ services:
       - ConnectionStrings__SupercomposeContext
       - ConnectionStrings__KeysContext
       - ConnectionStrings__Redis
-      - Sentry_Dsn
+      - SENTRY_DSN
     logging:
       driver: json-file
       options:
