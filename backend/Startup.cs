@@ -81,6 +81,7 @@ namespace supercompose
       services.AddRouting();
       services.AddLogging();
       services.AddHealthChecks();
+      services.AddCors();
 
       // Data protection
       services.AddDataProtection().PersistKeysToDbContext<KeysContext>();
@@ -137,6 +138,7 @@ namespace supercompose
 
       app.UseWebSockets();
       app.UseRouting();
+      app.UseCors();
 
       app.UseEndpoints(endpoints =>
       {
