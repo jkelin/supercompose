@@ -13,6 +13,7 @@ import {
   useEnableNodeMutation,
   useGetDeploymentsQuery,
   useGetNodeByIdQuery,
+  useRedeployNodeMutation,
 } from 'data';
 import { create, divide } from 'lodash';
 import { NextPage } from 'next';
@@ -62,6 +63,12 @@ const NodeDetail: NextPage<{}> = (props) => {
     },
   });
 
+  const [redeployNode] = useRedeployNodeMutation({
+    variables: {
+      id: router.query.id,
+    },
+  });
+
   if (nodeQuery.loading) {
     return (
       <DashboardLayout>
@@ -99,6 +106,16 @@ const NodeDetail: NextPage<{}> = (props) => {
                 onClick={enableNode}
               >
                 Enable
+              </ActionButton>
+            )}
+
+            {node?.enabled && (
+              <ActionButton
+                className="mr-4"
+                kind="primary-outline"
+                onClick={redeployNode}
+              >
+                Redeploy
               </ActionButton>
             )}
 

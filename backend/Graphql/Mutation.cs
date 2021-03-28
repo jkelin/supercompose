@@ -225,6 +225,17 @@ namespace supercompose
 
     [UseFirstOrDefault]
     [UseProjection]
+    public async Task<IQueryable<Compose>> RedeployCompose(
+      [Required] Guid id
+    )
+    {
+      await composeService.Redeploy(id);
+
+      return ctx.Composes.Where(x => x.Id == id);
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
     public async Task<IQueryable<Deployment>> CreateDeployment(
       [Required] Guid node,
       [Required] Guid compose
@@ -259,6 +270,17 @@ namespace supercompose
 
     [UseFirstOrDefault]
     [UseProjection]
+    public async Task<IQueryable<Deployment>> RedeployDeployment(
+      [Required] Guid id
+    )
+    {
+      await deploymentService.Redeploy(id);
+
+      return ctx.Deployments.Where(x => x.Id == id);
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
     public async Task<IQueryable<Node>> EnableNode(
       [Required] Guid node
     )
@@ -277,6 +299,17 @@ namespace supercompose
       await nodeService.Disable(node);
 
       return ctx.Nodes.Where(x => x.Id == node);
+    }
+
+    [UseFirstOrDefault]
+    [UseProjection]
+    public async Task<IQueryable<Node>> RedeployNode(
+      [Required] Guid id
+    )
+    {
+      await nodeService.Redeploy(id);
+
+      return ctx.Nodes.Where(x => x.Id == id);
     }
   }
 }

@@ -76,5 +76,18 @@ namespace backend2.Services
 
       await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);
     }
+
+    public async Task Redeploy(Guid deploymentId)
+    {
+      var deployment = await ctx.Deployments.FirstOrDefaultAsync(x => x.Id == deploymentId);
+
+      if (deployment == null) throw new DeploymentNotFoundException();
+
+      deployment.RedeploymentRequestedAt = DateTime.UtcNow;
+      deployment.ReconciliationFailed = null;
+      await ctx.SaveChangesAsync();
+
+      await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);
+    }
   }
 }

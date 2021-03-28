@@ -4,8 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using backend2.Context;
-
-#nullable disable
+using supercompose;
 
 namespace supercompose
 {
@@ -24,30 +23,13 @@ namespace supercompose
     [Required] public Guid? NodeId { get; set; }
 
     public DateTime? LastCheck { get; set; }
+    public DateTime? RedeploymentRequestedAt { get; set; }
 
     public Guid? LastDeployedNodeVersion { get; set; }
 
     public bool? LastDeployedAsEnabled { get; set; }
 
     public bool? ReconciliationFailed { get; set; }
-
-    public static Expression<Func<Deployment, bool>> ShouldUpdateProjection
-    {
-      get
-      {
-        return x => x.ReconciliationFailed != true &&
-                    ((x.Enabled && x.Node.Enabled) != x.LastDeployedAsEnabled || x.Enabled &&
-                      (x.Node.Version != x.LastDeployedNodeVersion ||
-                       x.Compose.CurrentId != x.LastDeployedComposeVersionId ||
-                       x.LastCheck + NodeCheckInterval < DateTime.UtcNow));
-      }
-    }
-
-    public bool ShouldUpdate()
-    {
-      return ShouldUpdateProjection.Compile().Invoke(this);
-    }
-
 
     public virtual Compose Compose { get; set; }
     public virtual ComposeVersion? LastDeployedComposeVersion { get; set; }

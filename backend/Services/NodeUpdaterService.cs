@@ -8,6 +8,7 @@ using supercompose;
 using System;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -56,25 +57,56 @@ namespace backend2.Services
       await multiplexer.GetSubscriber().PublishAsync(NodeUpdateListener.ChannelName, nodeId.ToString());
     }
 
+    private bool RedeployRequested(Deployment x)
+    {
+      var deplRequested = x.RedeploymentRequestedAt != null && x.RedeploymentRequestedAt > x.LastCheck;
+      var nodeRequested = x.Node.RedeploymentRequestedAt != null && x.Node.RedeploymentRequestedAt > x.LastCheck;
+      var composeRequested = x.LastDeployedComposeVersion?.RedeploymentRequestedAt != null &&
+                             x.LastDeployedComposeVersion.RedeploymentRequestedAt > x.LastCheck;
+
+      return deplRequested ||
+             nodeRequested ||
+             composeRequested;
+    }
+
+    private bool HasDeploymentChanged(Deployment x)
+    {
+      var nodeVersionChanged = x.Node.Version != x.LastDeployedNodeVersion;
+      var composeVersionChanged = x.Compose.CurrentId != x.LastDeployedComposeVersionId;
+      var lastCheckOutdated = x.LastCheck + NodeCheckInterval < DateTime.UtcNow;
+
+      return nodeVersionChanged || composeVersionChanged || lastCheckOutdated || RedeployRequested(x);
+    }
+
+    private bool ShouldUpdateDeployment(Deployment x)
+    {
+      var deplReconDidntFail = x.ReconciliationFailed != true;
+      var enabledChanged = (x.Enabled && x.Node.Enabled) != x.LastDeployedAsEnabled;
+      var deploymentUpdateable = enabledChanged || x.Enabled;
+
+      return deplReconDidntFail && deploymentUpdateable && HasDeploymentChanged(x);
+    }
+
     public async Task ProcessNodeUpdates(Guid nodeId, CancellationToken ct)
     {
       try
       {
         while (!ct.IsCancellationRequested)
         {
-          var deployments = await ctx.Deployments
-            .Where(x => x.NodeId == nodeId)
-            .Where(x => x.Node.ReconciliationFailed != true)
-            .Where(Deployment.ShouldUpdateProjection)
-            .Include(x => x.Node)
-            .Include(x => x.LastDeployedComposeVersion)
-            .Include(x => x.Compose)
+          var node = await ctx.Nodes
+            .Where(x => x.Id == nodeId)
+            .Include(x => x.Deployments)
+            .ThenInclude(x => x.Compose)
             .ThenInclude(x => x.Current)
-            .ToListAsync(ct);
+            .Include(x => x.Deployments)
+            .ThenInclude(x => x.LastDeployedComposeVersion)
+            .FirstOrDefaultAsync(ct);
 
-          if (deployments.Count == 0) return;
+          if (node == null) throw new NodeNotFoundException();
 
-          var node = deployments.First().Node;
+          var deployments = node.Deployments.Where(ShouldUpdateDeployment).ToList();
+          if (!deployments.Any()) return;
+
           using var ssh = await OpenSsh(node, ct);
 
           if (deployments.Any(x => x.LastDeployedNodeVersion != node.Version))
@@ -227,12 +259,17 @@ namespace backend2.Services
 
       try
       {
+        var (target, last) = CalculateDeploymentState(deployment);
+
         await EnsureComposeAndServiceDeployment(deployment, ssh, sftp, ct);
         await EnsureServiceInCorrectState(deployment, ssh, ct);
+        await EnsureRestarted(deployment, ssh, ct);
 
         deployment.LastDeployedComposeVersionId = deployment.Compose.CurrentId;
         deployment.LastDeployedNodeVersion = deployment.Node.Version;
-        await ctx.SaveChangesAsync();
+        deployment.LastCheck = DateTime.UtcNow;
+        deployment.LastDeployedAsEnabled = target.DeploymentEnabled;
+        await ctx.SaveChangesAsync(ct);
       }
       catch (DeploymentReconciliationFailedException ex)
       {
@@ -363,12 +400,39 @@ namespace backend2.Services
           else await StopDockerCompose(deployment, targetCompose, ssh, ct);
         }
       }
+    }
 
-      deployment.LastDeployedComposeVersion = targetCompose;
-      deployment.LastDeployedAsEnabled = target.DeploymentEnabled;
-      deployment.LastDeployedNodeVersion = deployment.Node.Version;
-      deployment.LastCheck = DateTime.UtcNow;
-      await ctx.SaveChangesAsync(ct);
+    private async Task EnsureRestarted(Deployment deployment, SshClient ssh, CancellationToken ct)
+    {
+      if (RedeployRequested(deployment))
+      {
+        var (target, last) = CalculateDeploymentState(deployment);
+
+        if (target.UseService)
+          await RestartSystemdService(deployment, deployment.Compose.Current, ssh, ct);
+        else
+          await RestartDockerCompose(deployment, deployment.Compose.Current, ssh, ct);
+      }
+    }
+
+    private async Task RestartSystemdService(Deployment deployment, ComposeVersion compose, SshClient ssh,
+      CancellationToken ct)
+    {
+      var serviceStartResult =
+        await RunCommand(ssh, $"systemctl restart {compose.ServiceName}", ct);
+
+      if (serviceStartResult.status != 0)
+        throw new DeploymentReconciliationFailedException("Systemd service failed to restart");
+    }
+
+    private async Task RestartDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
+      CancellationToken ct)
+    {
+      var startCommand =
+        await RunCommand(ssh, $"/usr/local/bin/docker-compose --file '{compose.ComposePath}' restart", ct);
+
+      if (startCommand.status != 0)
+        throw new DeploymentReconciliationFailedException($"Docker-compose failed to restart");
     }
 
     private async Task StopSystemdService(Deployment deployment, ComposeVersion compose, SshClient ssh,

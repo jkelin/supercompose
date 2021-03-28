@@ -10,6 +10,7 @@ import {
   useGetComposeByIdQuery,
   useGetDeploymentsQuery,
   useGetNodesQuery,
+  useRedeployComposeMutation,
 } from 'data';
 import { NextPage } from 'next';
 import { useRouter } from 'next/dist/client/router';
@@ -56,6 +57,12 @@ const ComposeDetail: NextPage<{}> = (props) => {
     [compose, createDeployment, router, toast],
   );
 
+  const [redeployCompose] = useRedeployComposeMutation({
+    variables: {
+      id: router.query.id,
+    },
+  });
+
   if (!composeQuery.data) {
     return (
       <DashboardLayout>
@@ -81,9 +88,22 @@ const ComposeDetail: NextPage<{}> = (props) => {
             <div className="text-sm text-gray-600">Docker Compose</div>
           </div>
 
-          <LinkButton kind="primary" href={`/compose/${router.query.id}/edit`}>
-            Update
-          </LinkButton>
+          <div className="flex flex-row">
+            <ActionButton
+              className="mr-4"
+              kind="primary-outline"
+              onClick={redeployCompose}
+            >
+              Redeploy
+            </ActionButton>
+
+            <LinkButton
+              kind="primary"
+              href={`/compose/${router.query.id}/edit`}
+            >
+              Update
+            </LinkButton>
+          </div>
         </div>
 
         <div className="px-4 py-5 sm:p-6">

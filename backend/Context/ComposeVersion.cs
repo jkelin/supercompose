@@ -22,6 +22,8 @@ namespace supercompose
 
     [Required] public bool PendingDelete { get; set; } = false;
 
+    public DateTime? RedeploymentRequestedAt { get; set; }
+
     public string ComposePath => Directory + "/docker-compose.yml";
 
     public string ServicePath => $"/etc/systemd/system/{ServiceName}.service";

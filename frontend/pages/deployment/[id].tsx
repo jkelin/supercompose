@@ -19,6 +19,7 @@ import {
   useGetDeploymentsQuery,
   useGetNodeByIdQuery,
   useOnConnectionLogSubscription,
+  useRedeployDeploymentMutation,
 } from 'data';
 import { create, divide } from 'lodash';
 import { NextPage } from 'next';
@@ -55,6 +56,12 @@ const DeploymentDetail: NextPage<{}> = (props) => {
     ],
   });
 
+  const [redeployDeployment] = useRedeployDeploymentMutation({
+    variables: {
+      id: router.query.id,
+    },
+  });
+
   if (deploymentQuery.loading) {
     return (
       <DashboardLayout>
@@ -67,13 +74,6 @@ const DeploymentDetail: NextPage<{}> = (props) => {
 
   const deployment = deploymentQuery.data!.deployment!;
 
-  const onDisable = async () => {
-    await disableDeployment();
-  };
-  const onEnable = async () => {
-    await enableDeployment();
-  };
-
   return (
     <DashboardLayout>
       <div className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200 place-self-start w-full">
@@ -84,18 +84,32 @@ const DeploymentDetail: NextPage<{}> = (props) => {
             </h1>
             <div className="text-sm text-gray-600">Deployment</div>
           </div>
+          <div className="flex flex-row">
+            {deployment?.enabled && (
+              <ActionButton
+                kind="danger-outline"
+                onClick={disableDeployment}
+                className="mr-4"
+              >
+                Disable
+              </ActionButton>
+            )}
+            {!deployment?.enabled && (
+              <ActionButton
+                kind="primary-outline"
+                onClick={enableDeployment}
+                className="mr-4"
+              >
+                Enable
+              </ActionButton>
+            )}
 
-          {deployment?.enabled && (
-            <ActionButton kind="danger-outline" onClick={onDisable}>
-              Disable
-            </ActionButton>
-          )}
-
-          {!deployment?.enabled && (
-            <ActionButton kind="primary-outline" onClick={onEnable}>
-              Enable
-            </ActionButton>
-          )}
+            {deployment?.enabled && (
+              <ActionButton kind="primary-outline" onClick={redeployDeployment}>
+                Redeploy
+              </ActionButton>
+            )}
+          </div>
         </div>
         <div className="px-4 py-5 sm:p-6">
           <div className="flex flex-wrap">

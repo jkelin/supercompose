@@ -28,6 +28,8 @@ namespace supercompose
 
     public bool? ReconciliationFailed { get; set; }
 
+    public DateTime? RedeploymentRequestedAt { get; set; }
+
     [Required] public Guid Version { get; set; } = Guid.NewGuid();
 
     public Guid? TenantId { get; set; }

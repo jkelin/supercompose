@@ -1,0 +1,13 @@
+mutation redeployCompose($id: Uuid!) {
+  redeployCompose(id: $id) {
+    id
+    name
+    current {
+      id
+      directory
+      serviceEnabled
+      serviceName
+      content
+    }
+  }
+}

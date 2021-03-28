@@ -121,5 +121,34 @@ namespace backend2.Services
       name = new Regex("-+", RegexOptions.IgnoreCase).Replace(name, "-");
       return name;
     }
+
+    public async Task Redeploy(Guid composeId)
+    {
+      var compose = await ctx.Composes
+        .Include(x => x.Current)
+        .Include(x => x.Deployments)
+        .FirstOrDefaultAsync(x => x.Id == composeId);
+
+      if (compose == null) throw new ComposeNotFoundException();
+
+      var version = new ComposeVersion
+      {
+        Id = Guid.NewGuid(),
+        Content = compose.Current.Content,
+        Directory = compose.Current.Directory,
+        ServiceEnabled = compose.Current.ServiceEnabled,
+        ServiceName = compose.Current.ServiceName,
+        RedeploymentRequestedAt = DateTime.UtcNow,
+        ComposeId = compose.Id
+      };
+
+      await ctx.ComposeVersions.AddAsync(version);
+
+      compose.CurrentId = version.Id;
+
+      await ctx.SaveChangesAsync();
+
+      foreach (var deployment in compose.Deployments) await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);
+    }
   }
 }

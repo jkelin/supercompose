@@ -1,0 +1,14 @@
+mutation redeployNode($id: Uuid!) {
+  redeployNode(id: $id) {
+    id
+    name
+    host
+    username
+    enabled
+    reconciliationFailed
+    port
+    deployments {
+      id
+    }
+  }
+}

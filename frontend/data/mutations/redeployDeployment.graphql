@@ -1,0 +1,24 @@
+mutation redeployDeployment($id: Uuid!) {
+  redeployDeployment(id: $id) {
+    id
+    enabled
+    reconciliationFailed
+    compose {
+      id
+      name
+      current {
+        id
+        serviceEnabled
+        serviceName
+        directory
+      }
+    }
+    node {
+      id
+      name
+      host
+      port
+      username
+    }
+  }
+}

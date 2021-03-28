@@ -75,11 +75,14 @@ export type Mutation = {
   createCompose?: Maybe<Compose>;
   updateCompose?: Maybe<Compose>;
   deleteCompose: Scalars['Boolean'];
+  redeployCompose?: Maybe<Compose>;
   createDeployment?: Maybe<Deployment>;
   enableDeployment?: Maybe<Deployment>;
   disableDeployment?: Maybe<Deployment>;
+  redeployDeployment?: Maybe<Deployment>;
   enableNode?: Maybe<Node>;
   disableNode?: Maybe<Node>;
+  redeployNode?: Maybe<Node>;
 };
 
 export type MutationCreateNodeArgs = {
@@ -133,6 +136,10 @@ export type MutationDeleteComposeArgs = {
   id: Scalars['Uuid'];
 };
 
+export type MutationRedeployComposeArgs = {
+  id: Scalars['Uuid'];
+};
+
 export type MutationCreateDeploymentArgs = {
   node: Scalars['Uuid'];
   compose: Scalars['Uuid'];
@@ -146,12 +153,20 @@ export type MutationDisableDeploymentArgs = {
   deployment: Scalars['Uuid'];
 };
 
+export type MutationRedeployDeploymentArgs = {
+  id: Scalars['Uuid'];
+};
+
 export type MutationEnableNodeArgs = {
   node: Scalars['Uuid'];
 };
 
 export type MutationDisableNodeArgs = {
   node: Scalars['Uuid'];
+};
+
+export type MutationRedeployNodeArgs = {
+  id: Scalars['Uuid'];
 };
 
 export type Subscription = {
@@ -192,6 +207,7 @@ export type NodeFilterInput = {
   port?: Maybe<ComparableNullableOfInt32OperationFilterInput>;
   username?: Maybe<StringOperationFilterInput>;
   reconciliationFailed?: Maybe<BooleanOperationFilterInput>;
+  redeploymentRequestedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
   version?: Maybe<ComparableGuidOperationFilterInput>;
   tenantId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
   tenant?: Maybe<TenantFilterInput>;
@@ -207,6 +223,7 @@ export type NodeSortInput = {
   port?: Maybe<SortEnumType>;
   username?: Maybe<SortEnumType>;
   reconciliationFailed?: Maybe<SortEnumType>;
+  redeploymentRequestedAt?: Maybe<SortEnumType>;
   version?: Maybe<SortEnumType>;
   tenantId?: Maybe<SortEnumType>;
   tenant?: Maybe<TenantSortInput>;
@@ -235,6 +252,7 @@ export type DeploymentFilterInput = {
   lastDeployedComposeVersionId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
   nodeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
   lastCheck?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
+  redeploymentRequestedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
   lastDeployedNodeVersion?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
   lastDeployedAsEnabled?: Maybe<BooleanOperationFilterInput>;
   reconciliationFailed?: Maybe<BooleanOperationFilterInput>;
@@ -329,6 +347,21 @@ export type ComparableNullableOfInt32OperationFilterInput = {
   nlte?: Maybe<Scalars['Int']>;
 };
 
+export type ComparableNullableOfDateTimeOperationFilterInput = {
+  eq?: Maybe<Scalars['DateTime']>;
+  neq?: Maybe<Scalars['DateTime']>;
+  in?: Maybe<Array<Maybe<Scalars['DateTime']>>>;
+  nin?: Maybe<Array<Maybe<Scalars['DateTime']>>>;
+  gt?: Maybe<Scalars['DateTime']>;
+  ngt?: Maybe<Scalars['DateTime']>;
+  gte?: Maybe<Scalars['DateTime']>;
+  ngte?: Maybe<Scalars['DateTime']>;
+  lt?: Maybe<Scalars['DateTime']>;
+  nlt?: Maybe<Scalars['DateTime']>;
+  lte?: Maybe<Scalars['DateTime']>;
+  nlte?: Maybe<Scalars['DateTime']>;
+};
+
 export type ComparableGuidOperationFilterInput = {
   eq?: Maybe<Scalars['Uuid']>;
   neq?: Maybe<Scalars['Uuid']>;
@@ -386,6 +419,7 @@ export type ComposeVersionFilterInput = {
   serviceEnabled?: Maybe<BooleanOperationFilterInput>;
   composeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
   pendingDelete?: Maybe<BooleanOperationFilterInput>;
+  redeploymentRequestedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
   composePath?: Maybe<StringOperationFilterInput>;
   servicePath?: Maybe<StringOperationFilterInput>;
   composeNavigation?: Maybe<ComposeFilterInput>;
@@ -398,21 +432,6 @@ export type ListFilterInputTypeOfComposeVersionFilterInput = {
   none?: Maybe<ComposeVersionFilterInput>;
   some?: Maybe<ComposeVersionFilterInput>;
   any?: Maybe<Scalars['Boolean']>;
-};
-
-export type ComparableNullableOfDateTimeOperationFilterInput = {
-  eq?: Maybe<Scalars['DateTime']>;
-  neq?: Maybe<Scalars['DateTime']>;
-  in?: Maybe<Array<Maybe<Scalars['DateTime']>>>;
-  nin?: Maybe<Array<Maybe<Scalars['DateTime']>>>;
-  gt?: Maybe<Scalars['DateTime']>;
-  ngt?: Maybe<Scalars['DateTime']>;
-  gte?: Maybe<Scalars['DateTime']>;
-  ngte?: Maybe<Scalars['DateTime']>;
-  lt?: Maybe<Scalars['DateTime']>;
-  nlt?: Maybe<Scalars['DateTime']>;
-  lte?: Maybe<Scalars['DateTime']>;
-  nlte?: Maybe<Scalars['DateTime']>;
 };
 
 export type ConnectionLogSeverityOperationFilterInput = {
@@ -453,6 +472,7 @@ export type DeploymentSortInput = {
   lastDeployedComposeVersionId?: Maybe<SortEnumType>;
   nodeId?: Maybe<SortEnumType>;
   lastCheck?: Maybe<SortEnumType>;
+  redeploymentRequestedAt?: Maybe<SortEnumType>;
   lastDeployedNodeVersion?: Maybe<SortEnumType>;
   lastDeployedAsEnabled?: Maybe<SortEnumType>;
   reconciliationFailed?: Maybe<SortEnumType>;
@@ -526,6 +546,7 @@ export type ComposeVersionSortInput = {
   serviceEnabled?: Maybe<SortEnumType>;
   composeId?: Maybe<SortEnumType>;
   pendingDelete?: Maybe<SortEnumType>;
+  redeploymentRequestedAt?: Maybe<SortEnumType>;
   composePath?: Maybe<SortEnumType>;
   servicePath?: Maybe<SortEnumType>;
   composeNavigation?: Maybe<ComposeSortInput>;
@@ -562,20 +583,20 @@ export type ConnectionLog = {
 
 export type Deployment = {
   __typename?: 'Deployment';
-  shouldUpdate: Scalars['Boolean'];
   id: Scalars['Uuid'];
   enabled: Scalars['Boolean'];
   composeId: Scalars['Uuid'];
   lastDeployedComposeVersionId?: Maybe<Scalars['Uuid']>;
   nodeId: Scalars['Uuid'];
   lastCheck?: Maybe<Scalars['DateTime']>;
+  redeploymentRequestedAt?: Maybe<Scalars['DateTime']>;
   lastDeployedNodeVersion?: Maybe<Scalars['Uuid']>;
   lastDeployedAsEnabled?: Maybe<Scalars['Boolean']>;
   reconciliationFailed?: Maybe<Scalars['Boolean']>;
-  compose?: Maybe<Compose>;
+  compose: Compose;
   lastDeployedComposeVersion?: Maybe<ComposeVersion>;
-  node?: Maybe<Node>;
-  connectionLogs?: Maybe<Array<Maybe<ConnectionLog>>>;
+  node: Node;
+  connectionLogs: Array<ConnectionLog>;
 };
 
 export type Compose = {
@@ -600,6 +621,7 @@ export type Node = {
   port: Scalars['Int'];
   username: Scalars['String'];
   reconciliationFailed?: Maybe<Scalars['Boolean']>;
+  redeploymentRequestedAt?: Maybe<Scalars['DateTime']>;
   version: Scalars['Uuid'];
   tenantId?: Maybe<Scalars['Uuid']>;
   tenant?: Maybe<Tenant>;
@@ -622,6 +644,7 @@ export type ComposeVersion = {
   serviceEnabled: Scalars['Boolean'];
   composeId: Scalars['Uuid'];
   pendingDelete: Scalars['Boolean'];
+  redeploymentRequestedAt?: Maybe<Scalars['DateTime']>;
   composePath?: Maybe<Scalars['String']>;
   servicePath?: Maybe<Scalars['String']>;
   composeNavigation?: Maybe<Compose>;
@@ -670,10 +693,8 @@ export type CreateDeploymentMutationVariables = Exact<{
 export type CreateDeploymentMutation = { __typename?: 'Mutation' } & {
   createDeployment?: Maybe<
     { __typename?: 'Deployment' } & Pick<Deployment, 'id'> & {
-        compose?: Maybe<
-          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>
-        >;
-        node?: Maybe<{ __typename?: 'Node' } & Pick<Node, 'id' | 'name'>>;
+        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
+        node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
       }
   >;
 };
@@ -730,21 +751,17 @@ export type DisableDeploymentMutation = { __typename?: 'Mutation' } & {
       Deployment,
       'id' | 'enabled' | 'reconciliationFailed'
     > & {
-        compose?: Maybe<
-          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
-              current?: Maybe<
-                { __typename?: 'ComposeVersion' } & Pick<
-                  ComposeVersion,
-                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
-                >
-              >;
-            }
-        >;
-        node?: Maybe<
-          { __typename?: 'Node' } & Pick<
-            Node,
-            'id' | 'name' | 'host' | 'port' | 'username'
-          >
+        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+            current?: Maybe<
+              { __typename?: 'ComposeVersion' } & Pick<
+                ComposeVersion,
+                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+              >
+            >;
+          };
+        node: { __typename?: 'Node' } & Pick<
+          Node,
+          'id' | 'name' | 'host' | 'port' | 'username'
         >;
       }
   >;
@@ -783,21 +800,17 @@ export type EnableDeploymentMutation = { __typename?: 'Mutation' } & {
       Deployment,
       'id' | 'enabled' | 'reconciliationFailed'
     > & {
-        compose?: Maybe<
-          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
-              current?: Maybe<
-                { __typename?: 'ComposeVersion' } & Pick<
-                  ComposeVersion,
-                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
-                >
-              >;
-            }
-        >;
-        node?: Maybe<
-          { __typename?: 'Node' } & Pick<
-            Node,
-            'id' | 'name' | 'host' | 'port' | 'username'
-          >
+        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+            current?: Maybe<
+              { __typename?: 'ComposeVersion' } & Pick<
+                ComposeVersion,
+                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+              >
+            >;
+          };
+        node: { __typename?: 'Node' } & Pick<
+          Node,
+          'id' | 'name' | 'host' | 'port' | 'username'
         >;
       }
   >;
@@ -809,6 +822,72 @@ export type EnableNodeMutationVariables = Exact<{
 
 export type EnableNodeMutation = { __typename?: 'Mutation' } & {
   enableNode?: Maybe<
+    { __typename?: 'Node' } & Pick<
+      Node,
+      | 'id'
+      | 'name'
+      | 'host'
+      | 'username'
+      | 'enabled'
+      | 'reconciliationFailed'
+      | 'port'
+    > & {
+        deployments?: Maybe<
+          Array<Maybe<{ __typename?: 'Deployment' } & Pick<Deployment, 'id'>>>
+        >;
+      }
+  >;
+};
+
+export type RedeployComposeMutationVariables = Exact<{
+  id: Scalars['Uuid'];
+}>;
+
+export type RedeployComposeMutation = { __typename?: 'Mutation' } & {
+  redeployCompose?: Maybe<
+    { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+        current?: Maybe<
+          { __typename?: 'ComposeVersion' } & Pick<
+            ComposeVersion,
+            'id' | 'directory' | 'serviceEnabled' | 'serviceName' | 'content'
+          >
+        >;
+      }
+  >;
+};
+
+export type RedeployDeploymentMutationVariables = Exact<{
+  id: Scalars['Uuid'];
+}>;
+
+export type RedeployDeploymentMutation = { __typename?: 'Mutation' } & {
+  redeployDeployment?: Maybe<
+    { __typename?: 'Deployment' } & Pick<
+      Deployment,
+      'id' | 'enabled' | 'reconciliationFailed'
+    > & {
+        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+            current?: Maybe<
+              { __typename?: 'ComposeVersion' } & Pick<
+                ComposeVersion,
+                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+              >
+            >;
+          };
+        node: { __typename?: 'Node' } & Pick<
+          Node,
+          'id' | 'name' | 'host' | 'port' | 'username'
+        >;
+      }
+  >;
+};
+
+export type RedeployNodeMutationVariables = Exact<{
+  id: Scalars['Uuid'];
+}>;
+
+export type RedeployNodeMutation = { __typename?: 'Mutation' } & {
+  redeployNode?: Maybe<
     { __typename?: 'Node' } & Pick<
       Node,
       | 'id'
@@ -923,21 +1002,17 @@ export type GetDeploymentByIdQuery = { __typename?: 'Query' } & {
       Deployment,
       'id' | 'enabled' | 'reconciliationFailed'
     > & {
-        compose?: Maybe<
-          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
-              current?: Maybe<
-                { __typename?: 'ComposeVersion' } & Pick<
-                  ComposeVersion,
-                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
-                >
-              >;
-            }
-        >;
-        node?: Maybe<
-          { __typename?: 'Node' } & Pick<
-            Node,
-            'id' | 'name' | 'host' | 'port' | 'username'
-          >
+        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+            current?: Maybe<
+              { __typename?: 'ComposeVersion' } & Pick<
+                ComposeVersion,
+                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+              >
+            >;
+          };
+        node: { __typename?: 'Node' } & Pick<
+          Node,
+          'id' | 'name' | 'host' | 'port' | 'username'
         >;
       }
   >;
@@ -961,10 +1036,8 @@ export type GetDeploymentsQueryVariables = Exact<{ [key: string]: never }>;
 export type GetDeploymentsQuery = { __typename?: 'Query' } & {
   deployments: Array<
     { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
-        node?: Maybe<{ __typename?: 'Node' } & Pick<Node, 'id' | 'name'>>;
-        compose?: Maybe<
-          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>
-        >;
+        node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
+        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
       }
   >;
 };
@@ -1555,6 +1628,186 @@ export type EnableNodeMutationResult = Apollo.MutationResult<EnableNodeMutation>
 export type EnableNodeMutationOptions = Apollo.BaseMutationOptions<
   EnableNodeMutation,
   EnableNodeMutationVariables
+>;
+export const RedeployComposeDocument = gql`
+  mutation redeployCompose($id: Uuid!) {
+    redeployCompose(id: $id) {
+      id
+      name
+      current {
+        id
+        directory
+        serviceEnabled
+        serviceName
+        content
+      }
+    }
+  }
+`;
+export type RedeployComposeMutationFn = Apollo.MutationFunction<
+  RedeployComposeMutation,
+  RedeployComposeMutationVariables
+>;
+
+/**
+ * __useRedeployComposeMutation__
+ *
+ * To run a mutation, you first call `useRedeployComposeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRedeployComposeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [redeployComposeMutation, { data, loading, error }] = useRedeployComposeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRedeployComposeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    RedeployComposeMutation,
+    RedeployComposeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    RedeployComposeMutation,
+    RedeployComposeMutationVariables
+  >(RedeployComposeDocument, baseOptions);
+}
+export type RedeployComposeMutationHookResult = ReturnType<
+  typeof useRedeployComposeMutation
+>;
+export type RedeployComposeMutationResult = Apollo.MutationResult<RedeployComposeMutation>;
+export type RedeployComposeMutationOptions = Apollo.BaseMutationOptions<
+  RedeployComposeMutation,
+  RedeployComposeMutationVariables
+>;
+export const RedeployDeploymentDocument = gql`
+  mutation redeployDeployment($id: Uuid!) {
+    redeployDeployment(id: $id) {
+      id
+      enabled
+      reconciliationFailed
+      compose {
+        id
+        name
+        current {
+          id
+          serviceEnabled
+          serviceName
+          directory
+        }
+      }
+      node {
+        id
+        name
+        host
+        port
+        username
+      }
+    }
+  }
+`;
+export type RedeployDeploymentMutationFn = Apollo.MutationFunction<
+  RedeployDeploymentMutation,
+  RedeployDeploymentMutationVariables
+>;
+
+/**
+ * __useRedeployDeploymentMutation__
+ *
+ * To run a mutation, you first call `useRedeployDeploymentMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRedeployDeploymentMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [redeployDeploymentMutation, { data, loading, error }] = useRedeployDeploymentMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRedeployDeploymentMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    RedeployDeploymentMutation,
+    RedeployDeploymentMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    RedeployDeploymentMutation,
+    RedeployDeploymentMutationVariables
+  >(RedeployDeploymentDocument, baseOptions);
+}
+export type RedeployDeploymentMutationHookResult = ReturnType<
+  typeof useRedeployDeploymentMutation
+>;
+export type RedeployDeploymentMutationResult = Apollo.MutationResult<RedeployDeploymentMutation>;
+export type RedeployDeploymentMutationOptions = Apollo.BaseMutationOptions<
+  RedeployDeploymentMutation,
+  RedeployDeploymentMutationVariables
+>;
+export const RedeployNodeDocument = gql`
+  mutation redeployNode($id: Uuid!) {
+    redeployNode(id: $id) {
+      id
+      name
+      host
+      username
+      enabled
+      reconciliationFailed
+      port
+      deployments {
+        id
+      }
+    }
+  }
+`;
+export type RedeployNodeMutationFn = Apollo.MutationFunction<
+  RedeployNodeMutation,
+  RedeployNodeMutationVariables
+>;
+
+/**
+ * __useRedeployNodeMutation__
+ *
+ * To run a mutation, you first call `useRedeployNodeMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRedeployNodeMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [redeployNodeMutation, { data, loading, error }] = useRedeployNodeMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRedeployNodeMutation(
+  baseOptions?: Apollo.MutationHookOptions<
+    RedeployNodeMutation,
+    RedeployNodeMutationVariables
+  >,
+) {
+  return Apollo.useMutation<
+    RedeployNodeMutation,
+    RedeployNodeMutationVariables
+  >(RedeployNodeDocument, baseOptions);
+}
+export type RedeployNodeMutationHookResult = ReturnType<
+  typeof useRedeployNodeMutation
+>;
+export type RedeployNodeMutationResult = Apollo.MutationResult<RedeployNodeMutation>;
+export type RedeployNodeMutationOptions = Apollo.BaseMutationOptions<
+  RedeployNodeMutation,
+  RedeployNodeMutationVariables
 >;
 export const TestConnectionDocument = gql`
   mutation testConnection(
