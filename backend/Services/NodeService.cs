@@ -151,13 +151,16 @@ namespace supercompose
 
     public async Task Redeploy(Guid nodeId)
     {
-      var node = await ctx.Nodes.FirstOrDefaultAsync(x => x.Id == nodeId);
+      var node = await ctx.Nodes.Include(x => x.Deployments).FirstOrDefaultAsync(x => x.Id == nodeId);
 
       if (node == null) throw new NodeNotFoundException();
 
       node.RedeploymentRequestedAt = DateTime.UtcNow;
       node.Version = Guid.NewGuid();
       node.ReconciliationFailed = null;
+
+      foreach (var nodeDeployment in node.Deployments) nodeDeployment.ReconciliationFailed = false;
+
       await ctx.SaveChangesAsync();
 
       await nodeUpdater.NotifyAboutNodeChange(nodeId);

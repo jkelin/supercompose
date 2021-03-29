@@ -6,7 +6,7 @@ import {
   ConnectionLogSeverity,
 } from 'data';
 import { format } from 'date-fns';
-import { orderBy, takeRight } from 'lodash';
+import { orderBy, takeRight, uniqBy } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -81,19 +81,34 @@ export const ConnectionLogs: React.FC<{
       variables: {
         deploymentId: props.deploymentId,
         after: new Date().toISOString(),
-      }, //
+      },
       document: OnConnectionLogDocument,
       updateQuery: (prev, { subscriptionData }) => {
         if (!subscriptionData.data || !subscriptionData.data.connectionLogs) {
           return prev;
         }
 
+        const logs = takeRight(
+          orderBy(
+            uniqBy(
+              [
+                ...(prev.connectionLogs?.nodes as any),
+                subscriptionData.data.connectionLogs,
+              ],
+              (x) => x.id,
+            ),
+            ['time'],
+            ['desc'],
+          ),
+          500,
+        ).reverse();
+
         return {
           ...prev,
-          connectionLogs: [
+          connectionLogs: {
             ...prev.connectionLogs,
-            subscriptionData.data.connectionLogs,
-          ] as any,
+            nodes: logs,
+          },
         };
       },
     });
@@ -101,18 +116,7 @@ export const ConnectionLogs: React.FC<{
     setIsSubbed(true);
   }, [connectionLogsQuery, props.deploymentId, isSubbed]);
 
-  const logs = useMemo(
-    () =>
-      takeRight(
-        orderBy(
-          connectionLogsQuery.data?.connectionLogs,
-          ['time', 'id'],
-          ['asc', 'desc'],
-        ),
-        500,
-      ),
-    [connectionLogsQuery.data?.connectionLogs],
-  );
+  const logs = connectionLogsQuery.data?.connectionLogs?.nodes || [];
 
   useIsomorphicLayoutEffect(() => {
     if (

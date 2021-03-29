@@ -1,9 +1,15 @@
 query getDeploymentConnectionLogs($id: Uuid!) {
-  connectionLogs(where: { deploymentId: { eq: $id } }, order: { time: DESC }) {
-    id
-    time
-    message
-    error
-    severity
+  connectionLogs(
+    where: { deploymentId: { eq: $id } }
+    order: { time: ASC }
+    last: 500
+  ) {
+    nodes {
+      id
+      time
+      message
+      error
+      severity
+    }
   }
 }

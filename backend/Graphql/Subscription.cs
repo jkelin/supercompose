@@ -37,7 +37,8 @@ namespace backend
       if (deploymentId != null) query = query.Where(x => x.DeploymentId == deploymentId);
       if (nodeId != null) query = query.Where(x => x.NodeId == nodeId);
       if (composeId != null) query = query.Where(x => x.ComposeId == composeId);
-      if (after != null) query = query.Where(x => x.Time > after);
+
+      query = query.Where(x => x.Time > (after ?? DateTime.UtcNow));
 
       foreach (var log in await query.ToListAsync(ct)) yield return log;
 

@@ -15,9 +15,9 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  Uuid: any;
   /** The `DateTime` scalar represents an ISO-8601 compliant date time type. */
   DateTime: any;
+  Uuid: any;
 };
 
 export type Query = {
@@ -28,7 +28,7 @@ export type Query = {
   compose?: Maybe<Compose>;
   deployments: Array<Deployment>;
   deployment?: Maybe<Deployment>;
-  connectionLogs: Array<ConnectionLog>;
+  connectionLogs?: Maybe<ConnectionLogConnection>;
   connectionLog?: Maybe<ConnectionLog>;
 };
 
@@ -58,6 +58,10 @@ export type QueryDeploymentArgs = {
 };
 
 export type QueryConnectionLogsArgs = {
+  first?: Maybe<Scalars['Int']>;
+  after?: Maybe<Scalars['String']>;
+  last?: Maybe<Scalars['Int']>;
+  before?: Maybe<Scalars['String']>;
   where?: Maybe<ConnectionLogFilterInput>;
   order?: Maybe<Array<ConnectionLogSortInput>>;
 };
@@ -297,6 +301,35 @@ export type ConnectionLogSortInput = {
   compose?: Maybe<ComposeSortInput>;
 };
 
+export type ConnectionLog = {
+  __typename?: 'ConnectionLog';
+  id: Scalars['Uuid'];
+  severity: ConnectionLogSeverity;
+  message: Scalars['String'];
+  time: Scalars['DateTime'];
+  error?: Maybe<Scalars['String']>;
+  metadata?: Maybe<Array<KeyValuePairOfStringAndObject>>;
+  nodeId?: Maybe<Scalars['Uuid']>;
+  node?: Maybe<Node>;
+  deploymentId?: Maybe<Scalars['Uuid']>;
+  deployment?: Maybe<Deployment>;
+  tenantId?: Maybe<Scalars['Uuid']>;
+  tenant?: Maybe<Tenant>;
+  composeId?: Maybe<Scalars['Uuid']>;
+  compose?: Maybe<Compose>;
+};
+
+/** A connection to a list of items. */
+export type ConnectionLogConnection = {
+  __typename?: 'ConnectionLogConnection';
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** A list of edges. */
+  edges?: Maybe<Array<ConnectionLogEdge>>;
+  /** A flattened list of the nodes. */
+  nodes?: Maybe<Array<ConnectionLog>>;
+};
+
 export type ComparableNullableOfGuidOperationFilterInput = {
   eq?: Maybe<Scalars['Uuid']>;
   neq?: Maybe<Scalars['Uuid']>;
@@ -490,6 +523,28 @@ export type ComposeSortInput = {
   tenant?: Maybe<TenantSortInput>;
 };
 
+/** Information about pagination in a connection. */
+export type PageInfo = {
+  __typename?: 'PageInfo';
+  /** Indicates whether more edges exist following the set defined by the clients arguments. */
+  hasNextPage: Scalars['Boolean'];
+  /** Indicates whether more edges exist prior the set defined by the clients arguments. */
+  hasPreviousPage: Scalars['Boolean'];
+  /** When paginating backwards, the cursor to continue. */
+  startCursor?: Maybe<Scalars['String']>;
+  /** When paginating forwards, the cursor to continue. */
+  endCursor?: Maybe<Scalars['String']>;
+};
+
+/** An edge in a connection. */
+export type ConnectionLogEdge = {
+  __typename?: 'ConnectionLogEdge';
+  /** A cursor for use in pagination. */
+  cursor: Scalars['String'];
+  /** The item at the end of the edge. */
+  node: ConnectionLog;
+};
+
 export type ListFilterInputTypeOfComposeFilterInput = {
   all?: Maybe<ComposeFilterInput>;
   none?: Maybe<ComposeFilterInput>;
@@ -563,24 +618,6 @@ export type NodeResult =
   | SuccessfulNodeUpdate
   | NodeConnectionFailed;
 
-export type ConnectionLog = {
-  __typename?: 'ConnectionLog';
-  id: Scalars['Uuid'];
-  severity: ConnectionLogSeverity;
-  message: Scalars['String'];
-  time: Scalars['DateTime'];
-  error?: Maybe<Scalars['String']>;
-  metadata?: Maybe<Array<KeyValuePairOfStringAndObject>>;
-  nodeId?: Maybe<Scalars['Uuid']>;
-  node?: Maybe<Node>;
-  deploymentId?: Maybe<Scalars['Uuid']>;
-  deployment?: Maybe<Deployment>;
-  tenantId?: Maybe<Scalars['Uuid']>;
-  tenant?: Maybe<Tenant>;
-  composeId?: Maybe<Scalars['Uuid']>;
-  compose?: Maybe<Compose>;
-};
-
 export type Deployment = {
   __typename?: 'Deployment';
   id: Scalars['Uuid'];
@@ -635,6 +672,19 @@ export enum ConnectionLogSeverity {
   Warning = 'WARNING',
 }
 
+export type KeyValuePairOfStringAndObject = {
+  __typename?: 'KeyValuePairOfStringAndObject';
+  key: Scalars['String'];
+};
+
+export type Tenant = {
+  __typename?: 'Tenant';
+  id: Scalars['Uuid'];
+  composes?: Maybe<Array<Maybe<Compose>>>;
+  nodes?: Maybe<Array<Maybe<Node>>>;
+  connectionLogs?: Maybe<Array<Maybe<ConnectionLog>>>;
+};
+
 export type ComposeVersion = {
   __typename?: 'ComposeVersion';
   id: Scalars['Uuid'];
@@ -650,19 +700,6 @@ export type ComposeVersion = {
   composeNavigation?: Maybe<Compose>;
   compose?: Maybe<Compose>;
   deployments?: Maybe<Array<Maybe<Deployment>>>;
-};
-
-export type Tenant = {
-  __typename?: 'Tenant';
-  id: Scalars['Uuid'];
-  composes?: Maybe<Array<Maybe<Compose>>>;
-  nodes?: Maybe<Array<Maybe<Node>>>;
-  connectionLogs?: Maybe<Array<Maybe<ConnectionLog>>>;
-};
-
-export type KeyValuePairOfStringAndObject = {
-  __typename?: 'KeyValuePairOfStringAndObject';
-  key: Scalars['String'];
 };
 
 export type CreateComposeMutationVariables = Exact<{
@@ -1023,11 +1060,17 @@ export type GetDeploymentConnectionLogsQueryVariables = Exact<{
 }>;
 
 export type GetDeploymentConnectionLogsQuery = { __typename?: 'Query' } & {
-  connectionLogs: Array<
-    { __typename?: 'ConnectionLog' } & Pick<
-      ConnectionLog,
-      'id' | 'time' | 'message' | 'error' | 'severity'
-    >
+  connectionLogs?: Maybe<
+    { __typename?: 'ConnectionLogConnection' } & {
+      nodes?: Maybe<
+        Array<
+          { __typename?: 'ConnectionLog' } & Pick<
+            ConnectionLog,
+            'id' | 'time' | 'message' | 'error' | 'severity'
+          >
+        >
+      >;
+    }
   >;
 };
 
@@ -2228,13 +2271,16 @@ export const GetDeploymentConnectionLogsDocument = gql`
   query getDeploymentConnectionLogs($id: Uuid!) {
     connectionLogs(
       where: { deploymentId: { eq: $id } }
-      order: { time: DESC }
+      order: { time: ASC }
+      last: 500
     ) {
-      id
-      time
-      message
-      error
-      severity
+      nodes {
+        id
+        time
+        message
+        error
+        severity
+      }
     }
   }
 `;

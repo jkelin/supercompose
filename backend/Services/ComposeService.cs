@@ -146,6 +146,8 @@ namespace backend2.Services
 
       compose.CurrentId = version.Id;
 
+      foreach (var deployment in compose.Deployments) deployment.ReconciliationFailed = false;
+
       await ctx.SaveChangesAsync();
 
       foreach (var deployment in compose.Deployments) await nodeUpdater.NotifyAboutNodeChange(deployment.NodeId.Value);

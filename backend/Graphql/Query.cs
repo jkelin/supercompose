@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using backend2.Context;
 using HotChocolate;
 using HotChocolate.Data;
+using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 
 namespace supercompose
@@ -62,9 +63,11 @@ namespace supercompose
       return ctx.Deployments;
     }
 
+
     [UseProjection]
     [UseFiltering]
     [UseSorting]
+    [UsePaging(MaxPageSize = 1000)]
     public DbSet<ConnectionLog> GetConnectionLogs(
       [Service] SupercomposeContext ctx)
     {
