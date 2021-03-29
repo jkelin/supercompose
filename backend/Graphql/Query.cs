@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using backend2.Context;
+using backend2.Exceptions;
 using HotChocolate;
 using HotChocolate.Data;
 using HotChocolate.Types;

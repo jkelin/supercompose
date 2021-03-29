@@ -14,15 +14,16 @@ import { WebSocketLink } from '@apollo/client/link/ws';
 import '../styles/globals.css';
 import { getToken } from 'lib/auth0';
 import axios from 'axios';
-import { ToastProvider } from 'containers';
+import { globalCreateToast, ToastProvider } from 'containers';
 import { SupercomposeConfig } from 'lib/config';
+import { onError } from '@apollo/client/link/error';
 
 const App = ({ Component, pageProps, apollo }: any) => (
-  <ApolloProvider client={apollo}>
-    <ToastProvider>
+  <ToastProvider>
+    <ApolloProvider client={apollo}>
       <Component {...pageProps} />
-    </ToastProvider>
-  </ApolloProvider>
+    </ApolloProvider>
+  </ToastProvider>
 );
 
 const gqlHoC = withApollo(
@@ -77,6 +78,26 @@ const gqlHoC = withApollo(
       }
     });
 
+    const errorLink = onError(({ graphQLErrors, networkError }) => {
+      if (graphQLErrors)
+        graphQLErrors.forEach(({ message, locations, path }) => {
+          const toastCreated = globalCreateToast({
+            kind: 'error',
+            title: 'Something went wrong!',
+            message: message,
+          });
+
+          if (!toastCreated) {
+            console.error(
+              `[GraphQL error]: Message: ${message}, Path: ${path}`,
+              { locations },
+            );
+          }
+        });
+
+      if (networkError) console.log(`[Network error]: ${networkError}`);
+    });
+
     const splitLink =
       typeof window !== 'undefined'
         ? split(
@@ -87,16 +108,18 @@ const gqlHoC = withApollo(
                 definition.operation === 'subscription'
               );
             },
-            authLink.concat(wsLink as any),
-            authLink.concat(httpLink),
+            authLink.concat(errorLink).concat(wsLink as any),
+            authLink.concat(errorLink).concat(httpLink),
           )
-        : authLink.concat(httpLink);
+        : authLink.concat(errorLink).concat(httpLink);
 
-    return new ApolloClient({
+    const client = new ApolloClient({
       link: splitLink,
       cache: new InMemoryCache().restore(opts.initialState || {}),
       credentials: 'include',
-    }) as any;
+    });
+
+    return client as any;
   },
   { getDataFromTree },
 );

@@ -104,6 +104,7 @@ namespace supercompose
         .AddQueryType<Query>()
         .AddMutationType<Mutation>()
         .AddSubscriptionType<Subscription>()
+        .AddErrorFilter<SupercomposeErrorFilter>()
         .AddType<Mutation.SuccessfulNodeCreation>()
         .AddType<Mutation.SuccessfulNodeUpdate>()
         .AddType<Mutation.NodeConnectionFailed>();

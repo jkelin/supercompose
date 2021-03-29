@@ -46,18 +46,16 @@ const Toast: React.FC<{ toast: Toast }> = (props) => {
             )}
             {props.toast.kind === 'error' && (
               <svg
-                className="h-6 w-6 text-green-400"
+                className="h-6 w-6 text-red-400"
                 xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                viewBox="0 0 20 20"
+                fill="currentColor"
                 aria-hidden="true"
               >
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
                 />
               </svg>
             )}
@@ -103,6 +101,30 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
+export function globalCreateToast(
+  toast: Omit<Toast, 'id' | 'onClose'>,
+): boolean {
+  if (typeof window !== 'undefined' && (window as any).createToast) {
+    (window as any).createToast(toast);
+    return true;
+  }
+
+  return false;
+}
+
+function toastTimeoutFromContents(toast: Toast) {
+  if (
+    typeof toast.title === 'string' &&
+    (!toast.message || typeof toast.message === 'string')
+  ) {
+    const totalText = toast.title + (toast.message || '');
+
+    return totalText.length * (toast.kind === 'success' ? 40 : 60);
+  }
+
+  return toast.kind === 'success' ? 1000 : 3000;
+}
+
 export const ToastProvider: React.FC<{}> = (props) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -115,7 +137,7 @@ export const ToastProvider: React.FC<{}> = (props) => {
 
       setToasts((toasts) => toasts.concat(typedToast));
       await new Promise((resolve) =>
-        setTimeout(resolve, toast.timeout || 1000),
+        setTimeout(resolve, toast.timeout || toastTimeoutFromContents(toast)),
       );
       typedToast.onClose();
     },
@@ -135,6 +157,12 @@ export const ToastProvider: React.FC<{}> = (props) => {
   //   }, 200);
   //   return () => clearInterval(interval);
   // }, [i, createToast]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).createToast = createToast;
+    }
+  }, [createToast]);
 
   return (
     <ToastContext.Provider value={createToast}>

@@ -5,3 +5,4 @@ export * from './PublicLayout';
 export * from './DashboardLayout';
 export * from './Toasts';
 export * from './ComposeEditor';
+export * from './ErrorBoundary';
