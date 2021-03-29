@@ -119,7 +119,8 @@ namespace backend2.Services
     {
       name = new Regex("[^a-z0-9_-]", RegexOptions.IgnoreCase).Replace(name, "-");
       name = new Regex("-+", RegexOptions.IgnoreCase).Replace(name, "-");
-      return name;
+      name = new Regex("^supercompose-", RegexOptions.IgnoreCase).Replace(name, "");
+      return "supercompose-" + name;
     }
 
     public async Task Redeploy(Guid composeId)
