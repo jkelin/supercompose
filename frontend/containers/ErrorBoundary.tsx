@@ -8,14 +8,12 @@ export class ErrorBoundary extends React.Component<{}, { error?: Error }> {
   }
 
   static getDerivedStateFromError(error: Error) {
-    console.warn('getDerivedStateFromError', error);
     return {
       error: error,
     };
   }
 
   render() {
-    console.warn('render', this.state);
     if (this.state.error) {
       <div className="flex flex-col items-center justify-center w-full h-full">
         <div className="p-4 text-center">

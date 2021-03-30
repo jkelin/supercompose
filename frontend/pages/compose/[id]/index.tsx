@@ -153,7 +153,6 @@ const ComposeDetail: NextPage<{}> = (props) => {
           </div>
           <ul className="flex flex-col">
             {nodes.map((x, i) => {
-              console.warn(deploymentsQuery.data?.deployments, compose?.id);
               const deployment = deploymentsQuery.data?.deployments.find(
                 (y) => y.compose!.id === compose?.id && y.node!.id === x.id,
               );

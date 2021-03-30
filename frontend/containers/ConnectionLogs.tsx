@@ -67,8 +67,6 @@ export const ConnectionLogs: React.FC<{
   const [isSubbed, setIsSubbed] = useState(false);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
 
-  console.warn('csl', connectionLogsQuery.error);
-
   useIsomorphicLayoutEffect(() => {
     if (
       isSubbed ||
