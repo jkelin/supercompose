@@ -12,7 +12,7 @@ services:
           max-size: 100m
     restart: always
   backend:
-    build: ../../backend
+    build: ../../backend/SuperCompose
     ports:
       - 3101:80
     environment:
