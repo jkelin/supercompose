@@ -34,11 +34,11 @@ export const Navbar: React.FC<{}> = (props) => {
               <a className="flex-shrink-0 flex items-center">
                 <LogoSymbol
                   className="block lg:hidden h-8 w-auto"
-                  style={{ height: 40 }}
+                  style={{ height: 39 }}
                 />
                 <Logo
                   className="hidden lg:block h-8 w-auto"
-                  style={{ height: 40 }}
+                  style={{ height: 41 }}
                 />
               </a>
             </Link>
