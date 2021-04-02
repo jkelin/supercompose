@@ -33,5 +33,8 @@ namespace SuperCompose.Context
 
     public virtual ICollection<ConnectionLog> ConnectionLogs { get; set; } =
       new List<ConnectionLog>();
+
+    public virtual ICollection<Container> Containers { get; set; } =
+      new List<Container>();
   }
 }

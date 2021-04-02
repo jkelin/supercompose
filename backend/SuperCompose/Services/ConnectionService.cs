@@ -113,6 +113,44 @@ namespace SuperCompose.Services
       }
     }
 
+    public async IAsyncEnumerable<(string? result, string? error, int? status)> StreamLines(SshClient ssh,
+      string command, CancellationToken ct = default)
+    {
+      logger.BeginScope(new
+      {
+        command
+      });
+      //try
+      //{
+      logger.LogDebug("Streaming command lines");
+      using var cmd = ssh.CreateCommand(command, Encoding.UTF8);
+      var res = cmd.BeginExecute();
+
+      using var sr = new StreamReader(cmd.OutputStream, Encoding.UTF8);
+
+      while (!res.IsCompleted)
+      {
+        var line = await sr.ReadLineAsync();
+        if (line != null) yield return (line, null, null);
+      }
+
+      ct.ThrowIfCancellationRequested();
+
+      logger.LogDebug("Command finished with {status}", cmd.ExitStatus);
+      yield return (cmd.Result, cmd.Error, cmd.ExitStatus);
+      //}
+      //catch (SshException ex)
+      //{
+      //  logger.BeginScope(new
+      //  {
+      //    command
+      //  });
+      //  logger.LogWarning("Error while running command {message}", ex.Message);
+
+      //  throw;
+      //}
+    }
+
     private async Task<ConnectionInfo> PrepareConnectionInfo(ConnectionParams conn, TimeSpan timeout)
     {
       var authMethods = new List<AuthenticationMethod>();

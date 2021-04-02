@@ -21,6 +21,7 @@ namespace SuperCompose.Context
     public virtual DbSet<Node> Nodes { get; set; }
     public virtual DbSet<Tenant> Tenants { get; set; }
     public virtual DbSet<ConnectionLog> ConnectionLogs { get; set; }
+    public virtual DbSet<Container> Containers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -102,6 +103,14 @@ namespace SuperCompose.Context
       });
 
       modelBuilder.Entity<Tenant>(entity => { });
+
+      modelBuilder.Entity<Container>(entity =>
+      {
+        entity.HasOne(d => d.Deployment)
+          .WithMany(p => p.Containers)
+          .HasForeignKey(d => d.DeploymentId)
+          .OnDelete(DeleteBehavior.Cascade);
+      });
 
       OnModelCreatingPartial(modelBuilder);
     }

@@ -514,8 +514,10 @@ After=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=true
+Environment=""COMPOSE_PROJECT_NAME={deployment.Compose.Current.ServiceName}""
+Environment=""COMPOSE_FILE={deployment.Compose.Current.Directory}/docker-compose.yml""
 WorkingDirectory={deployment.Compose.Current.Directory}
-ExecStart={dockerComposeLocation} up -d --remove-orphans
+ExecStart={dockerComposeLocation} up -d --remove-orphans --project-directory ""{deployment.Compose.Current.Directory}""
 ExecStop={dockerComposeLocation} down
 
 [Install]

@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Docker.DotNet" Version="3.125.4" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="11.0.9" />
     <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="11.0.9" />
     <PackageReference Include="HotChocolate.AspNetCore.Subscriptions" Version="10.5.5" />
