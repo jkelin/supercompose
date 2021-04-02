@@ -81,9 +81,9 @@ namespace SuperCompose.Services
     {
       var deplReconDidntFail = x.ReconciliationFailed != true;
       var enabledChanged = (x.Enabled && x.Node.Enabled) != x.LastDeployedAsEnabled;
-      var deploymentUpdateable = enabledChanged || x.Enabled;
+      var deploymentUpdateable = enabledChanged || x.Enabled && HasDeploymentChanged(x);
 
-      return deplReconDidntFail && deploymentUpdateable && HasDeploymentChanged(x);
+      return deplReconDidntFail && deploymentUpdateable;
     }
 
     public async Task ProcessNodeUpdates(Guid nodeId, CancellationToken ct)
@@ -517,7 +517,7 @@ RemainAfterExit=true
 Environment=""COMPOSE_PROJECT_NAME={deployment.Compose.Current.ServiceName}""
 Environment=""COMPOSE_FILE={deployment.Compose.Current.Directory}/docker-compose.yml""
 WorkingDirectory={deployment.Compose.Current.Directory}
-ExecStart={dockerComposeLocation} up -d --remove-orphans --project-directory ""{deployment.Compose.Current.Directory}""
+ExecStart={dockerComposeLocation} --project-directory ""{deployment.Compose.Current.Directory}"" --project-name ""{deployment.Compose.Current.ServiceName}"" up -d --remove-orphans
 ExecStop={dockerComposeLocation} down
 
 [Install]

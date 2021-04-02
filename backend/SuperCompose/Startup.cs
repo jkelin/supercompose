@@ -124,11 +124,13 @@ namespace SuperCompose
         .AddScoped<ConnectionService>()
         .AddScoped<NodeUpdaterService>()
         .AddScoped<ConnectionLogService>()
+        .AddScoped<NodeAgentService>()
         .AddScoped<NodeService>();
 
       // Custom hosted services
       services
         .AddHostedService<NodeUpdateListener>()
+        .AddHostedService<NodeAgentOrchestrator>()
         .AddHostedService<ConnectionLogProcessor>();
     }
 

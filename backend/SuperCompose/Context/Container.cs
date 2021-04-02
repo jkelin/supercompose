@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using Docker.DotNet.Models;
+using HotChocolate;
 
 namespace SuperCompose.Context
 {
@@ -35,7 +36,9 @@ namespace SuperCompose.Context
 
     [Required] public ContainerState State { get; set; }
 
-    [Column(TypeName = "jsonb")] public ContainerInspectResponse? LastInspect { get; set; }
+    [GraphQLIgnore]
+    [Column(TypeName = "jsonb")]
+    public ContainerInspectResponse? LastInspect { get; set; }
 
     public DateTime? LastInspectAt { get; set; }
 

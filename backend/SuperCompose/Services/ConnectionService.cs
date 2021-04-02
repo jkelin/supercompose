@@ -113,7 +113,7 @@ namespace SuperCompose.Services
       }
     }
 
-    public async IAsyncEnumerable<(string? result, string? error, int? status)> StreamLines(SshClient ssh,
+    public async IAsyncEnumerable<(string? stdout, string? stderr, int? code)> StreamLines(SshClient ssh,
       string command, CancellationToken ct = default)
     {
       logger.BeginScope(new

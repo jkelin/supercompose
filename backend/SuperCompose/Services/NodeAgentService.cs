@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Docker.DotNet;
 using Docker.DotNet.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Nito.Disposables;
 using Renci.SshNet;
@@ -17,20 +18,23 @@ using ContainerState = SuperCompose.Context.ContainerState;
 
 namespace SuperCompose.Services
 {
-  public class NodeInfoService
+  public class NodeAgentService
   {
     private readonly SuperComposeContext ctx;
     private readonly ConnectionService connService;
     private readonly CryptoService cryptoService;
+    private readonly ILogger<NodeAgentService> logger;
 
-    public NodeInfoService(SuperComposeContext ctx, ConnectionService connService, CryptoService cryptoService)
+    public NodeAgentService(SuperComposeContext ctx, ConnectionService connService, CryptoService cryptoService,
+      ILogger<NodeAgentService> logger)
     {
       this.ctx = ctx;
       this.connService = connService;
       this.cryptoService = cryptoService;
+      this.logger = logger;
     }
 
-    public async Task ListenOnNode(Guid nodeId, CancellationToken ct = default)
+    public async Task RunNodeAgent(Guid nodeId, CancellationToken ct = default)
     {
       var node = await ctx.Nodes
         .FirstOrDefaultAsync(x => x.Id == nodeId, ct);
@@ -45,35 +49,89 @@ namespace SuperCompose.Services
       );
       var client = await connService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
 
-      await ReloadContainersForNode(nodeId, client, ct);
+      await ReloadContainersFor(ctx.Deployments.Where(x => x.NodeId == nodeId && x.Enabled == true), client, ct);
+      var events = ListenForEvents(client, ct);
+
+      await foreach (var ee in events.WithCancellation(ct))
+      {
+        var query = ctx.Deployments.Where(x =>
+          x.NodeId == nodeId && x.LastDeployedComposeVersion.ServiceName == ee.compose);
+        await ReloadContainersFor(query, client, ct);
+      }
     }
 
-    private async Task ReloadContainersForNode(Guid nodeId, SshClient ssh, CancellationToken ct)
+    private async IAsyncEnumerable<(DateTime time, string compose, string service, Message msg)> ListenForEvents(
+      SshClient ssh,
+      CancellationToken ct = default)
     {
-      var deployments = await ctx.Deployments
-        .Where(x => x.NodeId == nodeId && x.Enabled == true)
-        .Include(x => x.LastDeployedComposeVersion)
+      var args = new[]
+      {
+        "--filter='label=com.docker.compose.project'",
+        "--filter='type=container'",
+        "--format='{{json .}}'"
+        //"--since 10h"
+      };
+      var stream = connService.StreamLines(ssh, "docker events " + string.Join(" ", args), ct);
+
+      await foreach (var (result, error, status) in stream.WithCancellation(ct))
+        if (status != null)
+        {
+          throw new Exception("Stream has ended"); // TODO;
+        }
+        else if (error != null)
+        {
+          throw new Exception("Stream has had an error"); // TODO;
+        }
+        else if (result != null)
+        {
+          var msg = JsonConvert.DeserializeObject<Message>(result);
+
+
+          var a = msg.Action;
+          var isCriticalAction = a == "create" || a == "destroy" || a == "die" || a == "kill" || a == "oom" ||
+                                 a == "pause" ||
+                                 a == "rename" || a == "resize" || a == "restart" || a == "start" || a == "stop" ||
+                                 a == "unpause" ||
+                                 a == "update";
+          if (isCriticalAction && msg.Actor.Attributes.TryGetValue("com.docker.compose.project", out var project) &&
+              msg.Actor.Attributes.TryGetValue("com.docker.compose.service", out var service))
+            yield return (DateTime.UnixEpoch + TimeSpan.FromMilliseconds(msg.TimeNano / 1000000), project, service,
+              msg);
+        }
+    }
+
+    private async Task ReloadContainersFor(IQueryable<Deployment> query, SshClient ssh, CancellationToken ct = default)
+    {
+      var deployments = await query.Include(x => x.LastDeployedComposeVersion)
         .Include(x => x.Compose)
         .Include(x => x.Containers)
         .ToArrayAsync(ct);
 
+      logger.LogDebug("Reloading containers for {deployments}", string.Join(",", deployments.Select(x => x.Id)));
+
       var list = await ListContainers(ssh, ct);
-
-      var relevantContainers = FilterContainersForDeployments(list, deployments);
-      if (!relevantContainers.Any()) return;
-
-      var inspected = await InspectContainers(ssh, relevantContainers, ct);
       await using var trx = await ctx.Database.BeginTransactionAsync(ct);
 
-      foreach (var deployment in deployments)
-      {
-        var relevantInspects = inspected
-          .Where(x =>
-            x.Config.Labels.ContainsKey("com.docker.compose.project") &&
-            x.Config.Labels["com.docker.compose.project"] == deployment.LastDeployedComposeVersion.ServiceName
-          );
+      var relevantContainers = FilterContainersForDeployments(list, deployments);
 
-        await UpdateContainersForDeployment(relevantInspects, deployment, ct);
+      if (relevantContainers.Any())
+      {
+        var inspected = await InspectContainers(ssh, relevantContainers, ct);
+
+        foreach (var deployment in deployments)
+        {
+          var relevantInspects = inspected
+            .Where(x =>
+              x.Config.Labels.ContainsKey("com.docker.compose.project") &&
+              x.Config.Labels["com.docker.compose.project"] == deployment.LastDeployedComposeVersion.ServiceName
+            );
+
+          await UpdateContainersForDeployment(relevantInspects, deployment, ct);
+        }
+      }
+      else
+      {
+        foreach (var deployment in deployments) ctx.Containers.RemoveRange(deployment.Containers);
       }
 
       await ctx.SaveChangesAsync(ct);
@@ -187,7 +245,7 @@ namespace SuperCompose.Services
     private async Task<IEnumerable<ContainerListResult>> ListContainers(SshClient ssh,
       CancellationToken ct = default)
     {
-      var command = "docker container ls --format='{{json .}}' --filter='label=com.docker.compose.project'";
+      var command = "docker container ls --all --format='{{json .}}' --filter='label=com.docker.compose.project'";
       var result = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
 
       if (result.status != 0) throw new Exception("Could not list containers");
