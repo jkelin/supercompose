@@ -76,13 +76,13 @@ const EditNodeForm: React.FC<{
       if (err.field) {
         form.setError(err.field as any, {
           type: 'specific',
-          message: err.error,
+          message: err.error!,
           shouldFocus: true,
         });
       } else {
         form.setError('username', {
           type: 'global',
-          message: err.error,
+          message: err.error!,
         });
       }
     },
@@ -107,7 +107,7 @@ const EditNodeForm: React.FC<{
         kind: 'success',
         title: 'Node updated',
       });
-      router.push(`/node/${resp?.data?.updateNode!.node.id}`);
+      router.push(`/node/${resp?.data?.updateNode!.node?.id}`);
     } else {
       handleErrors(resp?.data?.updateNode as any);
     }
