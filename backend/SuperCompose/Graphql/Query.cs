@@ -63,7 +63,6 @@ namespace SuperCompose.Graphql
       return ctx.Deployments;
     }
 
-
     [UseProjection]
     [UseFiltering]
     [UseSorting]
@@ -82,21 +81,23 @@ namespace SuperCompose.Graphql
     {
       return ctx.ConnectionLogs;
     }
-  }
 
-  public class Person
-  {
-    public Person(string name)
+    [UseProjection]
+    [UseFiltering]
+    [UseSorting]
+    public DbSet<Container> GetContainers(
+      [Service] SuperComposeContext ctx)
     {
-      Name = name;
+      return ctx.Containers;
     }
 
-    public string Name { get; }
-
-    public async Task<string> Test()
+    [UseFirstOrDefault]
+    [UseProjection]
+    [UseFiltering]
+    public DbSet<Container> GetContainer(
+      [Service] SuperComposeContext ctx)
     {
-      await Task.Delay(1000);
-      return Guid.NewGuid().ToString();
+      return ctx.Containers;
     }
   }
 }

@@ -13,8 +13,8 @@ export const DashboardLayout: React.FC<{}> = (props) => {
       </Head>
       <main className="mx-auto container">
         <Head>
-          <title>Create Next App</title>
-          <link rel="icon" href="/favicon.ico" />
+          <title>SuperCompose</title>
+          <link rel="icon" href="/favicon.svg" />
         </Head>
         <ul className="my-8 grid grid-cols-layout gap-4">
           <ErrorBoundary>

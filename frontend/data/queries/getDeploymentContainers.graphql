@@ -1,0 +1,11 @@
+query getDeploymentContainers($id: Uuid!) {
+  containers(where: { deploymentId: { eq: $id } }) {
+    id
+    containerName
+    serviceName
+    containerNumber
+    startedAt
+    finishedAt
+    state
+  }
+}

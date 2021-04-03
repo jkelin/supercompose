@@ -168,7 +168,7 @@ export const ConnectionLogs: React.FC<{
               </div>
               <div
                 className="bg-white divide-y divide-gray-200 overflow-auto"
-                style={{ maxHeight: '50vh' }}
+                style={{ maxHeight: '45vh' }}
                 ref={listRef as any}
                 onScroll={() => checkScrolledToBottom()}
               >

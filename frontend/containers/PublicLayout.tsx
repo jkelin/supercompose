@@ -7,8 +7,8 @@ export const PublicLayout: React.FC<{}> = (props) => {
   return (
     <React.Fragment>
       <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>SuperCompose</title>
+        <link rel="icon" href="/favicon.svg" />
       </Head>
       <Navbar />
       {props.children}

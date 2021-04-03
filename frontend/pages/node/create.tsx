@@ -57,13 +57,13 @@ export default function CreateNode() {
       if (err.field) {
         form.setError(err.field as any, {
           type: 'specific',
-          message: err.error,
+          message: err.error!,
           shouldFocus: true,
         });
       } else {
         form.setError('username', {
           type: 'global',
-          message: err.error,
+          message: err.error!,
         });
       }
     },
@@ -108,7 +108,7 @@ export default function CreateNode() {
         kind: 'success',
         title: 'Node created',
       });
-      router.push(`/node/${resp?.data?.createNode!.node.id}`);
+      router.push(`/node/${resp?.data?.createNode!.node?.id}`);
     } else {
       handleErrors(resp?.data?.createNode as any);
     }

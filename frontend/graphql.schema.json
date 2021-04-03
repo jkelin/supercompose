@@ -338,6 +338,88 @@
             },
             "isDeprecated": false,
             "deprecationReason": null
+          },
+          {
+            "name": "containers",
+            "description": null,
+            "args": [
+              {
+                "name": "where",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "ContainerFilterInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              },
+              {
+                "name": "order",
+                "description": null,
+                "type": {
+                  "kind": "LIST",
+                  "name": null,
+                  "ofType": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": {
+                      "kind": "INPUT_OBJECT",
+                      "name": "ContainerSortInput",
+                      "ofType": null
+                    }
+                  }
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Container",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "container",
+            "description": null,
+            "args": [
+              {
+                "name": "where",
+                "description": null,
+                "type": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "ContainerFilterInput",
+                  "ofType": null
+                },
+                "defaultValue": null,
+                "isDeprecated": false,
+                "deprecationReason": null
+              }
+            ],
+            "type": {
+              "kind": "OBJECT",
+              "name": "Container",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
           }
         ],
         "inputFields": null,
@@ -1263,13 +1345,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Node",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "Node",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -1290,13 +1368,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Node",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "Node",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -1317,13 +1391,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
-              }
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -1397,7 +1467,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -1445,7 +1515,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfInt32OperationFilterInput",
+              "name": "ComparableInt32OperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -1747,7 +1817,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -1771,7 +1841,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -1906,7 +1976,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -1930,7 +2000,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -1954,7 +2024,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -2063,6 +2133,18 @@
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "ListFilterInputTypeOfConnectionLogFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containers",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ListFilterInputTypeOfContainerFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -2461,6 +2543,308 @@
         "possibleTypes": null
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "ContainerFilterInput",
+        "description": null,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "and",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "ContainerFilterInput",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "or",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "ContainerFilterInput",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "id",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ComparableGuidOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containerName",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "StringOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "serviceName",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "StringOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containerNumber",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ComparableInt32OperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "startedAt",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ComparableNullableOfDateTimeOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "finishedAt",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ComparableNullableOfDateTimeOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "state",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ContainerStateOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "lastInspectAt",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ComparableNullableOfDateTimeOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deploymentId",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ComparableGuidOperationFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deployment",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "DeploymentFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "ContainerSortInput",
+        "description": null,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "id",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containerName",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "serviceName",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containerNumber",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "startedAt",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "finishedAt",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "state",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "lastInspectAt",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deploymentId",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "SortEnumType",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deployment",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "DeploymentSortInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "ConnectionLog",
         "description": null,
@@ -2732,7 +3116,7 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "ComparableNullableOfGuidOperationFilterInput",
+        "name": "ComparableGuidOperationFilterInput",
         "description": null,
         "fields": null,
         "inputFields": [
@@ -2767,9 +3151,13 @@
               "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "SCALAR",
-                "name": "Uuid",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Uuid",
+                  "ofType": null
+                }
               }
             },
             "defaultValue": null,
@@ -2783,9 +3171,13 @@
               "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "SCALAR",
-                "name": "Uuid",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Uuid",
+                  "ofType": null
+                }
               }
             },
             "defaultValue": null,
@@ -3109,7 +3501,7 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "ComparableNullableOfInt32OperationFilterInput",
+        "name": "ComparableInt32OperationFilterInput",
         "description": null,
         "fields": null,
         "inputFields": [
@@ -3144,9 +3536,13 @@
               "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "SCALAR",
-                "name": "Int",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
               }
             },
             "defaultValue": null,
@@ -3160,9 +3556,13 @@
               "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "SCALAR",
-                "name": "Int",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
               }
             },
             "defaultValue": null,
@@ -3435,7 +3835,7 @@
       },
       {
         "kind": "INPUT_OBJECT",
-        "name": "ComparableGuidOperationFilterInput",
+        "name": "ComparableNullableOfGuidOperationFilterInput",
         "description": null,
         "fields": null,
         "inputFields": [
@@ -3470,13 +3870,9 @@
               "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Uuid",
-                  "ofType": null
-                }
+                "kind": "SCALAR",
+                "name": "Uuid",
+                "ofType": null
               }
             },
             "defaultValue": null,
@@ -3490,13 +3886,9 @@
               "kind": "LIST",
               "name": null,
               "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Uuid",
-                  "ofType": null
-                }
+                "kind": "SCALAR",
+                "name": "Uuid",
+                "ofType": null
               }
             },
             "defaultValue": null,
@@ -3655,7 +4047,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -3918,7 +4310,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -3978,7 +4370,7 @@
             "description": null,
             "type": {
               "kind": "INPUT_OBJECT",
-              "name": "ComparableNullableOfGuidOperationFilterInput",
+              "name": "ComparableGuidOperationFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -4110,6 +4502,65 @@
             "type": {
               "kind": "INPUT_OBJECT",
               "name": "ComposeVersionFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "any",
+            "description": null,
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "INPUT_OBJECT",
+        "name": "ListFilterInputTypeOfContainerFilterInput",
+        "description": null,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "all",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ContainerFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "none",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ContainerFilterInput",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "some",
+            "description": null,
+            "type": {
+              "kind": "INPUT_OBJECT",
+              "name": "ContainerFilterInput",
               "ofType": null
             },
             "defaultValue": null,
@@ -4729,6 +5180,81 @@
         "possibleTypes": null
       },
       {
+        "kind": "INPUT_OBJECT",
+        "name": "ContainerStateOperationFilterInput",
+        "description": null,
+        "fields": null,
+        "inputFields": [
+          {
+            "name": "eq",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "ContainerState",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "neq",
+            "description": null,
+            "type": {
+              "kind": "ENUM",
+              "name": "ContainerState",
+              "ofType": null
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "in",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "ENUM",
+                  "name": "ContainerState",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "nin",
+            "description": null,
+            "type": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "ENUM",
+                  "name": "ContainerState",
+                  "ofType": null
+                }
+              }
+            },
+            "defaultValue": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "OBJECT",
         "name": "PageInfo",
         "description": "Information about pagination in a connection.",
@@ -4997,177 +5523,6 @@
                   "ofType": null
                 }
               }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          }
-        ],
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "INPUT_OBJECT",
-        "name": "ComparableInt32OperationFilterInput",
-        "description": null,
-        "fields": null,
-        "inputFields": [
-          {
-            "name": "eq",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "neq",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "in",
-            "description": null,
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Int",
-                  "ofType": null
-                }
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "nin",
-            "description": null,
-            "type": {
-              "kind": "LIST",
-              "name": null,
-              "ofType": {
-                "kind": "NON_NULL",
-                "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Int",
-                  "ofType": null
-                }
-              }
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "gt",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ngt",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "gte",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "ngte",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "lt",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "nlt",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "lte",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
-            },
-            "defaultValue": null,
-            "isDeprecated": false,
-            "deprecationReason": null
-          },
-          {
-            "name": "nlte",
-            "description": null,
-            "type": {
-              "kind": "SCALAR",
-              "name": "Int",
-              "ofType": null
             },
             "defaultValue": null,
             "isDeprecated": false,
@@ -5504,16 +5859,6 @@
       },
       {
         "kind": "SCALAR",
-        "name": "DateTime",
-        "description": "The `DateTime` scalar represents an ISO-8601 compliant date time type.",
-        "fields": null,
-        "inputFields": null,
-        "interfaces": null,
-        "enumValues": null,
-        "possibleTypes": null
-      },
-      {
-        "kind": "SCALAR",
         "name": "Uuid",
         "description": null,
         "fields": null,
@@ -5547,6 +5892,165 @@
             "ofType": null
           }
         ]
+      },
+      {
+        "kind": "OBJECT",
+        "name": "Container",
+        "description": null,
+        "fields": [
+          {
+            "name": "id",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Uuid",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containerName",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "serviceName",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containerNumber",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Int",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "startedAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "DateTime",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "finishedAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "DateTime",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "state",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "ENUM",
+                "name": "ContainerState",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "lastInspectAt",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "DateTime",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deploymentId",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "Uuid",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "deployment",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Deployment",
+                "ofType": null
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
       },
       {
         "kind": "OBJECT",
@@ -5694,13 +6198,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Compose",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "Compose",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -5722,13 +6222,9 @@
             "description": null,
             "args": [],
             "type": {
-              "kind": "NON_NULL",
-              "name": null,
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Node",
-                "ofType": null
-              }
+              "kind": "OBJECT",
+              "name": "Node",
+              "ofType": null
             },
             "isDeprecated": false,
             "deprecationReason": null
@@ -5749,6 +6245,30 @@
                   "ofType": {
                     "kind": "OBJECT",
                     "name": "ConnectionLog",
+                    "ofType": null
+                  }
+                }
+              }
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "containers",
+            "description": null,
+            "args": [],
+            "type": {
+              "kind": "NON_NULL",
+              "name": null,
+              "ofType": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": {
+                  "kind": "NON_NULL",
+                  "name": null,
+                  "ofType": {
+                    "kind": "OBJECT",
+                    "name": "Container",
                     "ofType": null
                   }
                 }
@@ -6110,6 +6630,16 @@
         "possibleTypes": null
       },
       {
+        "kind": "SCALAR",
+        "name": "DateTime",
+        "description": "The `DateTime` scalar represents an ISO-8601 compliant date time type.",
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
         "kind": "ENUM",
         "name": "ConnectionLogSeverity",
         "description": null,
@@ -6238,6 +6768,59 @@
         "inputFields": null,
         "interfaces": [],
         "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "ENUM",
+        "name": "ContainerState",
+        "description": null,
+        "fields": null,
+        "inputFields": null,
+        "interfaces": null,
+        "enumValues": [
+          {
+            "name": "CREATED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "RUNNING",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "REMOVING",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "PAUSED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "RESTARTING",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "DEAD",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          },
+          {
+            "name": "EXITED",
+            "description": null,
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
         "possibleTypes": null
       },
       {

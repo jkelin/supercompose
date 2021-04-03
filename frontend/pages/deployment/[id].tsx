@@ -1,6 +1,16 @@
 import classNames from 'classnames';
-import { ActionButton, LinkButton, NamedCodePill, Spinner } from 'components';
 import {
+  ActionButton,
+  LinkButton,
+  NamedCodePill,
+  Spinner,
+  Tab,
+  TabContainer,
+  TabList,
+  TabPanel,
+} from 'components';
+import {
+  Containers,
   createQuickIdentificationTitle,
   DashboardLayout,
   IdentificationIcon,
@@ -145,7 +155,18 @@ const DeploymentDetail: NextPage<{}> = (props) => {
             </NamedCodePill>
           </div>
         </div>
-        <ConnectionLogs deploymentId={router.query.id as any} />
+        <TabContainer default="connection logs">
+          <TabList>
+            <Tab id="connection logs">Connection logs</Tab>
+            <Tab id="containers">Containers</Tab>
+          </TabList>
+          <TabPanel id="connection logs">
+            <ConnectionLogs deploymentId={router.query.id as any} />
+          </TabPanel>
+          <TabPanel id="containers">
+            <Containers deploymentId={router.query.id as any} />
+          </TabPanel>
+        </TabContainer>
       </div>
     </DashboardLayout>
   );

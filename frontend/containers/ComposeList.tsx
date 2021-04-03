@@ -30,24 +30,24 @@ const ComposeCard: React.FC<{
   compose: Pick<Compose, 'id' | 'name'>;
 }> = (props) => {
   return (
-    <li className="max-h-14 col-span-1 flex shadow-sm rounded-md">
-      <IdentificationIcon
-        className="rounded-l-md"
-        name={props.compose.name}
-        id={props.compose.id}
-      />
-      <div className="flex-1 flex items-center justify-between border-t border-r border-b border-gray-200 bg-white rounded-r-md truncate">
-        <div className="flex-1 px-4 py-2 text-sm truncate">
-          <Link href={`/compose/${props.compose.id}`}>
-            <a className="text-gray-900 font-medium hover:text-gray-600">
+    <Link href={`/compose/${props.compose.id}`}>
+      <a className="hover:text-gray-600 max-h-14 col-span-1 flex shadow-sm hover:shadow-inner rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+        <IdentificationIcon
+          className="rounded-l-md"
+          name={props.compose.name}
+          id={props.compose.id}
+        />
+        <div className="flex-1 flex items-center justify-between border-t border-r border-b border-gray-200 bg-white rounded-r-md truncate">
+          <div className="flex-1 px-4 py-2 text-sm truncate">
+            <span className="text-gray-900 font-medium">
               {props.compose.name}
-            </a>
-          </Link>
-          {/* <p className="text-gray-500">
+            </span>
+
+            {/* <p className="text-gray-500">
             {props.node.username}@{props.node.host}
           </p> */}
-        </div>
-        {/* <div className="flex-shrink-0 pr-2">
+          </div>
+          {/* <div className="flex-shrink-0 pr-2">
           <button className="w-8 h-8 bg-white inline-flex items-center justify-center text-gray-400 rounded-full bg-transparent hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
             <span className="sr-only">Open options</span>
             <svg
@@ -61,8 +61,9 @@ const ComposeCard: React.FC<{
             </svg>
           </button>
         </div> */}
-      </div>
-    </li>
+        </div>
+      </a>
+    </Link>
   );
 };
 

@@ -15,9 +15,9 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
+  Uuid: any;
   /** The `DateTime` scalar represents an ISO-8601 compliant date time type. */
   DateTime: any;
-  Uuid: any;
 };
 
 export type Query = {
@@ -30,6 +30,8 @@ export type Query = {
   deployment?: Maybe<Deployment>;
   connectionLogs?: Maybe<ConnectionLogConnection>;
   connectionLog?: Maybe<ConnectionLog>;
+  containers: Array<Container>;
+  container?: Maybe<Container>;
 };
 
 export type QueryNodesArgs = {
@@ -68,6 +70,15 @@ export type QueryConnectionLogsArgs = {
 
 export type QueryConnectionLogArgs = {
   where?: Maybe<ConnectionLogFilterInput>;
+};
+
+export type QueryContainersArgs = {
+  where?: Maybe<ContainerFilterInput>;
+  order?: Maybe<Array<ContainerSortInput>>;
+};
+
+export type QueryContainerArgs = {
+  where?: Maybe<ContainerFilterInput>;
 };
 
 export type Mutation = {
@@ -187,28 +198,28 @@ export type SubscriptionOnConnectionLogArgs = {
 
 export type SuccessfulNodeCreation = {
   __typename?: 'SuccessfulNodeCreation';
-  node: Node;
+  node?: Maybe<Node>;
 };
 
 export type SuccessfulNodeUpdate = {
   __typename?: 'SuccessfulNodeUpdate';
-  node: Node;
+  node?: Maybe<Node>;
 };
 
 export type NodeConnectionFailed = {
   __typename?: 'NodeConnectionFailed';
-  error: Scalars['String'];
+  error?: Maybe<Scalars['String']>;
   field?: Maybe<Scalars['String']>;
 };
 
 export type NodeFilterInput = {
   and?: Maybe<Array<NodeFilterInput>>;
   or?: Maybe<Array<NodeFilterInput>>;
-  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  id?: Maybe<ComparableGuidOperationFilterInput>;
   enabled?: Maybe<BooleanOperationFilterInput>;
   name?: Maybe<StringOperationFilterInput>;
   host?: Maybe<StringOperationFilterInput>;
-  port?: Maybe<ComparableNullableOfInt32OperationFilterInput>;
+  port?: Maybe<ComparableInt32OperationFilterInput>;
   username?: Maybe<StringOperationFilterInput>;
   reconciliationFailed?: Maybe<BooleanOperationFilterInput>;
   redeploymentRequestedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
@@ -236,9 +247,9 @@ export type NodeSortInput = {
 export type ComposeFilterInput = {
   and?: Maybe<Array<ComposeFilterInput>>;
   or?: Maybe<Array<ComposeFilterInput>>;
-  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  id?: Maybe<ComparableGuidOperationFilterInput>;
   name?: Maybe<StringOperationFilterInput>;
-  currentId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  currentId?: Maybe<ComparableGuidOperationFilterInput>;
   tenantId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
   current?: Maybe<ComposeVersionFilterInput>;
   tenant?: Maybe<TenantFilterInput>;
@@ -250,11 +261,11 @@ export type ComposeFilterInput = {
 export type DeploymentFilterInput = {
   and?: Maybe<Array<DeploymentFilterInput>>;
   or?: Maybe<Array<DeploymentFilterInput>>;
-  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  id?: Maybe<ComparableGuidOperationFilterInput>;
   enabled?: Maybe<BooleanOperationFilterInput>;
-  composeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  composeId?: Maybe<ComparableGuidOperationFilterInput>;
   lastDeployedComposeVersionId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
-  nodeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  nodeId?: Maybe<ComparableGuidOperationFilterInput>;
   lastCheck?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
   redeploymentRequestedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
   lastDeployedNodeVersion?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
@@ -264,6 +275,7 @@ export type DeploymentFilterInput = {
   lastDeployedComposeVersion?: Maybe<ComposeVersionFilterInput>;
   node?: Maybe<NodeFilterInput>;
   connectionLogs?: Maybe<ListFilterInputTypeOfConnectionLogFilterInput>;
+  containers?: Maybe<ListFilterInputTypeOfContainerFilterInput>;
 };
 
 export type ConnectionLogFilterInput = {
@@ -301,6 +313,34 @@ export type ConnectionLogSortInput = {
   compose?: Maybe<ComposeSortInput>;
 };
 
+export type ContainerFilterInput = {
+  and?: Maybe<Array<ContainerFilterInput>>;
+  or?: Maybe<Array<ContainerFilterInput>>;
+  id?: Maybe<ComparableGuidOperationFilterInput>;
+  containerName?: Maybe<StringOperationFilterInput>;
+  serviceName?: Maybe<StringOperationFilterInput>;
+  containerNumber?: Maybe<ComparableInt32OperationFilterInput>;
+  startedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
+  finishedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
+  state?: Maybe<ContainerStateOperationFilterInput>;
+  lastInspectAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
+  deploymentId?: Maybe<ComparableGuidOperationFilterInput>;
+  deployment?: Maybe<DeploymentFilterInput>;
+};
+
+export type ContainerSortInput = {
+  id?: Maybe<SortEnumType>;
+  containerName?: Maybe<SortEnumType>;
+  serviceName?: Maybe<SortEnumType>;
+  containerNumber?: Maybe<SortEnumType>;
+  startedAt?: Maybe<SortEnumType>;
+  finishedAt?: Maybe<SortEnumType>;
+  state?: Maybe<SortEnumType>;
+  lastInspectAt?: Maybe<SortEnumType>;
+  deploymentId?: Maybe<SortEnumType>;
+  deployment?: Maybe<DeploymentSortInput>;
+};
+
 export type ConnectionLog = {
   __typename?: 'ConnectionLog';
   id: Scalars['Uuid'];
@@ -330,11 +370,11 @@ export type ConnectionLogConnection = {
   nodes?: Maybe<Array<ConnectionLog>>;
 };
 
-export type ComparableNullableOfGuidOperationFilterInput = {
+export type ComparableGuidOperationFilterInput = {
   eq?: Maybe<Scalars['Uuid']>;
   neq?: Maybe<Scalars['Uuid']>;
-  in?: Maybe<Array<Maybe<Scalars['Uuid']>>>;
-  nin?: Maybe<Array<Maybe<Scalars['Uuid']>>>;
+  in?: Maybe<Array<Scalars['Uuid']>>;
+  nin?: Maybe<Array<Scalars['Uuid']>>;
   gt?: Maybe<Scalars['Uuid']>;
   ngt?: Maybe<Scalars['Uuid']>;
   gte?: Maybe<Scalars['Uuid']>;
@@ -365,11 +405,11 @@ export type StringOperationFilterInput = {
   nendsWith?: Maybe<Scalars['String']>;
 };
 
-export type ComparableNullableOfInt32OperationFilterInput = {
+export type ComparableInt32OperationFilterInput = {
   eq?: Maybe<Scalars['Int']>;
   neq?: Maybe<Scalars['Int']>;
-  in?: Maybe<Array<Maybe<Scalars['Int']>>>;
-  nin?: Maybe<Array<Maybe<Scalars['Int']>>>;
+  in?: Maybe<Array<Scalars['Int']>>;
+  nin?: Maybe<Array<Scalars['Int']>>;
   gt?: Maybe<Scalars['Int']>;
   ngt?: Maybe<Scalars['Int']>;
   gte?: Maybe<Scalars['Int']>;
@@ -395,11 +435,11 @@ export type ComparableNullableOfDateTimeOperationFilterInput = {
   nlte?: Maybe<Scalars['DateTime']>;
 };
 
-export type ComparableGuidOperationFilterInput = {
+export type ComparableNullableOfGuidOperationFilterInput = {
   eq?: Maybe<Scalars['Uuid']>;
   neq?: Maybe<Scalars['Uuid']>;
-  in?: Maybe<Array<Scalars['Uuid']>>;
-  nin?: Maybe<Array<Scalars['Uuid']>>;
+  in?: Maybe<Array<Maybe<Scalars['Uuid']>>>;
+  nin?: Maybe<Array<Maybe<Scalars['Uuid']>>>;
   gt?: Maybe<Scalars['Uuid']>;
   ngt?: Maybe<Scalars['Uuid']>;
   gte?: Maybe<Scalars['Uuid']>;
@@ -413,7 +453,7 @@ export type ComparableGuidOperationFilterInput = {
 export type TenantFilterInput = {
   and?: Maybe<Array<TenantFilterInput>>;
   or?: Maybe<Array<TenantFilterInput>>;
-  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  id?: Maybe<ComparableGuidOperationFilterInput>;
   composes?: Maybe<ListFilterInputTypeOfComposeFilterInput>;
   nodes?: Maybe<ListFilterInputTypeOfNodeFilterInput>;
   connectionLogs?: Maybe<ListFilterInputTypeOfConnectionLogFilterInput>;
@@ -445,12 +485,12 @@ export type TenantSortInput = {
 export type ComposeVersionFilterInput = {
   and?: Maybe<Array<ComposeVersionFilterInput>>;
   or?: Maybe<Array<ComposeVersionFilterInput>>;
-  id?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  id?: Maybe<ComparableGuidOperationFilterInput>;
   content?: Maybe<StringOperationFilterInput>;
   directory?: Maybe<StringOperationFilterInput>;
   serviceName?: Maybe<StringOperationFilterInput>;
   serviceEnabled?: Maybe<BooleanOperationFilterInput>;
-  composeId?: Maybe<ComparableNullableOfGuidOperationFilterInput>;
+  composeId?: Maybe<ComparableGuidOperationFilterInput>;
   pendingDelete?: Maybe<BooleanOperationFilterInput>;
   redeploymentRequestedAt?: Maybe<ComparableNullableOfDateTimeOperationFilterInput>;
   composePath?: Maybe<StringOperationFilterInput>;
@@ -464,6 +504,13 @@ export type ListFilterInputTypeOfComposeVersionFilterInput = {
   all?: Maybe<ComposeVersionFilterInput>;
   none?: Maybe<ComposeVersionFilterInput>;
   some?: Maybe<ComposeVersionFilterInput>;
+  any?: Maybe<Scalars['Boolean']>;
+};
+
+export type ListFilterInputTypeOfContainerFilterInput = {
+  all?: Maybe<ContainerFilterInput>;
+  none?: Maybe<ContainerFilterInput>;
+  some?: Maybe<ContainerFilterInput>;
   any?: Maybe<Scalars['Boolean']>;
 };
 
@@ -523,6 +570,13 @@ export type ComposeSortInput = {
   tenant?: Maybe<TenantSortInput>;
 };
 
+export type ContainerStateOperationFilterInput = {
+  eq?: Maybe<ContainerState>;
+  neq?: Maybe<ContainerState>;
+  in?: Maybe<Array<ContainerState>>;
+  nin?: Maybe<Array<ContainerState>>;
+};
+
 /** Information about pagination in a connection. */
 export type PageInfo = {
   __typename?: 'PageInfo';
@@ -564,21 +618,6 @@ export type IEqualityComparerOfStringFilterInput = {
   or?: Maybe<Array<IEqualityComparerOfStringFilterInput>>;
 };
 
-export type ComparableInt32OperationFilterInput = {
-  eq?: Maybe<Scalars['Int']>;
-  neq?: Maybe<Scalars['Int']>;
-  in?: Maybe<Array<Scalars['Int']>>;
-  nin?: Maybe<Array<Scalars['Int']>>;
-  gt?: Maybe<Scalars['Int']>;
-  ngt?: Maybe<Scalars['Int']>;
-  gte?: Maybe<Scalars['Int']>;
-  ngte?: Maybe<Scalars['Int']>;
-  lt?: Maybe<Scalars['Int']>;
-  nlt?: Maybe<Scalars['Int']>;
-  lte?: Maybe<Scalars['Int']>;
-  nlte?: Maybe<Scalars['Int']>;
-};
-
 export type ListStringOperationFilterInput = {
   all?: Maybe<StringOperationFilterInput>;
   none?: Maybe<StringOperationFilterInput>;
@@ -618,6 +657,20 @@ export type NodeResult =
   | SuccessfulNodeUpdate
   | NodeConnectionFailed;
 
+export type Container = {
+  __typename?: 'Container';
+  id: Scalars['Uuid'];
+  containerName: Scalars['String'];
+  serviceName: Scalars['String'];
+  containerNumber: Scalars['Int'];
+  startedAt?: Maybe<Scalars['DateTime']>;
+  finishedAt?: Maybe<Scalars['DateTime']>;
+  state: ContainerState;
+  lastInspectAt?: Maybe<Scalars['DateTime']>;
+  deploymentId: Scalars['Uuid'];
+  deployment: Deployment;
+};
+
 export type Deployment = {
   __typename?: 'Deployment';
   id: Scalars['Uuid'];
@@ -630,10 +683,11 @@ export type Deployment = {
   lastDeployedNodeVersion?: Maybe<Scalars['Uuid']>;
   lastDeployedAsEnabled?: Maybe<Scalars['Boolean']>;
   reconciliationFailed?: Maybe<Scalars['Boolean']>;
-  compose: Compose;
+  compose?: Maybe<Compose>;
   lastDeployedComposeVersion?: Maybe<ComposeVersion>;
-  node: Node;
+  node?: Maybe<Node>;
   connectionLogs: Array<ConnectionLog>;
+  containers: Array<Container>;
 };
 
 export type Compose = {
@@ -685,6 +739,16 @@ export type Tenant = {
   connectionLogs?: Maybe<Array<Maybe<ConnectionLog>>>;
 };
 
+export enum ContainerState {
+  Created = 'CREATED',
+  Running = 'RUNNING',
+  Removing = 'REMOVING',
+  Paused = 'PAUSED',
+  Restarting = 'RESTARTING',
+  Dead = 'DEAD',
+  Exited = 'EXITED',
+}
+
 export type ComposeVersion = {
   __typename?: 'ComposeVersion';
   id: Scalars['Uuid'];
@@ -730,8 +794,10 @@ export type CreateDeploymentMutationVariables = Exact<{
 export type CreateDeploymentMutation = { __typename?: 'Mutation' } & {
   createDeployment?: Maybe<
     { __typename?: 'Deployment' } & Pick<Deployment, 'id'> & {
-        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
-        node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>
+        >;
+        node?: Maybe<{ __typename?: 'Node' } & Pick<Node, 'id' | 'name'>>;
       }
   >;
 };
@@ -748,9 +814,11 @@ export type CreateNodeMutationVariables = Exact<{
 export type CreateNodeMutation = { __typename?: 'Mutation' } & {
   createNode:
     | ({ __typename?: 'SuccessfulNodeCreation' } & {
-        node: { __typename?: 'Node' } & Pick<
-          Node,
-          'id' | 'name' | 'host' | 'username' | 'reconciliationFailed'
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'username' | 'reconciliationFailed'
+          >
         >;
       })
     | { __typename?: 'SuccessfulNodeUpdate' }
@@ -788,17 +856,21 @@ export type DisableDeploymentMutation = { __typename?: 'Mutation' } & {
       Deployment,
       'id' | 'enabled' | 'reconciliationFailed'
     > & {
-        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
-            current?: Maybe<
-              { __typename?: 'ComposeVersion' } & Pick<
-                ComposeVersion,
-                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
-              >
-            >;
-          };
-        node: { __typename?: 'Node' } & Pick<
-          Node,
-          'id' | 'name' | 'host' | 'port' | 'username'
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
         >;
       }
   >;
@@ -837,17 +909,21 @@ export type EnableDeploymentMutation = { __typename?: 'Mutation' } & {
       Deployment,
       'id' | 'enabled' | 'reconciliationFailed'
     > & {
-        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
-            current?: Maybe<
-              { __typename?: 'ComposeVersion' } & Pick<
-                ComposeVersion,
-                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
-              >
-            >;
-          };
-        node: { __typename?: 'Node' } & Pick<
-          Node,
-          'id' | 'name' | 'host' | 'port' | 'username'
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
         >;
       }
   >;
@@ -903,17 +979,21 @@ export type RedeployDeploymentMutation = { __typename?: 'Mutation' } & {
       Deployment,
       'id' | 'enabled' | 'reconciliationFailed'
     > & {
-        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
-            current?: Maybe<
-              { __typename?: 'ComposeVersion' } & Pick<
-                ComposeVersion,
-                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
-              >
-            >;
-          };
-        node: { __typename?: 'Node' } & Pick<
-          Node,
-          'id' | 'name' | 'host' | 'port' | 'username'
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
         >;
       }
   >;
@@ -995,9 +1075,11 @@ export type UpdateNodeMutation = { __typename?: 'Mutation' } & {
   updateNode:
     | { __typename?: 'SuccessfulNodeCreation' }
     | ({ __typename?: 'SuccessfulNodeUpdate' } & {
-        node: { __typename?: 'Node' } & Pick<
-          Node,
-          'id' | 'name' | 'host' | 'username' | 'reconciliationFailed'
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'username' | 'reconciliationFailed'
+          >
         >;
       })
     | ({ __typename?: 'NodeConnectionFailed' } & Pick<
@@ -1039,17 +1121,21 @@ export type GetDeploymentByIdQuery = { __typename?: 'Query' } & {
       Deployment,
       'id' | 'enabled' | 'reconciliationFailed'
     > & {
-        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
-            current?: Maybe<
-              { __typename?: 'ComposeVersion' } & Pick<
-                ComposeVersion,
-                'id' | 'serviceEnabled' | 'serviceName' | 'directory'
-              >
-            >;
-          };
-        node: { __typename?: 'Node' } & Pick<
-          Node,
-          'id' | 'name' | 'host' | 'port' | 'username'
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'> & {
+              current?: Maybe<
+                { __typename?: 'ComposeVersion' } & Pick<
+                  ComposeVersion,
+                  'id' | 'serviceEnabled' | 'serviceName' | 'directory'
+                >
+              >;
+            }
+        >;
+        node?: Maybe<
+          { __typename?: 'Node' } & Pick<
+            Node,
+            'id' | 'name' | 'host' | 'port' | 'username'
+          >
         >;
       }
   >;
@@ -1074,13 +1160,34 @@ export type GetDeploymentConnectionLogsQuery = { __typename?: 'Query' } & {
   >;
 };
 
+export type GetDeploymentContainersQueryVariables = Exact<{
+  id: Scalars['Uuid'];
+}>;
+
+export type GetDeploymentContainersQuery = { __typename?: 'Query' } & {
+  containers: Array<
+    { __typename?: 'Container' } & Pick<
+      Container,
+      | 'id'
+      | 'containerName'
+      | 'serviceName'
+      | 'containerNumber'
+      | 'startedAt'
+      | 'finishedAt'
+      | 'state'
+    >
+  >;
+};
+
 export type GetDeploymentsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetDeploymentsQuery = { __typename?: 'Query' } & {
   deployments: Array<
     { __typename?: 'Deployment' } & Pick<Deployment, 'id' | 'enabled'> & {
-        node: { __typename?: 'Node' } & Pick<Node, 'id' | 'name'>;
-        compose: { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>;
+        node?: Maybe<{ __typename?: 'Node' } & Pick<Node, 'id' | 'name'>>;
+        compose?: Maybe<
+          { __typename?: 'Compose' } & Pick<Compose, 'id' | 'name'>
+        >;
       }
   >;
 };
@@ -2332,6 +2439,68 @@ export type GetDeploymentConnectionLogsLazyQueryHookResult = ReturnType<
 export type GetDeploymentConnectionLogsQueryResult = Apollo.QueryResult<
   GetDeploymentConnectionLogsQuery,
   GetDeploymentConnectionLogsQueryVariables
+>;
+export const GetDeploymentContainersDocument = gql`
+  query getDeploymentContainers($id: Uuid!) {
+    containers(where: { deploymentId: { eq: $id } }) {
+      id
+      containerName
+      serviceName
+      containerNumber
+      startedAt
+      finishedAt
+      state
+    }
+  }
+`;
+
+/**
+ * __useGetDeploymentContainersQuery__
+ *
+ * To run a query within a React component, call `useGetDeploymentContainersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDeploymentContainersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDeploymentContainersQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetDeploymentContainersQuery(
+  baseOptions: Apollo.QueryHookOptions<
+    GetDeploymentContainersQuery,
+    GetDeploymentContainersQueryVariables
+  >,
+) {
+  return Apollo.useQuery<
+    GetDeploymentContainersQuery,
+    GetDeploymentContainersQueryVariables
+  >(GetDeploymentContainersDocument, baseOptions);
+}
+export function useGetDeploymentContainersLazyQuery(
+  baseOptions?: Apollo.LazyQueryHookOptions<
+    GetDeploymentContainersQuery,
+    GetDeploymentContainersQueryVariables
+  >,
+) {
+  return Apollo.useLazyQuery<
+    GetDeploymentContainersQuery,
+    GetDeploymentContainersQueryVariables
+  >(GetDeploymentContainersDocument, baseOptions);
+}
+export type GetDeploymentContainersQueryHookResult = ReturnType<
+  typeof useGetDeploymentContainersQuery
+>;
+export type GetDeploymentContainersLazyQueryHookResult = ReturnType<
+  typeof useGetDeploymentContainersLazyQuery
+>;
+export type GetDeploymentContainersQueryResult = Apollo.QueryResult<
+  GetDeploymentContainersQuery,
+  GetDeploymentContainersQueryVariables
 >;
 export const GetDeploymentsDocument = gql`
   query getDeployments {
