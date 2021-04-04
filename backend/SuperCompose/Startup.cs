@@ -82,7 +82,8 @@ namespace SuperCompose
       services.AddRouting();
       services.AddLogging();
       services.AddHealthChecks();
-      services.AddCors(x => x.AddDefaultPolicy(p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+      services.AddCors(x => x.AddDefaultPolicy(p =>
+        p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().SetPreflightMaxAge(TimeSpan.FromSeconds(3600))));
 
       // Data protection
       services.AddDataProtection().PersistKeysToDbContext<KeysContext>();
@@ -125,6 +126,7 @@ namespace SuperCompose
         .AddScoped<NodeUpdaterService>()
         .AddScoped<ConnectionLogService>()
         .AddScoped<NodeAgentService>()
+        .AddScoped<PubSubService>()
         .AddScoped<NodeService>();
 
       // Custom hosted services

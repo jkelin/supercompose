@@ -8,18 +8,19 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using SuperCompose.Services;
 
 namespace SuperCompose.Graphql
 {
   public class Subscription
   {
     private readonly SuperComposeContext ctx;
-    private readonly ITopicEventReceiver eventReceiver;
+    private readonly PubSubService pubSub;
 
-    public Subscription(SuperComposeContext ctx, ITopicEventReceiver eventReceiver)
+    public Subscription(SuperComposeContext ctx, PubSubService pubSub)
     {
       this.ctx = ctx;
-      this.eventReceiver = eventReceiver;
+      this.pubSub = pubSub;
     }
 
     [SubscribeAndResolve]
@@ -41,7 +42,7 @@ namespace SuperCompose.Graphql
 
       foreach (var log in await query.ToListAsync(ct)) yield return log;
 
-      var sub = await eventReceiver.SubscribeAsync<string, ConnectionLog>($"connectionLogCreated", ct);
+      var sub = await pubSub.OnConnectionLogCreated(ct);
 
       await foreach (var log in sub.ReadEventsAsync().WithCancellation(ct))
       {
@@ -52,6 +53,18 @@ namespace SuperCompose.Graphql
 
         yield return log;
       }
+    }
+
+    [SubscribeAndResolve]
+    public async IAsyncEnumerable<ContainerChange> OnContainersChanged(
+      Guid deploymentId,
+      [EnumeratorCancellation] CancellationToken ct = default
+    )
+    {
+      var sub = await pubSub.OnContainerChanged(ct);
+      await foreach (var change in sub.ReadEventsAsync().WithCancellation(ct))
+        if (change.DeploymentId == deploymentId)
+          yield return change;
     }
   }
 }

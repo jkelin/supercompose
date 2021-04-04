@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -12,8 +14,11 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Nito.Disposables;
 using Renci.SshNet;
+using Renci.SshNet.Common;
 using SuperCompose.Context;
+using SuperCompose.Exceptions;
 using SuperCompose.Util;
+using Z.EntityFramework.Plus;
 using ContainerState = SuperCompose.Context.ContainerState;
 
 namespace SuperCompose.Services
@@ -24,20 +29,72 @@ namespace SuperCompose.Services
     private readonly ConnectionService connService;
     private readonly CryptoService cryptoService;
     private readonly ILogger<NodeAgentService> logger;
+    private readonly PubSubService pubSub;
+    private readonly ConnectionLogService connectionLog;
 
     public NodeAgentService(SuperComposeContext ctx, ConnectionService connService, CryptoService cryptoService,
-      ILogger<NodeAgentService> logger)
+      ILogger<NodeAgentService> logger, PubSubService pubSub, ConnectionLogService connectionLog)
     {
       this.ctx = ctx;
       this.connService = connService;
       this.cryptoService = cryptoService;
       this.logger = logger;
+      this.pubSub = pubSub;
+      this.connectionLog = connectionLog;
     }
 
     public async Task RunNodeAgent(Guid nodeId, CancellationToken ct = default)
     {
-      var node = await ctx.Nodes
-        .FirstOrDefaultAsync(x => x.Id == nodeId, ct);
+      using var _ = connectionLog.BeginScope(nodeId);
+      using var _2 = logger.BeginScope(new {nodeId});
+
+      try
+      {
+        var node = await ctx.Nodes
+          .FirstOrDefaultAsync(x => x.Id == nodeId, ct);
+
+        var client = await OpenSsh(node, ct);
+
+        await ReloadContainersFor(ctx.Deployments.Where(x => x.NodeId == nodeId && x.Enabled == true), client, ct);
+        var events = ListenForEvents(client, ct);
+
+        await foreach (var ee in events.WithCancellation(ct))
+        {
+          var query = ctx.Deployments.Where(x =>
+            x.NodeId == nodeId && x.LastDeployedComposeVersion.ServiceName == ee.compose);
+          await ReloadContainersFor(query, client, ct);
+        }
+      }
+      catch (TaskCanceledException)
+      {
+      }
+      catch (NodeConnectionFailedException ex)
+      {
+        logger.LogInformation("Node agent connection failed failed {why}", ex.Message);
+        connectionLog.Error($"Node connection failed", ex);
+      }
+      catch (ContainerInfoException ex)
+      {
+        logger.LogInformation("Failed to get container info {why}", ex.Message);
+        connectionLog.Error($"Failed to get container info", ex);
+      }
+      catch (SshException ex)
+      {
+        logger.LogInformation("Node agent had an SSHException {why}", ex.Message);
+        connectionLog.Error($"SSH error", ex);
+      }
+      catch (Exception ex)
+      {
+        logger.LogWarning(ex, "Unknown error in node agent {nodeId}", nodeId);
+        connectionLog.Error($"Unknown error", ex);
+
+        throw;
+      }
+    }
+
+    private async Task<SshClient> OpenSsh(Node node, CancellationToken ct)
+    {
+      logger.LogDebug("Pending changes detected, opening ssh connection");
 
       var connectionParams = new ConnectionParams
       (
@@ -47,22 +104,18 @@ namespace SuperCompose.Services
         node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
         node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
       );
-      var client = await connService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
 
-      await ReloadContainersFor(ctx.Deployments.Where(x => x.NodeId == nodeId && x.Enabled == true), client, ct);
-      var events = ListenForEvents(client, ct);
+      connectionLog.Info($"Connecting SSH to {node.Username}@{node.Host}:{node.Port}");
+      var ssh = await connService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
 
-      await foreach (var ee in events.WithCancellation(ct))
-      {
-        var query = ctx.Deployments.Where(x =>
-          x.NodeId == nodeId && x.LastDeployedComposeVersion.ServiceName == ee.compose);
-        await ReloadContainersFor(query, client, ct);
-      }
+      ct.ThrowIfCancellationRequested();
+
+      return ssh;
     }
 
     private async IAsyncEnumerable<(DateTime time, string compose, string service, Message msg)> ListenForEvents(
       SshClient ssh,
-      CancellationToken ct = default)
+      [EnumeratorCancellation] CancellationToken ct = default)
     {
       var args = new[]
       {
@@ -113,6 +166,7 @@ namespace SuperCompose.Services
       await using var trx = await ctx.Database.BeginTransactionAsync(ct);
 
       var relevantContainers = FilterContainersForDeployments(list, deployments);
+      var changes = new Queue<ContainerChange>();
 
       if (relevantContainers.Any())
       {
@@ -126,22 +180,31 @@ namespace SuperCompose.Services
               x.Config.Labels["com.docker.compose.project"] == deployment.LastDeployedComposeVersion.ServiceName
             );
 
-          await UpdateContainersForDeployment(relevantInspects, deployment, ct);
+          var deploymentChanges = await UpdateContainersForDeployment(relevantInspects, deployment, ct);
+          foreach (var change in deploymentChanges) changes.Enqueue(change);
         }
       }
       else
       {
-        foreach (var deployment in deployments) ctx.Containers.RemoveRange(deployment.Containers);
+        foreach (var deployment in deployments)
+        foreach (var container in deployment.Containers)
+        {
+          ctx.Containers.Remove(container);
+          changes.Enqueue(new ContainerChange(ContainerChangeKind.Removed, container.Id, container.DeploymentId));
+        }
       }
 
       await ctx.SaveChangesAsync(ct);
       await trx.CommitAsync(ct);
+      foreach (var change in changes) await pubSub.ContainerChanged(change, ct);
     }
 
-    private async Task UpdateContainersForDeployment(IEnumerable<ContainerInspectResponse> deploymentInspects,
+    private async Task<IReadOnlyCollection<ContainerChange>> UpdateContainersForDeployment(
+      IEnumerable<ContainerInspectResponse> deploymentInspects,
       Deployment deployment, CancellationToken ct)
     {
       var processedContainers = new HashSet<Container>();
+      var changes = new Queue<ContainerChange>();
 
       foreach (var inspect in deploymentInspects)
       {
@@ -163,6 +226,11 @@ namespace SuperCompose.Services
             };
 
             await ctx.Containers.AddAsync(container, ct);
+            changes.Enqueue(new ContainerChange(ContainerChangeKind.Created, container.Id, container.DeploymentId));
+          }
+          else
+          {
+            changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
           }
 
           container.ContainerNumber = containerNumber;
@@ -187,10 +255,16 @@ namespace SuperCompose.Services
       }
 
       var outdatedContainers = deployment.Containers.Except(processedContainers);
-      foreach (var container in outdatedContainers) ctx.Containers.Remove(container);
+      foreach (var container in outdatedContainers)
+      {
+        changes.Enqueue(new ContainerChange(ContainerChangeKind.Removed, container.Id, container.DeploymentId));
+        ctx.Containers.Remove(container);
+      }
+
+      return changes;
     }
 
-    private ContainerState DockerStateToContainerState(string state)
+    private static ContainerState DockerStateToContainerState(string state)
     {
       return state switch
       {
@@ -205,7 +279,8 @@ namespace SuperCompose.Services
       };
     }
 
-    private IEnumerable<string> FilterContainersForDeployments(IEnumerable<ContainerListResult> listResult,
+    private IReadOnlyCollection<ContainerListResult> FilterContainersForDeployments(
+      IEnumerable<ContainerListResult> listResult,
       IEnumerable<Deployment> deployments)
     {
       var matcher = new Regex(@"(?<name>[^=,]+)(=(?<value>[^=,]+))?");
@@ -215,52 +290,61 @@ namespace SuperCompose.Services
         .Select(x =>
         {
           var matches = matcher.Matches(x.Labels);
-          return new
+          return x with
           {
-            x.Id,
-            Labels = matches.ToDictionary(y => y.Groups["name"].Value, y => y.Groups["value"].Value)
+            LabelsParsed = matches.ToDictionary(y => y.Groups["name"].Value, y => y.Groups["value"].Value)
           };
         });
 
       return matched
-        .Where(x => projects.Contains(x.Labels["com.docker.compose.project"]))
-        .Select(x => x.Id);
+        .Where(x => projects.Contains(x.LabelsParsed["com.docker.compose.project"]))
+        .ToArray();
     }
 
-    private async Task<IEnumerable<ContainerInspectResponse>> InspectContainers(SshClient ssh,
-      IEnumerable<string> containers,
+    private async Task<IReadOnlyCollection<ContainerInspectResponse>> InspectContainers(SshClient ssh,
+      IEnumerable<ContainerListResult> containers,
       CancellationToken ct = default)
     {
-      var command = $"docker inspect --format '{{{{json .}}}}' {string.Join(" ", containers.Select(x => $"\"{x}\""))}";
-      var result = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
+      var command =
+        $"docker inspect --format '{{{{json .}}}}' {string.Join(" ", containers.Select(x => $"'{x.Names}'"))}";
+      var (stdout, stderr, code) = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
 
-      if (result.status != 0) throw new Exception("Could not inspect containers");
+      if (code != 0 && !stderr.Contains("Error: No such object:"))
+        throw new ContainerInfoException("Could not inspect containers")
+        {
+          StdErr = stderr,
+          Command = command
+        };
 
-      return result.result
+      return stdout
         .Split("\n")
         .Where(x => !string.IsNullOrEmpty(x))
-        .Select(x => JsonConvert.DeserializeObject<ContainerInspectResponse>(x)!);
+        .Select(x => JsonConvert.DeserializeObject<ContainerInspectResponse>(x)!)
+        .ToArray();
     }
 
-    private async Task<IEnumerable<ContainerListResult>> ListContainers(SshClient ssh,
+    private async Task<IReadOnlyCollection<ContainerListResult>> ListContainers(SshClient ssh,
       CancellationToken ct = default)
     {
-      var command = "docker container ls --all --format='{{json .}}' --filter='label=com.docker.compose.project'";
-      var result = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
+      const string? command =
+        "docker container ls --all --format='{{json .}}' --filter='label=com.docker.compose.project'";
+      var (stdout, stderr, code) = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
 
-      if (result.status != 0) throw new Exception("Could not list containers");
+      if (code != 0)
+        throw new ContainerInfoException("Could not list containers")
+        {
+          StdErr = stderr,
+          Command = command
+        };
 
-      return result.result
+      return stdout
         .Split("\n")
         .Where(x => !string.IsNullOrEmpty(x))
-        .Select(x => JsonConvert.DeserializeObject<ContainerListResult>(x)!);
+        .Select(x => JsonConvert.DeserializeObject<ContainerListResult>(x)!)
+        .ToArray();
     }
 
-    private class ContainerListResult
-    {
-      public string Id { get; set; }
-
-      public string Labels { get; set; }
-    }
+    private record ContainerListResult(string Id, string Labels, Dictionary<string, string>? LabelsParsed,
+      string Names);
   }
 }

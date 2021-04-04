@@ -198,7 +198,7 @@ namespace SuperCompose.Services
 
       var result = await connectionService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
 
-      if (result.status != 0) connectionLog.Info($"Command failed with status: {result.status}");
+      if (result.code != 0) connectionLog.Info($"Command failed with status: {result.code}");
 
       return result;
     }

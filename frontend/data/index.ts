@@ -187,6 +187,7 @@ export type MutationRedeployNodeArgs = {
 export type Subscription = {
   __typename?: 'Subscription';
   onConnectionLog: ConnectionLog;
+  onContainersChanged: ContainerChange;
 };
 
 export type SubscriptionOnConnectionLogArgs = {
@@ -194,6 +195,10 @@ export type SubscriptionOnConnectionLogArgs = {
   nodeId?: Maybe<Scalars['Uuid']>;
   composeId?: Maybe<Scalars['Uuid']>;
   after?: Maybe<Scalars['DateTime']>;
+};
+
+export type SubscriptionOnContainersChangedArgs = {
+  deploymentId: Scalars['Uuid'];
 };
 
 export type SuccessfulNodeCreation = {
@@ -720,6 +725,13 @@ export type Node = {
   connectionLogs?: Maybe<Array<Maybe<ConnectionLog>>>;
 };
 
+export type ContainerChange = {
+  __typename?: 'ContainerChange';
+  kind: ContainerChangeKind;
+  containerId: Scalars['Uuid'];
+  deploymentId: Scalars['Uuid'];
+};
+
 export enum ConnectionLogSeverity {
   Info = 'INFO',
   Error = 'ERROR',
@@ -747,6 +759,12 @@ export enum ContainerState {
   Restarting = 'RESTARTING',
   Dead = 'DEAD',
   Exited = 'EXITED',
+}
+
+export enum ContainerChangeKind {
+  Created = 'CREATED',
+  Removed = 'REMOVED',
+  Changed = 'CHANGED',
 }
 
 export type ComposeVersion = {
@@ -1232,6 +1250,19 @@ export type OnConnectionLogSubscription = { __typename?: 'Subscription' } & {
   connectionLogs: { __typename?: 'ConnectionLog' } & Pick<
     ConnectionLog,
     'id' | 'error' | 'message' | 'severity' | 'time'
+  >;
+};
+
+export type OnContainersChangedSubscriptionVariables = Exact<{
+  deploymentId: Scalars['Uuid'];
+}>;
+
+export type OnContainersChangedSubscription = {
+  __typename?: 'Subscription';
+} & {
+  connectionLogs: { __typename?: 'ContainerChange' } & Pick<
+    ContainerChange,
+    'containerId' | 'deploymentId' | 'kind'
   >;
 };
 
@@ -2729,3 +2760,44 @@ export type OnConnectionLogSubscriptionHookResult = ReturnType<
   typeof useOnConnectionLogSubscription
 >;
 export type OnConnectionLogSubscriptionResult = Apollo.SubscriptionResult<OnConnectionLogSubscription>;
+export const OnContainersChangedDocument = gql`
+  subscription onContainersChanged($deploymentId: Uuid!) {
+    connectionLogs: onContainersChanged(deploymentId: $deploymentId) {
+      containerId
+      deploymentId
+      kind
+    }
+  }
+`;
+
+/**
+ * __useOnContainersChangedSubscription__
+ *
+ * To run a query within a React component, call `useOnContainersChangedSubscription` and pass it any options that fit your needs.
+ * When your component renders, `useOnContainersChangedSubscription` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the subscription, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOnContainersChangedSubscription({
+ *   variables: {
+ *      deploymentId: // value for 'deploymentId'
+ *   },
+ * });
+ */
+export function useOnContainersChangedSubscription(
+  baseOptions: Apollo.SubscriptionHookOptions<
+    OnContainersChangedSubscription,
+    OnContainersChangedSubscriptionVariables
+  >,
+) {
+  return Apollo.useSubscription<
+    OnContainersChangedSubscription,
+    OnContainersChangedSubscriptionVariables
+  >(OnContainersChangedDocument, baseOptions);
+}
+export type OnContainersChangedSubscriptionHookResult = ReturnType<
+  typeof useOnContainersChangedSubscription
+>;
+export type OnContainersChangedSubscriptionResult = Apollo.SubscriptionResult<OnContainersChangedSubscription>;

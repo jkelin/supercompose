@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Nito.AsyncEx;
 using SuperCompose.Context;
+using SuperCompose.Services;
 
 namespace SuperCompose.HostedServices
 {
@@ -50,10 +51,10 @@ namespace SuperCompose.HostedServices
 
         using var scope = provider.CreateScope();
         await using var ctx = scope.ServiceProvider.GetRequiredService<SuperComposeContext>();
-        var eventSender = scope.ServiceProvider.GetRequiredService<ITopicEventSender>();
+        var pubSub = scope.ServiceProvider.GetRequiredService<PubSubService>();
 
         await ctx.ConnectionLogs.BulkInsertAsync(current.Select(x => x.Log), ct);
-        foreach (var log in current) await eventSender.SendAsync("connectionLogCreated", log.Log, ct);
+        foreach (var log in current) await pubSub.ConnectionLogCreated(log.Log, ct);
       }
     }
   }

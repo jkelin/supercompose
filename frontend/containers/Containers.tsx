@@ -7,6 +7,7 @@ import {
   useGetDeploymentContainersQuery,
   Container,
   ContainerState,
+  useOnContainersChangedSubscription,
 } from 'data';
 import { format } from 'date-fns';
 import { groupBy, orderBy, takeRight, uniqBy } from 'lodash';
@@ -20,6 +21,7 @@ import React, {
 } from 'react';
 import classNames from 'classnames';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import { Spinner } from 'components';
 
 const containerStateColors: Record<ContainerState, string> = {
   [ContainerState.Created]: 'text-yellow-900',
@@ -77,9 +79,33 @@ export const Containers: React.FC<{
   const containersQuery = useGetDeploymentContainersQuery({
     variables: { id: props.deploymentId },
   });
+  useOnContainersChangedSubscription({
+    variables: {
+      deploymentId: props.deploymentId,
+    },
+    skip: typeof window === 'undefined',
+    shouldResubscribe: true,
+    onSubscriptionData: () => {
+      containersQuery.refetch();
+    },
+  });
+
+  if (!containersQuery.data?.containers) {
+    return (
+      <div className="h-32 flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
 
   if (!containersQuery.data?.containers.length) {
-    return <div />;
+    return (
+      <div className="h-32 flex items-center justify-center">
+        <p className="text-center font-semibold">
+          No relevant containers found
+        </p>
+      </div>
+    );
   }
 
   const services = groupBy(

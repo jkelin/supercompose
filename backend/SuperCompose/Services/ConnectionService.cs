@@ -76,7 +76,7 @@ namespace SuperCompose.Services
       return client;
     }
 
-    public async Task<(string result, string error, int status)> RunCommand(SshClient ssh, string command,
+    public async Task<(string stdout, string stderr, int code)> RunCommand(SshClient ssh, string command,
       TimeSpan timeout, CancellationToken ct = default)
     {
       logger.BeginScope(new

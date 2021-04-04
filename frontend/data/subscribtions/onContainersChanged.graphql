@@ -1,0 +1,7 @@
+subscription onContainersChanged($deploymentId: Uuid!) {
+  connectionLogs: onContainersChanged(deploymentId: $deploymentId) {
+    containerId
+    deploymentId
+    kind
+  }
+}
