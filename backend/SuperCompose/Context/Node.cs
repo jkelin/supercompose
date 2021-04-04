@@ -2,6 +2,7 @@ using HotChocolate;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using HotChocolate.Data;
 
 #nullable disable
 

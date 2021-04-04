@@ -48,11 +48,12 @@ namespace SuperCompose
     {
       // Redis
       services.AddSingleton<IConnectionMultiplexer>(action =>
-      {
-        return ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis"));
-      });
+        ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")));
 
       // Postgres main
+      services.AddPooledDbContextFactory<SuperComposeContext>(options =>
+        options.UseNpgsql(
+          configuration.GetConnectionString("SuperComposeContext")));
       services.AddDbContext<SuperComposeContext>(options =>
         options.UseNpgsql(
           configuration.GetConnectionString("SuperComposeContext")));
@@ -103,10 +104,16 @@ namespace SuperCompose
           ))
         .AddApolloTracing()
         //.UseAutomaticPersistedQueryPipeline()
+        .AddDataLoader<DeploymentStateDataloader>()
+        .AddDataLoader<NodeStateDataloader>()
+        .AddDataLoader<ComposeStateDataloader>()
         .AddQueryType<Query>()
         .AddMutationType<Mutation>()
         .AddSubscriptionType<Subscription>()
         .AddErrorFilter<SuperComposeErrorFilter>()
+        .AddType<DeploymentResolvers>()
+        .AddType<NodeResolvers>()
+        .AddType<ComposeResolvers>()
         .AddType<Mutation.SuccessfulNodeCreation>()
         .AddType<Mutation.SuccessfulNodeUpdate>()
         .AddType<Mutation.NodeConnectionFailed>();

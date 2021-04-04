@@ -15,52 +15,52 @@ namespace SuperCompose.Graphql
     [UseFiltering]
     [UseSorting]
     public IQueryable<Node> GetNodes(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Nodes;
+      return ctx.CreateDbContext().Nodes;
     }
 
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
     public IQueryable<Node> GetNode(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Nodes;
+      return ctx.CreateDbContext().Nodes;
     }
 
     [UseProjection]
     [UseFiltering]
     public DbSet<Compose> GetComposes(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Composes;
+      return ctx.CreateDbContext().Composes;
     }
 
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
     public DbSet<Compose> GetCompose(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Composes;
+      return ctx.CreateDbContext().Composes;
     }
 
     [UseProjection]
     [UseFiltering]
     public DbSet<Deployment> GetDeployments(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Deployments;
+      return ctx.CreateDbContext().Deployments;
     }
 
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
     public DbSet<Deployment> GetDeployment(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Deployments;
+      return ctx.CreateDbContext().Deployments;
     }
 
     [UseProjection]
@@ -68,36 +68,36 @@ namespace SuperCompose.Graphql
     [UseSorting]
     [UsePaging(MaxPageSize = 1000)]
     public DbSet<ConnectionLog> GetConnectionLogs(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.ConnectionLogs;
+      return ctx.CreateDbContext().ConnectionLogs;
     }
 
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
     public DbSet<ConnectionLog> GetConnectionLog(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.ConnectionLogs;
+      return ctx.CreateDbContext().ConnectionLogs;
     }
 
     [UseProjection]
     [UseFiltering]
     [UseSorting]
     public DbSet<Container> GetContainers(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Containers;
+      return ctx.CreateDbContext().Containers;
     }
 
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
     public DbSet<Container> GetContainer(
-      [Service] SuperComposeContext ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx)
     {
-      return ctx.Containers;
+      return ctx.CreateDbContext().Containers;
     }
   }
 }

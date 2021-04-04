@@ -18,21 +18,21 @@ namespace SuperCompose.Graphql
     private readonly NodeService nodeService;
     private readonly ComposeService composeService;
     private readonly DeploymentService deploymentService;
-    private readonly SuperComposeContext ctx;
+    private readonly IDbContextFactory<SuperComposeContext> ctxFactiry;
     private readonly ConnectionService conn;
 
     public Mutation(
       NodeService nodeService,
       ComposeService composeService,
       DeploymentService deploymentService,
-      SuperComposeContext ctx,
+      IDbContextFactory<SuperComposeContext> ctxFactiry,
       ConnectionService conn
     )
     {
       this.nodeService = nodeService;
       this.composeService = composeService;
       this.deploymentService = deploymentService;
-      this.ctx = ctx;
+      this.ctxFactiry = ctxFactiry;
       this.conn = conn;
     }
 
@@ -112,7 +112,8 @@ namespace SuperCompose.Graphql
       {
         var id = await nodeService.Create(name, new ConnectionParams(host, username, port, password, privateKey));
 
-        return await ctx.Nodes.Where(x => x.Id == id).Select(x => new SuccessfulNodeCreation {Node = x}).FirstAsync();
+        return await ctxFactiry.CreateDbContext().Nodes.Where(x => x.Id == id)
+          .Select(x => new SuccessfulNodeCreation {Node = x}).FirstAsync();
       }
       catch (NodeConnectionFailedException ex)
       {
@@ -164,7 +165,8 @@ namespace SuperCompose.Graphql
           privateKey
         );
 
-        return await ctx.Nodes.Where(x => x.Id == id).Select(x => new SuccessfulNodeUpdate {Node = x}).FirstAsync();
+        return await ctxFactiry.CreateDbContext().Nodes.Where(x => x.Id == id)
+          .Select(x => new SuccessfulNodeUpdate {Node = x}).FirstAsync();
       }
       catch (NodeConnectionFailedException ex)
       {
@@ -191,7 +193,7 @@ namespace SuperCompose.Graphql
     {
       var id = await composeService.Create(name, directory, serviceEnabled, compose);
 
-      return ctx.Composes.Where(x => x.Id == id);
+      return ctxFactiry.CreateDbContext().Composes.Where(x => x.Id == id);
     }
 
 
@@ -213,7 +215,7 @@ namespace SuperCompose.Graphql
         compose
       );
 
-      return ctx.Composes.Where(x => x.Id == id);
+      return ctxFactiry.CreateDbContext().Composes.Where(x => x.Id == id);
     }
 
     public async Task<bool> DeleteCompose([Required] Guid id)
@@ -231,7 +233,7 @@ namespace SuperCompose.Graphql
     {
       await composeService.Redeploy(id);
 
-      return ctx.Composes.Where(x => x.Id == id);
+      return ctxFactiry.CreateDbContext().Composes.Where(x => x.Id == id);
     }
 
     [UseFirstOrDefault]
@@ -243,7 +245,7 @@ namespace SuperCompose.Graphql
     {
       var id = await deploymentService.Create(node, compose);
 
-      return ctx.Deployments.Where(x => x.Id == id);
+      return ctxFactiry.CreateDbContext().Deployments.Where(x => x.Id == id);
     }
 
     [UseFirstOrDefault]
@@ -254,7 +256,7 @@ namespace SuperCompose.Graphql
     {
       await deploymentService.Enable(deployment);
 
-      return ctx.Deployments.Where(x => x.Id == deployment);
+      return ctxFactiry.CreateDbContext().Deployments.Where(x => x.Id == deployment);
     }
 
     [UseFirstOrDefault]
@@ -265,7 +267,7 @@ namespace SuperCompose.Graphql
     {
       await deploymentService.Disable(deployment);
 
-      return ctx.Deployments.Where(x => x.Id == deployment);
+      return ctxFactiry.CreateDbContext().Deployments.Where(x => x.Id == deployment);
     }
 
     [UseFirstOrDefault]
@@ -276,7 +278,7 @@ namespace SuperCompose.Graphql
     {
       await deploymentService.Redeploy(id);
 
-      return ctx.Deployments.Where(x => x.Id == id);
+      return ctxFactiry.CreateDbContext().Deployments.Where(x => x.Id == id);
     }
 
     [UseFirstOrDefault]
@@ -287,7 +289,7 @@ namespace SuperCompose.Graphql
     {
       await nodeService.Enable(node);
 
-      return ctx.Nodes.Where(x => x.Id == node);
+      return ctxFactiry.CreateDbContext().Nodes.Where(x => x.Id == node);
     }
 
     [UseFirstOrDefault]
@@ -298,7 +300,7 @@ namespace SuperCompose.Graphql
     {
       await nodeService.Disable(node);
 
-      return ctx.Nodes.Where(x => x.Id == node);
+      return ctxFactiry.CreateDbContext().Nodes.Where(x => x.Id == node);
     }
 
     [UseFirstOrDefault]
@@ -309,7 +311,7 @@ namespace SuperCompose.Graphql
     {
       await nodeService.Redeploy(id);
 
-      return ctx.Nodes.Where(x => x.Id == id);
+      return ctxFactiry.CreateDbContext().Nodes.Where(x => x.Id == id);
     }
   }
 }

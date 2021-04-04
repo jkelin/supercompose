@@ -6,10 +6,6 @@ namespace SuperCompose.Context
 {
   public partial class SuperComposeContext : DbContext
   {
-    public SuperComposeContext()
-    {
-    }
-
     public SuperComposeContext(DbContextOptions<SuperComposeContext> options)
       : base(options)
     {
