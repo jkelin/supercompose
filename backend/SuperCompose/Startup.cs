@@ -28,6 +28,11 @@ using StackExchange.Redis.Extensions.Core.Configuration;
 using SuperCompose.Exceptions;
 using SuperCompose.Graphql;
 using SuperCompose.Util;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Security.Cryptography;
+using System.Reflection;
 
 namespace SuperCompose
 {
@@ -141,6 +146,51 @@ namespace SuperCompose
         .AddHostedService<NodeUpdateListener>()
         .AddHostedService<NodeAgentOrchestrator>()
         .AddHostedService<ConnectionLogProcessor>();
+
+      // IdentityServer
+      var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
+      services
+        .AddIdentityServer()
+        .AddSigningCredential(GetSigningCredetials())
+        .AddConfigurationStore(options =>
+        {
+          options.ConfigureDbContext = builder =>
+            builder.UseNpgsql(configuration.GetConnectionString("ConfigurationDbContext"), opts =>
+            {
+              opts.MigrationsAssembly(migrationsAssembly);
+            });
+        })
+        .AddOperationalStore(options =>
+        {
+          options.ConfigureDbContext = builder =>
+            builder.UseNpgsql(configuration.GetConnectionString("PersistedGrantDbContext"), opts =>
+            {
+              opts.MigrationsAssembly(migrationsAssembly);
+            });
+
+          // this enables automatic token cleanup. this is optional.
+          options.EnableTokenCleanup = true;
+          options.TokenCleanupInterval = 30;
+        });
+    }
+
+    private X509SigningCredentials GetSigningCredetials()
+    {
+      var keyString = configuration["SigningKey"];
+      var certString = configuration["SigningKeyCert"];
+
+      if (string.IsNullOrEmpty(keyString))
+      {
+        throw new InvalidOperationException("SigningKey is not defined");
+      }
+
+      if (string.IsNullOrEmpty(certString))
+      {
+        throw new InvalidOperationException("CertString is not defined");
+      }
+
+      var signingKey = X509Certificate2.CreateFromPem(certString, keyString);
+      return new X509SigningCredentials(signingKey);
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -152,6 +202,7 @@ namespace SuperCompose
       app.UseWebSockets();
       app.UseRouting();
       app.UseCors();
+      app.UseIdentityServer();
 
       app.UseEndpoints(endpoints =>
       {
