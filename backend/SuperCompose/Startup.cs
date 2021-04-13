@@ -28,6 +28,7 @@ using StackExchange.Redis.Extensions.Core.Configuration;
 using SuperCompose.Exceptions;
 using SuperCompose.Graphql;
 using SuperCompose.Util;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace SuperCompose
 {
@@ -141,6 +142,24 @@ namespace SuperCompose
         .AddHostedService<NodeUpdateListener>()
         .AddHostedService<NodeAgentOrchestrator>()
         .AddHostedService<ConnectionLogProcessor>();
+
+      // Auth
+      services
+        .AddAuthentication(options =>
+        {
+          options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+          options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+          options.Authority = configuration["Auth:Authority"];
+          options.Audience = configuration["Auth:Audience"];
+        });
+
+      services.AddAuthorization(configure =>
+      {
+        //configure.AddPolicy("compose", policy => policy.)
+      });
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -149,6 +168,8 @@ namespace SuperCompose
     {
       if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
+      app.UseAuthentication();
+      app.UseAuthorization();
       app.UseWebSockets();
       app.UseRouting();
       app.UseCors();
