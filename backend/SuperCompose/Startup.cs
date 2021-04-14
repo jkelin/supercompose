@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
 using SuperCompose.Context;
 using SuperCompose.HostedServices;
@@ -29,6 +30,8 @@ using SuperCompose.Exceptions;
 using SuperCompose.Graphql;
 using SuperCompose.Util;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 
 namespace SuperCompose
 {
@@ -135,6 +138,7 @@ namespace SuperCompose
         .AddScoped<ConnectionLogService>()
         .AddScoped<NodeAgentService>()
         .AddScoped<PubSubService>()
+        .AddScoped<AuthService>()
         .AddScoped<NodeService>();
 
       // Custom hosted services
@@ -142,6 +146,9 @@ namespace SuperCompose
         .AddHostedService<NodeUpdateListener>()
         .AddHostedService<NodeAgentOrchestrator>()
         .AddHostedService<ConnectionLogProcessor>();
+
+      // HTTP Clients
+      services.AddHttpClient("OIDC", client => { client.BaseAddress = new Uri(configuration["Auth:Authority"]); });
 
       // Auth
       services
@@ -169,9 +176,9 @@ namespace SuperCompose
       if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
       app.UseAuthentication();
+      app.UseRouting();
       app.UseAuthorization();
       app.UseWebSockets();
-      app.UseRouting();
       app.UseCors();
 
       app.UseEndpoints(endpoints =>

@@ -210,7 +210,7 @@ export const Navbar: React.FC<{}> = (props) => {
           --> */}
                 <DropdownMenu>
                   <div className="block px-4 py-2 text-sm text-gray-700 border-b border-gray-300">
-                    <div>{user?.email}</div>
+                    <div>{user?.name}</div>
                   </div>
 
                   {/* <a

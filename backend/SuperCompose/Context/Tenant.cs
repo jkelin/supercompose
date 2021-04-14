@@ -17,5 +17,8 @@ namespace SuperCompose.Context
 
     public virtual ICollection<ConnectionLog> ConnectionLogs { get; set; } =
       new List<ConnectionLog>();
+
+    public Guid? UserId { get; set; }
+    public virtual User? User { get; set; }
   }
 }

@@ -16,6 +16,7 @@ namespace SuperCompose.Context
     public virtual DbSet<Deployment> Deployments { get; set; }
     public virtual DbSet<Node> Nodes { get; set; }
     public virtual DbSet<Tenant> Tenants { get; set; }
+    public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<ConnectionLog> ConnectionLogs { get; set; }
     public virtual DbSet<Container> Containers { get; set; }
 
@@ -98,7 +99,13 @@ namespace SuperCompose.Context
           .OnDelete(DeleteBehavior.Cascade);
       });
 
-      modelBuilder.Entity<Tenant>(entity => { });
+      modelBuilder.Entity<Tenant>(entity =>
+      {
+        entity.HasOne(d => d.User)
+          .WithMany(p => p.Tenants)
+          .HasForeignKey(d => d.UserId)
+          .OnDelete(DeleteBehavior.Cascade);
+      });
 
       modelBuilder.Entity<Container>(entity =>
       {
@@ -107,6 +114,8 @@ namespace SuperCompose.Context
           .HasForeignKey(d => d.DeploymentId)
           .OnDelete(DeleteBehavior.Cascade);
       });
+
+      modelBuilder.Entity<User>(entity => { });
 
       OnModelCreatingPartial(modelBuilder);
     }
