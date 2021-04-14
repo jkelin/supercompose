@@ -5,6 +5,9 @@ import { useRouter } from 'next/dist/client/router';
 
 import Logo from 'svg/logo.svg';
 import LogoSymbol from 'svg/logo-symbol.svg';
+import { useUser } from '@auth0/nextjs-auth0';
+import { Dropdown, DropdownButton, DropdownMenu } from 'components';
+import UserIcon from 'svg/user.svg';
 
 const NavbarLink: React.FC<{ active?: boolean; href: string }> = (props) => {
   return (
@@ -24,6 +27,7 @@ const NavbarLink: React.FC<{ active?: boolean; href: string }> = (props) => {
 
 export const Navbar: React.FC<{}> = (props) => {
   const router = useRouter();
+  const { user, error, isLoading } = useUser();
 
   return (
     <nav className="bg-white shadow">
@@ -166,24 +170,35 @@ export const Navbar: React.FC<{}> = (props) => {
             </button>
 
             {/* <!-- Profile dropdown --> */}
-            <div className="ml-4 relative flex-shrink-0">
-              <div>
-                <Link href="/api/auth/login">
-                  <a
-                    className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    id="user-menu"
-                    aria-haspopup="true"
-                  >
-                    <span className="sr-only">Open user menu</span>
-                    <img
-                      className="h-8 w-8 rounded-full"
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                      alt=""
-                    />
-                  </a>
-                </Link>
-              </div>
-              {/* <!--
+            <Dropdown id="user-menu">
+              <div className="ml-4 relative flex-shrink-0">
+                <div>
+                  {!user && (
+                    <Link href="/api/auth/login">
+                      <a
+                        className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        id="user-menu"
+                        aria-haspopup="true"
+                      >
+                        <span className="sr-only">Open user menu</span>
+                        <UserIcon className="h-8 w-8 text-gray-400" />
+                      </a>
+                    </Link>
+                  )}
+                  {user && (
+                    <DropdownButton className="bg-white rounded-full flex text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                      <span className="sr-only">Open user menu</span>
+                      {user.picture && (
+                        <img
+                          className="h-8 w-8 rounded-full"
+                          src={user.picture}
+                          alt=""
+                        />
+                      )}
+                    </DropdownButton>
+                  )}
+                </div>
+                {/* <!--
             Profile dropdown panel, show/hide based on dropdown state.
 
             Entering: "transition ease-out duration-100"
@@ -193,13 +208,12 @@ export const Navbar: React.FC<{}> = (props) => {
               From: "transform opacity-100 scale-100"
               To: "transform opacity-0 scale-95"
           --> */}
-              {/* <div
-                className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5"
-                role="menu"
-                aria-orientation="vertical"
-                aria-labelledby="user-menu"
-              >
-                <a
+                <DropdownMenu>
+                  <div className="block px-4 py-2 text-sm text-gray-700 border-b border-gray-300">
+                    <div>{user?.email}</div>
+                  </div>
+
+                  {/* <a
                   href="#"
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   role="menuitem"
@@ -212,16 +226,17 @@ export const Navbar: React.FC<{}> = (props) => {
                   role="menuitem"
                 >
                   Settings
-                </a>
-                <a
-                  href="#"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  role="menuitem"
-                >
-                  Sign out
-                </a>
-              </div> */}
-            </div>
+                </a> */}
+                  <a
+                    href="/api/auth/logout"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    role="menuitem"
+                  >
+                    Sign out
+                  </a>
+                </DropdownMenu>
+              </div>
+            </Dropdown>
           </div>
         </div>
       </div>
