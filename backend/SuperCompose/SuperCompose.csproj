@@ -9,15 +9,15 @@
 
   <ItemGroup>
     <PackageReference Include="Docker.DotNet" Version="3.125.4" />
-    <PackageReference Include="GreenDonut" Version="11.1.0" />
-    <PackageReference Include="HotChocolate.AspNetCore" Version="11.0.9" />
-    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="11.0.9" />
+    <PackageReference Include="GreenDonut" Version="12.0.0-preview.1" />
+    <PackageReference Include="HotChocolate.AspNetCore" Version="12.0.0-preview.1" />
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="12.0.0-preview.1" />
     <PackageReference Include="HotChocolate.AspNetCore.Subscriptions" Version="10.5.5" />
-    <PackageReference Include="HotChocolate.Data" Version="11.0.9" />
-    <PackageReference Include="HotChocolate.Data.EntityFramework" Version="11.0.9" />
-    <PackageReference Include="HotChocolate.PersistedQueries.Redis" Version="11.0.9" />
-    <PackageReference Include="HotChocolate.Subscriptions" Version="11.0.9" />
-    <PackageReference Include="HotChocolate.Subscriptions.Redis" Version="11.0.9" />
+    <PackageReference Include="HotChocolate.Data" Version="12.0.0-preview.1" />
+    <PackageReference Include="HotChocolate.Data.EntityFramework" Version="12.0.0-preview.1" />
+    <PackageReference Include="HotChocolate.PersistedQueries.Redis" Version="12.0.0-preview.1" />
+    <PackageReference Include="HotChocolate.Subscriptions" Version="12.0.0-preview.1" />
+    <PackageReference Include="HotChocolate.Subscriptions.Redis" Version="12.0.0-preview.1" />
     <PackageReference Include="MediatR" Version="9.0.0" />
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.5" />

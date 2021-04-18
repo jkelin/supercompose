@@ -6,33 +6,39 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SuperCompose.Context
 {
-  public partial class ComposeVersion
+  public sealed record ComposeVersion
   {
-    [Required] [Key] public Guid Id { get; set; }
+    [Required] [Key] public Guid Id { get; init; }
 
-    [Required] public string Content { get; set; }
+    [Required] public string Content { get; init; }
 
-    [Required] public string Directory { get; set; }
+    [Required] public string Directory { get; init; }
 
-    [MaxLength(255)] public string ServiceName { get; set; }
+    [MaxLength(255)] public string ServiceName { get; init; }
 
-    [Required] public bool ServiceEnabled { get; set; }
+    [Required] public bool ServiceEnabled { get; init; }
 
-    [Required] public Guid ComposeId { get; set; }
+    [Required] public Guid ComposeId { get; init; }
 
-    [Required] public bool PendingDelete { get; set; } = false;
+    [Required] public bool PendingDelete { get; init; } = false;
+    
 
-    public DateTime? RedeploymentRequestedAt { get; set; }
+    [Required] public Guid TenantId { get; set; }
+
+    public Tenant Tenant { get; init; }
+
+
+    public DateTime? RedeploymentRequestedAt { get; init; }
 
     public string ComposePath => Directory + "/docker-compose.yml";
 
     public string ServicePath => $"/etc/systemd/system/{ServiceName}.service";
 
 
-    public virtual Compose ComposeNavigation { get; set; }
-    public virtual Compose Compose { get; set; }
+    public Compose? CurrentCompose { get; init; }
+    public Compose Compose { get; init; }
 
-    public virtual ICollection<Deployment> Deployments { get; set; } =
+    public ICollection<Deployment> Deployments { get; init; } =
       new List<Deployment>();
   }
 }

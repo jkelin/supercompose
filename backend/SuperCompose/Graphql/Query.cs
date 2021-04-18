@@ -5,99 +5,138 @@ using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using HotChocolate.AspNetCore.Authorization;
+using SuperCompose.Util;
 
 namespace SuperCompose.Graphql
 {
   public class Query
   {
+    [Authorize]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
     public IQueryable<Node> GetNodes(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Nodes;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Nodes.Where(x => x.TenantId == tenant);
     }
 
+    [Authorize]
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
     public IQueryable<Node> GetNode(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Nodes;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Nodes.Where(x => x.TenantId == tenant);
     }
 
+    [Authorize]
     [UseProjection]
     [UseFiltering]
-    public DbSet<Compose> GetComposes(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<Compose> GetComposes(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Composes;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Composes.Where(x => x.TenantId == tenant);
     }
 
+    [Authorize]
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
-    public DbSet<Compose> GetCompose(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<Compose> GetCompose(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Composes;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Composes.Where(x => x.TenantId == tenant);
     }
 
+    [Authorize]
     [UseProjection]
     [UseFiltering]
-    public DbSet<Deployment> GetDeployments(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<Deployment> GetDeployments(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Deployments;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Deployments.Where(x => x.TenantId == tenant);
     }
 
+    [Authorize]
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
-    public DbSet<Deployment> GetDeployment(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<Deployment> GetDeployment(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Deployments;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Deployments
+        .Where(x => x.TenantId == tenant);
     }
 
+    [Authorize]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
     [UsePaging(MaxPageSize = 1000)]
-    public DbSet<ConnectionLog> GetConnectionLogs(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<ConnectionLog> GetConnectionLogs(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().ConnectionLogs;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().ConnectionLogs
+        .Where(x => x.TenantId == tenant);
+      ;
     }
 
+    [Authorize]
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
-    public DbSet<ConnectionLog> GetConnectionLog(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<ConnectionLog> GetConnectionLog(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().ConnectionLogs;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().ConnectionLogs
+        .Where(x => x.TenantId == tenant);
+      ;
     }
 
+    [Authorize]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public DbSet<Container> GetContainers(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<Container> GetContainers(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Containers;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Containers.Where(x => x.TenantId == tenant);
+      ;
     }
 
+    [Authorize]
     [UseFirstOrDefault]
     [UseProjection]
     [UseFiltering]
-    public DbSet<Container> GetContainer(
-      [Service] IDbContextFactory<SuperComposeContext> ctx)
+    public IQueryable<Container> GetContainer(
+      [Service] IDbContextFactory<SuperComposeContext> ctx,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
     {
-      return ctx.CreateDbContext().Containers;
+      var tenant = user.Tenant();
+      return ctx.CreateDbContext().Containers.Where(x => x.TenantId == tenant);
     }
   }
 }

@@ -45,7 +45,10 @@ namespace SuperCompose.Services
 
     public async Task RunNodeAgent(Guid nodeId, CancellationToken ct = default)
     {
-      using var _ = connectionLog.BeginScope(nodeId);
+      var tenantId = await ctx.Nodes
+        .Where(x => x.Id == nodeId).Select(x => x.TenantId).FirstOrDefaultAsync(ct);
+      
+      using var _ = connectionLog.BeginScope(tenantId, nodeId: nodeId);
       using var _2 = logger.BeginScope(new {nodeId});
 
       try
@@ -222,6 +225,7 @@ namespace SuperCompose.Services
             container = new Container
             {
               Id = Guid.NewGuid(),
+              TenantId = deployment.TenantId,
               DeploymentId = deployment.Id
             };
 

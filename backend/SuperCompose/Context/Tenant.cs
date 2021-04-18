@@ -18,6 +18,15 @@ namespace SuperCompose.Context
     public virtual ICollection<ConnectionLog> ConnectionLogs { get; set; } =
       new List<ConnectionLog>();
 
+    public virtual ICollection<ComposeVersion> ComposeVersions { get; set; } =
+      new List<ComposeVersion>();
+
+    public virtual ICollection<Container> Containers { get; set; } =
+      new List<Container>();
+
+    public virtual ICollection<Deployment> Deployments { get; set; } =
+      new List<Deployment>();
+
     public Guid? UserId { get; set; }
     public virtual User? User { get; set; }
   }

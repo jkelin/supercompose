@@ -6,8 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using HotChocolate;
+using HotChocolate.AspNetCore.Authorization;
 using SuperCompose.Context;
 using SuperCompose.Exceptions;
 
@@ -99,18 +102,21 @@ namespace SuperCompose.Graphql
       }
     }
 
+    [Authorize]
     public async Task<INodeResult> CreateNode(
       [Required] [MaxLength(255)] string name,
       [Required] [MaxLength(255)] string host,
       [Required] [MaxLength(255)] string username,
       [Required] [Range(1, 65535)] int port,
       string? password,
-      string? privateKey
+      string? privateKey,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user
     )
     {
+      var tenant = user.Tenant();
       try
       {
-        var id = await nodeService.Create(name, new ConnectionParams(host, username, port, password, privateKey));
+        var id = await nodeService.Create(tenant, name, new ConnectionParams(host, username, port, password, privateKey));
 
         return await ctxFactiry.CreateDbContext().Nodes.Where(x => x.Id == id)
           .Select(x => new SuccessfulNodeCreation {Node = x}).FirstAsync();
@@ -182,16 +188,19 @@ namespace SuperCompose.Graphql
     }
 
 
+    [Authorize]
     [UseFirstOrDefault]
     [UseProjection]
     public async Task<IQueryable<Compose>> CreateCompose(
       [Required] [MaxLength(255)] string name,
       [Required] [MaxLength(255)] string directory,
       [Required] bool serviceEnabled,
-      [Required] string compose
+      [Required] string compose,
+      [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user
     )
     {
-      var id = await composeService.Create(name, directory, serviceEnabled, compose);
+      var tenant = user.Tenant();
+      var id = await composeService.Create(tenant, name, directory, serviceEnabled, compose);
 
       return ctxFactiry.CreateDbContext().Composes.Where(x => x.Id == id);
     }

@@ -28,6 +28,7 @@ namespace SuperCompose.Services
     }
 
     public async Task<Guid> Create(
+      Guid tenantId,
       string name,
       ConnectionParams conn
     )
@@ -36,6 +37,7 @@ namespace SuperCompose.Services
 
       var node = new Node
       {
+        TenantId = tenantId,
         Host = conn.host,
         Enabled = true,
         Id = Guid.NewGuid(),

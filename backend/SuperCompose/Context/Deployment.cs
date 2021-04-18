@@ -36,5 +36,8 @@ namespace SuperCompose.Context
 
     public virtual ICollection<Container> Containers { get; set; } =
       new List<Container>();
+
+    [Required] public Guid TenantId { get; set; }
+    public virtual Tenant Tenant { get; set; }
   }
 }

@@ -259,7 +259,7 @@ namespace SuperCompose.Services
     private async Task ApplyDeployment(Deployment deployment, SshClient ssh, SftpClient sftp, CancellationToken ct)
     {
       // TODO cleanup current version
-      using var _ = connectionLog.BeginScope(deploymentId: deployment.Id);
+      using var _ = connectionLog.BeginScope(tenantId: deployment.TenantId, deploymentId: deployment.Id);
 
       try
       {

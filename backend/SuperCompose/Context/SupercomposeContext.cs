@@ -53,7 +53,7 @@ namespace SuperCompose.Context
       modelBuilder.Entity<Compose>(entity =>
       {
         entity.HasOne(d => d.Current)
-          .WithOne(p => p.Compose)
+          .WithOne(p => p.CurrentCompose)
           .HasForeignKey<Compose>(d => d.CurrentId)
           .OnDelete(DeleteBehavior.ClientSetNull);
 
@@ -65,9 +65,14 @@ namespace SuperCompose.Context
 
       modelBuilder.Entity<ComposeVersion>(entity =>
       {
-        entity.HasOne(d => d.ComposeNavigation)
+        entity.HasOne(d => d.Compose)
           .WithMany(p => p.ComposeVersions)
           .HasForeignKey(d => d.ComposeId)
+          .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(d => d.Tenant)
+          .WithMany(p => p.ComposeVersions)
+          .HasForeignKey(d => d.TenantId)
           .OnDelete(DeleteBehavior.Cascade);
       });
 
@@ -88,6 +93,11 @@ namespace SuperCompose.Context
         entity.HasOne(d => d.Node)
           .WithMany(p => p.Deployments)
           .HasForeignKey(d => d.NodeId)
+          .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(d => d.Tenant)
+          .WithMany(p => p.Deployments)
+          .HasForeignKey(d => d.TenantId)
           .OnDelete(DeleteBehavior.Cascade);
       });
 
@@ -112,6 +122,11 @@ namespace SuperCompose.Context
         entity.HasOne(d => d.Deployment)
           .WithMany(p => p.Containers)
           .HasForeignKey(d => d.DeploymentId)
+          .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(d => d.Tenant)
+          .WithMany(p => p.Containers)
+          .HasForeignKey(d => d.TenantId)
           .OnDelete(DeleteBehavior.Cascade);
       });
 

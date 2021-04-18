@@ -2,14 +2,27 @@ using HotChocolate;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using HotChocolate.Data;
 
 #nullable disable
 
 namespace SuperCompose.Context
 {
-  public record Node
+  public sealed record Node
   {
+    private readonly SuperComposeContext ctx;
+
+    public Node()
+    {
+      
+    }
+
+    public Node(SuperComposeContext ctx)
+    {
+      this.ctx = ctx;
+    }
+    
     [Required] [Key] public Guid Id { get; set; }
 
     [Required] public bool Enabled { get; set; }
@@ -26,20 +39,25 @@ namespace SuperCompose.Context
 
     [GraphQLIgnore] public byte[] PrivateKey { get; set; }
 
+    public int ContainerCount => ctx.Deployments
+      .Where(x => x.NodeId == Id)
+      .Select(x => x.Containers.Count)
+      .Sum();
+
     public bool? ReconciliationFailed { get; set; }
 
     public DateTime? RedeploymentRequestedAt { get; set; }
 
     [Required] public Guid Version { get; set; } = Guid.NewGuid();
 
-    public Guid? TenantId { get; set; }
+    [Required] public Guid TenantId { get; set; }
 
-    public virtual Tenant Tenant { get; set; }
+    public Tenant Tenant { get; set; }
 
-    public virtual ICollection<Deployment> Deployments { get; set; } =
+    public ICollection<Deployment> Deployments { get; set; } =
       new List<Deployment>();
 
-    public virtual ICollection<ConnectionLog> ConnectionLogs { get; set; } =
+    public ICollection<ConnectionLog> ConnectionLogs { get; set; } =
       new List<ConnectionLog>();
   }
 }

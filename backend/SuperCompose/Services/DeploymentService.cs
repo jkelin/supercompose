@@ -32,6 +32,7 @@ namespace SuperCompose.Services
 
       var deployment = new Deployment
       {
+        TenantId = node.TenantId,
         Id = Guid.NewGuid(),
         Node = node,
         Compose = compose,

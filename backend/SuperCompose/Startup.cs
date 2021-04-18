@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using SuperCompose.Context;
@@ -10,6 +11,7 @@ using SuperCompose.Services;
 using HotChocolate;
 using HotChocolate.AspNetCore.Subscriptions;
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
@@ -107,6 +109,7 @@ namespace SuperCompose
             sp.GetApplicationService<ILogger<GraphqlErrorLogger>>()
           ))
         .AddApolloTracing()
+        .AddAuthorization()
         //.UseAutomaticPersistedQueryPipeline()
         .AddDataLoader<DeploymentStateDataloader>()
         .AddDataLoader<NodeStateDataloader>()
@@ -163,10 +166,13 @@ namespace SuperCompose
           options.Audience = configuration["Auth:Audience"];
         });
 
-      services.AddAuthorization(configure =>
-      {
-        //configure.AddPolicy("compose", policy => policy.)
-      });
+      services.AddScoped<IClaimsTransformation, ClaimsTransformer>();
+      //services.AddAuthorization(options =>
+      //{
+      //  options.AddPolicy("Tenant", policy =>
+      //    policy.RequireAssertion(context =>
+      //      context.User.HasClaim(c => (c.Type == ClaimTypes.Country))));
+      //});
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

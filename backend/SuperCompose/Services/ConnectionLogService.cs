@@ -22,16 +22,22 @@ namespace SuperCompose.Services
     private async ValueTask Log(ConnectionLogSeverity severity, string message, Exception? exception = null,
       Dictionary<string, dynamic>? metadata = null)
     {
+      if (currentScope.Value == null)
+      {
+        throw new InvalidOperationException(
+          "Scope has not yet begun for this connection log");
+      }
+      
       await mediator.Publish(new SaveConnectionLog
       {
         Log = new ConnectionLog
         {
           Severity = severity,
           Message = message,
-          NodeId = currentScope.Value?.NodeId,
-          DeploymentId = currentScope.Value?.DeploymentId,
-          ComposeId = currentScope.Value?.ComposeId,
-          TenantId = currentScope.Value?.TenantId,
+          NodeId = currentScope.Value.NodeId,
+          DeploymentId = currentScope.Value.DeploymentId,
+          ComposeId = currentScope.Value.ComposeId,
+          TenantId = currentScope.Value.TenantId,
           Time = DateTime.UtcNow,
           Error = exception != null ? $"{exception.GetType().Name}: {exception.Message}" : null,
           Metadata = metadata
@@ -54,16 +60,17 @@ namespace SuperCompose.Services
       var _ = Log(ConnectionLogSeverity.Warning, message, exception, metadata);
     }
 
-    public IDisposable BeginScope(Guid? nodeId = null,
-      Guid? deploymentId = null, Guid? tenantId = null,
+    public IDisposable BeginScope(Guid tenantId,
+      Guid? nodeId = null,
+      Guid? deploymentId = null,
       Guid? composeId = null)
     {
       currentScope.Value ??= new Scope(() => currentScope.Value = null);
 
       currentScope.Value.NodeId ??= nodeId;
       currentScope.Value.DeploymentId ??= deploymentId;
-      currentScope.Value.TenantId ??= tenantId;
       currentScope.Value.ComposeId ??= composeId;
+      currentScope.Value.TenantId = tenantId;
 
       return currentScope.Value;
     }
@@ -74,8 +81,8 @@ namespace SuperCompose.Services
 
       public Guid? NodeId = null;
       public Guid? DeploymentId = null;
-      public Guid? TenantId = null;
       public Guid? ComposeId = null;
+      public Guid TenantId;
 
       public Scope(Action onDispose)
       {

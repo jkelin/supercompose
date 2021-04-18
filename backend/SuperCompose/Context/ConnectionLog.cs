@@ -35,8 +35,8 @@ namespace SuperCompose.Context
     public virtual Deployment? Deployment { get; set; }
 
 
-    public Guid? TenantId { get; set; }
-    public virtual Tenant? Tenant { get; set; }
+    [Required] public Guid TenantId { get; set; }
+    public virtual Tenant Tenant { get; set; }
 
 
     public Guid? ComposeId { get; set; }

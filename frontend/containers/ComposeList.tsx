@@ -68,7 +68,9 @@ const ComposeCard: React.FC<{
 };
 
 export const useComposeList = (): [Compose[], { loading: boolean }] => {
-  const composes = useGetComposesQuery();
+  const composes = useGetComposesQuery({
+    nextFetchPolicy: 'cache-and-network',
+  });
 
   const composeList = composes?.data?.composes;
   return [

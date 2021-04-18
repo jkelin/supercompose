@@ -19,7 +19,8 @@ namespace SuperCompose.Services
       this.nodeUpdater = nodeUpdater;
     }
 
-    public async Task<Guid> Create(string name, string directory, bool serviceEnabled, string content)
+    public async Task<Guid> Create(Guid tenantId, string name, string directory, bool 
+    serviceEnabled, string content)
     {
       // The complexity in this method is needed because deferred CurrentId
       await using var transaction = await ctx.Database.BeginTransactionAsync();
@@ -30,6 +31,7 @@ namespace SuperCompose.Services
       await ctx.Composes.AddAsync(new Compose
       {
         Id = composeId,
+        TenantId = tenantId,
         Name = name,
         CurrentId = versionId
       });
@@ -39,6 +41,7 @@ namespace SuperCompose.Services
       await ctx.ComposeVersions.AddAsync(new ComposeVersion
       {
         Id = versionId,
+        TenantId = tenantId,
         Content = content,
         Directory = directory,
         ServiceEnabled = serviceEnabled,
