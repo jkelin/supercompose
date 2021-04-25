@@ -2,6 +2,7 @@ import {
   getAccessToken,
   handleAuth,
   handleCallback,
+  handleLogin,
   handleProfile,
 } from '@auth0/nextjs-auth0';
 import axios from 'axios';
@@ -32,5 +33,10 @@ export default handleAuth({
     });
 
     return res.status(200).json(profile.data);
+  },
+  async login(req, res) {
+    return handleLogin(req, res, {
+      returnTo: '/dashboard',
+    });
   },
 });
