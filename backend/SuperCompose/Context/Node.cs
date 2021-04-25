@@ -3,12 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using HotChocolate.AspNetCore.Authorization;
 using HotChocolate.Data;
 
 #nullable disable
 
 namespace SuperCompose.Context
 {
+  //[Authorize(Apply = ApplyPolicy.AfterResolver, Policy = "Tenant")]
   public sealed record Node
   {
     private readonly SuperComposeContext ctx;

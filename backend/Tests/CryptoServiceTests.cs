@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using supercompose;
+using SuperCompose;
+using SuperCompose.Services;
 using Xunit;
 
 namespace BackendTests

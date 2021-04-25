@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -7,7 +5,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using SuperCompose.Context;
 
-namespace SuperCompose.Util
+namespace SuperCompose.Auth
 {
   public class ClaimsTransformer : IClaimsTransformation
   {

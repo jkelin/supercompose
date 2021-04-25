@@ -1,3 +1,4 @@
+using System;
 using HotChocolate;
 
 namespace SuperCompose.Exceptions
@@ -20,6 +21,9 @@ namespace SuperCompose.Exceptions
         NodeNotFoundException => error
           .WithCode("NODE_NOT_FOUND")
           .WithMessage("Requested node could not be found"),
+        UnauthorizedAccessException => error
+          .WithCode("UNAUTHORIZED")
+          .WithMessage("Requested operation is not authorized"),
         _ => error
           .WithCode("UNKNOWN_ERROR")
           .WithMessage("Unknown Error: " + error.Message)

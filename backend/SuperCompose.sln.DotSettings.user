@@ -3,4 +3,7 @@
   &lt;Assembly Path="C:\Users\jan\.nuget\packages\hotchocolate.data\11.0.9\lib\net5.0\HotChocolate.Data.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Users\jan\.nuget\packages\microsoft.identitymodel.protocols.openidconnect\6.7.1\lib\netstandard2.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=cf9520e1_002D921a_002D4e5b_002D8f40_002D80c37e10f1e1/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Solution /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Mediatr/@EntryIndexedValue">True</s:Boolean></wpf:ResourceDictionary>

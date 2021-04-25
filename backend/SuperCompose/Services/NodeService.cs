@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using SuperCompose.Util;
 using Microsoft.EntityFrameworkCore;
 using SuperCompose.Context;
@@ -17,14 +18,16 @@ namespace SuperCompose.Services
     private readonly ConnectionService connectionService;
     private readonly CryptoService crypto;
     private readonly NodeUpdaterService nodeUpdater;
+    private readonly IAuthorizationService authorizationService;
 
     public NodeService(SuperComposeContext ctx, ConnectionService connectionService, CryptoService crypto,
-      NodeUpdaterService nodeUpdater)
+      NodeUpdaterService nodeUpdater, IAuthorizationService authorizationService)
     {
       this.ctx = ctx;
       this.connectionService = connectionService;
       this.crypto = crypto;
       this.nodeUpdater = nodeUpdater;
+      this.authorizationService = authorizationService;
     }
 
     public async Task<Guid> Create(

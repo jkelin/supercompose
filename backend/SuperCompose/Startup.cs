@@ -32,8 +32,10 @@ using SuperCompose.Exceptions;
 using SuperCompose.Graphql;
 using SuperCompose.Util;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using SuperCompose.Auth;
 
 namespace SuperCompose
 {
@@ -100,7 +102,8 @@ namespace SuperCompose
 
       // Graphql
       services.AddGraphQLServer()
-        .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = env.IsDevelopment())
+        .ModifyRequestOptions(opt =>
+          opt.IncludeExceptionDetails = env.IsDevelopment())
         .AddFiltering()
         .AddSorting()
         .AddProjections()
@@ -157,8 +160,10 @@ namespace SuperCompose
       services
         .AddAuthentication(options =>
         {
-          options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-          options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+          options.DefaultAuthenticateScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+          options.DefaultChallengeScheme =
+            JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
@@ -166,13 +171,11 @@ namespace SuperCompose
           options.Audience = configuration["Auth:Audience"];
         });
 
-      services.AddScoped<IClaimsTransformation, ClaimsTransformer>();
-      //services.AddAuthorization(options =>
-      //{
-      //  options.AddPolicy("Tenant", policy =>
-      //    policy.RequireAssertion(context =>
-      //      context.User.HasClaim(c => (c.Type == ClaimTypes.Country))));
-      //});
+      services
+        .AddScoped<IClaimsTransformation, ClaimsTransformer>()
+        .AddScoped<IAuthorizationHandler, TenantNodeAuthorizationHandler>()
+        .AddScoped<IAuthorizationHandler, TenantComposeAuthorizationHandler>()
+        .AddScoped<IAuthorizationHandler, TenantDeploymentAuthorizationHandler>();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
