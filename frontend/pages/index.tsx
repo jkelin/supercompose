@@ -29,10 +29,11 @@ export default function Landing() {
             <span className="block">
               Nothing more, nothing less.
               <span className="block xl:inline">
-                <span className="ml-1  text-indigo-600 font-semibold">
+                {/* <span className="ml-1 text-indigo-600 font-semibold">
                   $12/year
                 </span>{' '}
-                when ready, currently in{' '}
+                when ready, */}{' '}
+                Currently in{' '}
                 <span className="text-red-600 font-semibold">ALPHA</span>.
               </span>
             </span>
