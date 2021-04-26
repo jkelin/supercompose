@@ -2,8 +2,11 @@ import Head from 'next/head';
 import React from 'react';
 import { ComposeList, NodeList } from 'containers';
 import { Navbar } from './Navbar';
+import { usePanelbear } from 'lib/usePanelbear';
 
 export const PublicLayout: React.FC<{}> = (props) => {
+  usePanelbear();
+
   return (
     <React.Fragment>
       <Head>

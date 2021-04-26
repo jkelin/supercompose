@@ -3,8 +3,11 @@ import React from 'react';
 import { ComposeList, NodeList } from 'containers';
 import { Navbar } from './Navbar';
 import { ErrorBoundary } from './ErrorBoundary';
+import { usePanelbear } from 'lib/usePanelbear';
 
 export const DashboardLayout: React.FC<{}> = (props) => {
+  usePanelbear();
+
   return (
     <React.Fragment>
       <Navbar />

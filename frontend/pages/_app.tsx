@@ -18,16 +18,19 @@ import { globalCreateToast, ToastProvider } from 'containers';
 import { SupercomposeConfig } from 'lib/config';
 import { onError } from '@apollo/client/link/error';
 import { UserProvider } from '@auth0/nextjs-auth0';
+import { usePanelbear } from 'lib/usePanelbear';
 
-const App = ({ Component, pageProps, apollo }: any) => (
-  <ToastProvider>
-    <UserProvider>
-      <ApolloProvider client={apollo}>
-        <Component {...pageProps} />
-      </ApolloProvider>
-    </UserProvider>
-  </ToastProvider>
-);
+const App = ({ Component, pageProps, apollo }: any) => {
+  return (
+    <ToastProvider>
+      <UserProvider>
+        <ApolloProvider client={apollo}>
+          <Component {...pageProps} />
+        </ApolloProvider>
+      </UserProvider>
+    </ToastProvider>
+  );
+};
 
 const gqlHoC = withApollo(
   (opts) => {
