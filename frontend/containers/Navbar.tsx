@@ -3,7 +3,8 @@ import Link from 'next/link';
 import classNames from 'classnames';
 import { useRouter } from 'next/dist/client/router';
 
-import Logo from 'svg/logo.svg';
+import Logo from 'svg/logo-stamp.svg';
+// import Logo from 'svg/logo.svg';
 import LogoSymbol from 'svg/logo-symbol.svg';
 import { useUser } from '@auth0/nextjs-auth0';
 import { Dropdown, DropdownButton, DropdownMenu } from 'components';
