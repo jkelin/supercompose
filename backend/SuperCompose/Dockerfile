@@ -4,7 +4,7 @@ WORKDIR /source
 
 # copy csproj and restore as distinct layers
 COPY *.csproj ./
-RUN dotnet restore -r linux-musl-x64
+RUN dotnet restore -r linux-x64
 
 # copy everything else and build app
 COPY . ./
