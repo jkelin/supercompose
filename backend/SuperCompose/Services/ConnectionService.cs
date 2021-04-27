@@ -9,10 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Nito.AsyncEx;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using SuperCompose.Context;
 using SuperCompose.Exceptions;
+using SuperCompose.Migrations.Keys;
 using SuperCompose.Util;
 
 namespace SuperCompose.Services
@@ -126,13 +128,16 @@ namespace SuperCompose.Services
       using var cmd = ssh.CreateCommand(command, Encoding.UTF8);
       var res = cmd.BeginExecute();
 
-      using var sr = new StreamReader(cmd.OutputStream, Encoding.UTF8);
+      using var stdOut = new StreamReader(cmd.OutputStream, Encoding.UTF8);
 
-      while (!res.IsCompleted)
+      while (!res.IsCompleted && cmd.OutputStream.CanRead && !ct.IsCancellationRequested)
       {
-        var line = await sr.ReadLineAsync();
-        if (line != null) yield return (line, null, null);
+        var line = await stdOut.ReadLineAsync().WaitAsync(ct);
+        if (!string.IsNullOrEmpty(line)) yield return (line, null, null);
+        else await Task.Delay(500, ct);
       }
+
+      cmd.EndExecute(res);
 
       ct.ThrowIfCancellationRequested();
 

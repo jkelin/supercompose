@@ -308,10 +308,10 @@ namespace SuperCompose.Graphql
       var nodeAuth =
         await authorizationService.AuthorizeAsync(user, node,
           new TenantNodeRequirement());
-      var deploymentAuth =
-        await authorizationService.AuthorizeAsync(user, node,
-          new TenantDeploymentRequirement());
-      if (nodeAuth.Failure != null || deploymentAuth.Failure != null)
+      var composeAuth =
+        await authorizationService.AuthorizeAsync(user, compose,
+          new TenantComposeRequirement());
+      if (nodeAuth.Failure != null || composeAuth.Failure != null)
       {
         throw new UnauthorizedAccessException();
       }
