@@ -63,6 +63,8 @@ namespace SuperCompose.Services
 
         await foreach (var ee in events.WithCancellation(ct))
         {
+          logger.LogDebug("Received node event {type} {compose}", ee.msg.Type, ee
+          .compose);
           var query = ctx.Deployments.Where(x =>
             x.NodeId == nodeId && x.LastDeployedComposeVersion.ServiceName == ee.compose);
           await ReloadContainersFor(query, client, ct);
@@ -128,8 +130,12 @@ namespace SuperCompose.Services
         //"--since 10h"
       };
       var stream = connService.StreamLines(ssh, "docker events " + string.Join(" ", args), ct);
+      logger.LogDebug("Listening for events");
 
       await foreach (var (result, error, status) in stream.WithCancellation(ct))
+      {
+        logger.LogTrace("Event received {Result}", result);
+        
         if (status != null)
         {
           throw new Exception("Stream has ended"); // TODO;
@@ -144,16 +150,26 @@ namespace SuperCompose.Services
 
 
           var a = msg.Action;
-          var isCriticalAction = a == "create" || a == "destroy" || a == "die" || a == "kill" || a == "oom" ||
-                                 a == "pause" ||
-                                 a == "rename" || a == "resize" || a == "restart" || a == "start" || a == "stop" ||
-                                 a == "unpause" ||
-                                 a == "update";
-          if (isCriticalAction && msg.Actor.Attributes.TryGetValue("com.docker.compose.project", out var project) &&
-              msg.Actor.Attributes.TryGetValue("com.docker.compose.service", out var service))
-            yield return (DateTime.UnixEpoch + TimeSpan.FromMilliseconds(msg.TimeNano / 1000000), project, service,
+          var isCriticalAction =
+            a == "create" || a == "destroy" || a == "die" || a == "kill" ||
+            a == "oom" ||
+            a == "pause" ||
+            a == "rename" || a == "resize" || a == "restart" || a == "start" ||
+            a == "stop" ||
+            a == "unpause" ||
+            a == "update";
+          if (isCriticalAction &&
+              msg.Actor.Attributes.TryGetValue("com.docker.compose.project",
+                out var project) &&
+              msg.Actor.Attributes.TryGetValue("com.docker.compose.service",
+                out var service))
+            yield return (
+              DateTime.UnixEpoch +
+              TimeSpan.FromMilliseconds(msg.TimeNano / 1000000), project,
+              service,
               msg);
         }
+      }
     }
 
     private async Task ReloadContainersFor(IQueryable<Deployment> query, SshClient ssh, CancellationToken ct = default)
@@ -206,6 +222,8 @@ namespace SuperCompose.Services
       IEnumerable<ContainerInspectResponse> deploymentInspects,
       Deployment deployment, CancellationToken ct)
     {
+      logger.LogTrace("Updating containers for deployment {Deployment}", deployment.Id);
+      
       var processedContainers = new HashSet<Container>();
       var changes = new Queue<ContainerChange>();
 

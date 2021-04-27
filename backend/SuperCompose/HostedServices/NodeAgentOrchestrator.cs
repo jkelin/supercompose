@@ -20,14 +20,14 @@ namespace SuperCompose.HostedServices
     public const string ChannelName = "node_changed";
 
     private readonly IConnectionMultiplexer multiplexer;
-    private readonly ILogger<NodeUpdateListener> logger;
+    private readonly ILogger<NodeAgentOrchestrator> logger;
     private readonly IServiceProvider provider;
 
     private readonly ConcurrentDictionary<Guid, CancellationTokenSource> agents = new();
 
     public NodeAgentOrchestrator(
       IConnectionMultiplexer multiplexer,
-      ILogger<NodeUpdateListener> logger,
+      ILogger<NodeAgentOrchestrator> logger,
       IServiceProvider provider
     )
     {
