@@ -3,14 +3,18 @@ import Link from 'next/link';
 import classNames from 'classnames';
 import { useRouter } from 'next/dist/client/router';
 
-import Logo from 'svg/logo-stamp.svg';
-// import Logo from 'svg/logo.svg';
+// import Logo from 'svg/logo-stamp.svg';
+import Logo from 'svg/logo.svg';
 import LogoSymbol from 'svg/logo-symbol.svg';
 import { useUser } from '@auth0/nextjs-auth0';
 import { Dropdown, DropdownButton, DropdownMenu } from 'components';
 import UserIcon from 'svg/user.svg';
 
-const NavbarLink: React.FC<{ active?: boolean; href: string }> = (props) => {
+const NavbarLink: React.FC<{
+  active?: boolean;
+  href: string;
+  openInNewTab?: boolean;
+}> = (props) => {
   return (
     <Link href={props.href}>
       <a
@@ -19,6 +23,7 @@ const NavbarLink: React.FC<{ active?: boolean; href: string }> = (props) => {
           props.active && 'border-b-2',
         )}
         style={(props.active && { paddingTop: 6 }) || undefined}
+        target={props.openInNewTab ? '_blank' : undefined}
       >
         {props.children}
       </a>
@@ -52,6 +57,14 @@ export const Navbar: React.FC<{}> = (props) => {
               <NavbarLink href="/docs" active={/^\/docs/.test(router.pathname)}>
                 Documentation
               </NavbarLink>
+              <a
+                href="https://github.com/jkelin/supercompose"
+                className="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1  text-sm font-medium"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub
+              </a>
               {user && (
                 <NavbarLink
                   href="/dashboard"
