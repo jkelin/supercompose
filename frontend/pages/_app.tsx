@@ -2,6 +2,7 @@ import withApollo from 'next-with-apollo';
 import { ApolloProvider } from '@apollo/react-hooks';
 import {
   ApolloClient,
+  ApolloLink,
   createHttpLink,
   InMemoryCache,
   split,
@@ -19,6 +20,8 @@ import { SupercomposeConfig } from 'lib/config';
 import { onError } from '@apollo/client/link/error';
 import { UserProvider } from '@auth0/nextjs-auth0';
 import { usePanelbear } from 'lib/usePanelbear';
+import jwt_decode from 'jwt-decode';
+import { BatchHttpLink } from '@apollo/client/link/batch-http';
 
 const App = ({ Component, pageProps, apollo }: any) => {
   return (
@@ -34,7 +37,10 @@ const App = ({ Component, pageProps, apollo }: any) => {
 
 const gqlHoC = withApollo(
   (opts) => {
-    const httpLink = createHttpLink({
+    // const httpLink = createHttpLink({
+    //   uri: SupercomposeConfig.BACKEND_URI + '/graphql',
+    // });
+    const httpLink = new BatchHttpLink({
       uri: SupercomposeConfig.BACKEND_URI + '/graphql',
     });
 
@@ -51,38 +57,57 @@ const gqlHoC = withApollo(
         },
       });
 
-    const authLink = setContext(async (_, { headers }) => {
-      if (typeof window === 'undefined') {
-        const accessToken = getToken(
-          opts.ctx?.req as any,
-          opts.ctx?.res as any,
-        );
+    let authLink: ApolloLink;
+    if (typeof window === 'undefined') {
+      authLink = setContext(async (_, { headers }) => {
+        try {
+          const accessToken = await getToken(
+            opts.ctx?.req as any,
+            opts.ctx?.res as any,
+          );
 
-        if (accessToken) {
+          if (accessToken) {
+            return {
+              headers: {
+                ...headers,
+                authorization: `Bearer ${accessToken}`,
+              },
+            };
+          } else {
+            return {};
+          }
+        } catch (ex) {
+          return {};
+        }
+      });
+    } else {
+      authLink = setContext(async (_, { headers }) => {
+        try {
+          let accessToken = sessionStorage.getItem('access_token');
+          const jwt: any = accessToken && jwt_decode(accessToken);
+
+          if (
+            !jwt ||
+            !jwt.exp ||
+            new Date(jwt.exp * 1000 + 10000) < new Date()
+          ) {
+            const tokenResp = await axios.get('/api/auth/token');
+            accessToken = tokenResp.data.access_token;
+            sessionStorage.setItem('access_token', accessToken as any);
+          }
+
           return {
             headers: {
               ...headers,
               authorization: `Bearer ${accessToken}`,
             },
           };
-        } else {
-          return {};
-        }
-      } else {
-        try {
-          const tokenResp = await axios.get('/api/auth/token');
-
-          return {
-            headers: {
-              ...headers,
-              authorization: `Bearer ${tokenResp.data.access_token}`,
-            },
-          };
         } catch (ex) {
+          sessionStorage.removeItem('access_token');
           return {};
         }
-      }
-    });
+      });
+    }
 
     const errorLink = onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors)

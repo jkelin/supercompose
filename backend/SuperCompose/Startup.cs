@@ -9,6 +9,7 @@ using SuperCompose.Context;
 using SuperCompose.HostedServices;
 using SuperCompose.Services;
 using HotChocolate;
+using HotChocolate.AspNetCore.Serialization;
 using HotChocolate.AspNetCore.Subscriptions;
 using MediatR;
 using Microsoft.AspNetCore.Authentication;
@@ -87,6 +88,8 @@ namespace SuperCompose
       );
 
       // Basic ASP.NET setup
+      services.AddResponseCaching();
+      services.AddResponseCompression();
       services.AddControllers();
       services.AddRouting();
       services.AddLogging();
@@ -103,7 +106,7 @@ namespace SuperCompose
       // Graphql
       services.AddGraphQLServer()
         .ModifyRequestOptions(opt =>
-          opt.IncludeExceptionDetails = env.IsDevelopment())
+           opt.IncludeExceptionDetails = env.IsDevelopment())
         .AddFiltering()
         .AddSorting()
         .AddProjections()
@@ -127,6 +130,10 @@ namespace SuperCompose
         .AddType<Mutation.SuccessfulNodeCreation>()
         .AddType<Mutation.SuccessfulNodeUpdate>()
         .AddType<Mutation.NodeConnectionFailed>();
+
+      services.AddHttpResultSerializer(
+        batchSerialization: HttpResultSerialization.JsonArray,
+        deferSerialization: HttpResultSerialization.MultiPartChunked);
 
       //services.AddRedisQueryStorage(s => s.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
       services.AddRedisSubscriptions(s => s.GetRequiredService<IConnectionMultiplexer>());
@@ -184,11 +191,13 @@ namespace SuperCompose
     {
       if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
+      app.UseResponseCompression();
       app.UseAuthentication();
       app.UseRouting();
       app.UseAuthorization();
       app.UseWebSockets();
       app.UseCors();
+      app.UseResponseCaching();
 
       app.UseEndpoints(endpoints =>
       {
