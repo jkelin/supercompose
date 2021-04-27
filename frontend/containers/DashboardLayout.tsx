@@ -6,7 +6,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { usePanelbear } from 'lib/usePanelbear';
 
 export const DashboardLayout: React.FC<{}> = (props) => {
-  usePanelbear();
+  // usePanelbear();
 
   return (
     <React.Fragment>
