@@ -16,7 +16,7 @@ services:
     logging:
       driver: json-file
       options:
-          max-size: 100m
+        max-size: 100m
     restart: always
   backend:
     build: ../../backend/SuperCompose
@@ -29,10 +29,11 @@ services:
       - SENTRY_DSN
       - Auth__Authority
       - Auth__Audience
+      - ASPNETCORE_ENVIRONMENT
     logging:
       driver: json-file
       options:
-          max-size: 100m
+        max-size: 100m
     restart: always
 volumes:
   redis-data:
