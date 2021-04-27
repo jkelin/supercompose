@@ -148,10 +148,10 @@ namespace SuperCompose
         .AddScoped<NodeService>();
 
       // Custom hosted services
-      services
-        .AddHostedService<NodeUpdateListener>()
-        .AddHostedService<NodeAgentOrchestrator>()
-        .AddHostedService<ConnectionLogProcessor>();
+      // services
+      //   .AddHostedService<NodeUpdateListener>()
+      //   .AddHostedService<NodeAgentOrchestrator>()
+      //   .AddHostedService<ConnectionLogProcessor>();
 
       // HTTP Clients
       services.AddHttpClient("OIDC", client => { client.BaseAddress = new Uri(configuration["Auth:Authority"]); });
