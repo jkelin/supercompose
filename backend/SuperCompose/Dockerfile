@@ -9,14 +9,16 @@ RUN dotnet restore -r linux-musl-x64
 # copy everything else and build app
 COPY . ./
 WORKDIR /source
-RUN dotnet publish SuperCompose.csproj -c release -o /app -r linux-musl-x64 --self-contained false --no-restore
+RUN dotnet publish SuperCompose.csproj -c release -o /app -r linux-x64 --self-contained false --no-restore
 
-# final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:5.0-focal-amd64
 WORKDIR /app
 RUN wget https://download-cf.jetbrains.com/resharper/dotUltimate.2021.1.2/JetBrains.dotTrace.CommandLineTools.linux-x64.2021.1.2.tar.gz
 RUN mkdir trace
 RUN tar -xf JetBrains.dotTrace.CommandLineTools.linux-x64.2021.1.2.tar.gz -C trace
+
+# final stage/image
+FROM mcr.microsoft.com/dotnet/aspnet:5.0-focal-amd64
+WORKDIR /app
 COPY --from=build /app ./
 
 # See: https://github.com/dotnet/announcements/issues/20
