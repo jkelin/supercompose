@@ -149,8 +149,8 @@ namespace SuperCompose
 
       // Custom hosted services
       services
-        .AddHostedService<NodeUpdateListener>();
-        // .AddHostedService<NodeAgentOrchestrator>()
+        // .AddHostedService<NodeUpdateListener>()
+        .AddHostedService<NodeAgentOrchestrator>();
         // .AddHostedService<ConnectionLogProcessor>();
 
       // HTTP Clients
