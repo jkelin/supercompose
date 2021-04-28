@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="5.0.2" />
     <PackageReference Include="Docker.DotNet" Version="3.125.4" />
     <PackageReference Include="GreenDonut" Version="12.0.0-preview.1" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="12.0.0-preview.1" />
@@ -29,6 +30,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="5.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.5" />
     <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="5.0.5" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.0" />

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,7 +35,10 @@ using SuperCompose.Graphql;
 using SuperCompose.Util;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using SuperCompose.Auth;
 
@@ -93,10 +97,16 @@ namespace SuperCompose
       services.AddControllers();
       services.AddRouting();
       services.AddLogging();
-      services.AddHealthChecks();
       services.AddCors(x => x.AddDefaultPolicy(p =>
         p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().SetPreflightMaxAge(TimeSpan.FromSeconds(3600))));
 
+      // Health check
+      services
+        .AddHealthChecks()
+        .AddRedis(configuration.GetConnectionString("Redis"), "Redis")
+        .AddDbContextCheck<SuperComposeContext>()
+        .AddDbContextCheck<KeysContext>();
+      
       // Data protection
       services.AddDataProtection().PersistKeysToDbContext<KeysContext>();
 
@@ -203,7 +213,19 @@ namespace SuperCompose
       {
         endpoints.MapGraphQL();
         endpoints.MapControllers();
-        endpoints.MapHealthChecks("/health");
+        endpoints.MapHealthChecks("/health", new HealthCheckOptions()
+        {
+          ResponseWriter = async (httpCtx, result) =>
+          {
+            httpCtx.Response.StatusCode = result.Status == HealthStatus.Healthy ? 200 : 500;
+            await httpCtx.Response.WriteAsJsonAsync(result.Entries
+            .ToDictionary(x => x.Key, x => new
+            {
+              Duration = x.Value.Duration.TotalMilliseconds,
+              Status = x.Value.Status.ToString(),
+            }));
+          }
+        });
       });
     }
   }
