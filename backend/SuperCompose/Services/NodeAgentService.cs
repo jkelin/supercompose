@@ -46,7 +46,9 @@ namespace SuperCompose.Services
     public async Task RunNodeAgent(Guid nodeId, CancellationToken ct = default)
     {
       var tenantId = await ctx.Nodes
-        .Where(x => x.Id == nodeId).Select(x => x.TenantId).FirstOrDefaultAsync(ct);
+        .Where(x => x.Id == nodeId)
+        .Select(x => x.TenantId)
+        .FirstOrDefaultAsync(ct);
       
       using var _ = connectionLog.BeginScope(tenantId, nodeId: nodeId);
       using var _2 = logger.BeginScope(new {nodeId});
