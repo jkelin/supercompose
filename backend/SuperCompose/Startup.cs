@@ -108,7 +108,10 @@ namespace SuperCompose
         .AddDbContextCheck<KeysContext>();
       
       // Data protection
-      services.AddDataProtection().PersistKeysToDbContext<KeysContext>();
+      services
+        .AddDataProtection()
+        .SetApplicationName("SuperCompose")
+        .PersistKeysToDbContext<KeysContext>();
 
       // Mediatr
       services.AddMediatR(typeof(Startup));

@@ -73,6 +73,7 @@ namespace SuperCompose.Services
 
       if (node == null) throw new NodeNotFoundException();
 
+      node.ReconciliationFailed = false;
       node.Name = name ?? node.Name;
       node.Host = host ?? node.Host;
       node.Username = username ?? node.Username;
