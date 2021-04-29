@@ -94,7 +94,7 @@ export default function Landing() {
                   type="text"
                   name="b_a0046024c5662f89708c48a35_7c348e4eb0"
                   tabIndex={-1}
-                  value=""
+                  defaultValue=""
                 ></input>
               </div>
 

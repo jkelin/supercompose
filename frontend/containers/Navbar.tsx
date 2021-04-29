@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import Link from 'next/link';
 import classNames from 'classnames';
 import { useRouter } from 'next/dist/client/router';
@@ -34,6 +34,11 @@ const NavbarLink: React.FC<{
 export const Navbar: React.FC<{}> = (props) => {
   const router = useRouter();
   const { user, error, isLoading } = useUser();
+
+  const onLogout = useCallback(() => {
+    sessionStorage.clear();
+    window.location.assign('/api/auth/logout');
+  }, []);
 
   return (
     <nav className="bg-white shadow">
@@ -245,13 +250,14 @@ export const Navbar: React.FC<{}> = (props) => {
                 >
                   Settings
                 </a> */}
-                  <a
-                    href="/api/auth/logout"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  <button
+                    onClick={onLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     role="menuitem"
+                    type="button"
                   >
                     Sign out
-                  </a>
+                  </button>
                 </DropdownMenu>
               </div>
             </Dropdown>
