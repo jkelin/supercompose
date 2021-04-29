@@ -69,7 +69,7 @@ const NodeDetail: NextPage<{}> = (props) => {
     },
   });
 
-  if (nodeQuery.loading) {
+  if (!nodeQuery.data) {
     return (
       <DashboardLayout>
         <div className="flex justify-center py-16 bg-white shadow rounded-lg">
@@ -84,7 +84,13 @@ const NodeDetail: NextPage<{}> = (props) => {
       <div className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200 place-self-start w-full">
         <div className="px-4 py-5 sm:px-6 flex flex-col lg:flex-row items-stretch justify-between lg:items-center">
           <div>
-            <h1 className="text-lg font-semibold mb-0">{node?.name}</h1>
+            <h1 className="text-lg font-semibold mb-0">
+              {node?.name}
+
+              {nodeQuery.loading && (
+                <Spinner className="inline-block ml-1 w-5 h-5" />
+              )}
+            </h1>
             <div className="text-sm text-gray-600">Node</div>
           </div>
 

@@ -27,7 +27,6 @@ const ComposeDetail: NextPage<{}> = (props) => {
   const router = useRouter();
   const composeQuery = useGetComposeByIdQuery({
     variables: { id: router.query.id as string },
-    fetchPolicy: 'cache-and-network',
   });
 
   const compose = composeQuery.data?.compose;

@@ -72,7 +72,7 @@ const DeploymentDetail: NextPage<{}> = (props) => {
     },
   });
 
-  if (deploymentQuery.loading) {
+  if (!deploymentQuery.data) {
     return (
       <DashboardLayout>
         <div className="flex justify-center py-16 bg-white shadow rounded-lg">
@@ -91,6 +91,9 @@ const DeploymentDetail: NextPage<{}> = (props) => {
           <div>
             <h1 className="text-lg font-semibold mb-0">
               {deployment.compose!.name} @ {deployment.node!.name}
+              {deploymentQuery.loading && (
+                <Spinner className="inline-block ml-1 w-5 h-5" />
+              )}
             </h1>
             <div className="text-sm text-gray-600">Deployment</div>
           </div>

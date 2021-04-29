@@ -63,7 +63,7 @@ export const NodeList: React.FC<{}> = (props) => {
       <CreateCard key="create" href="/node/create">
         Create node
       </CreateCard>
-      {nodeQuery && nodeQuery.loading && <div>Loading</div>}
+      {nodeQuery && nodeQuery.loading && !nodes.length && <div>Loading</div>}
       {nodes?.map((node, i) => (
         <React.Fragment key={node.id}>
           {i !== nodes.length && <div className="h-4" />}

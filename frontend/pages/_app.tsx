@@ -148,6 +148,19 @@ const gqlHoC = withApollo(
       link: splitLink,
       cache: new InMemoryCache().restore(opts.initialState || {}),
       credentials: 'include',
+      defaultOptions: {
+        watchQuery: {
+          fetchPolicy: 'cache-and-network',
+          errorPolicy: 'all',
+        },
+        query: {
+          fetchPolicy: 'cache-and-network' as any,
+          errorPolicy: 'all',
+        },
+        mutate: {
+          errorPolicy: 'all',
+        },
+      },
     });
 
     return client as any;
