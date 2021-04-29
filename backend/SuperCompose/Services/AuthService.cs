@@ -38,7 +38,7 @@ namespace SuperCompose.Services
     }
 
     public async Task<(Guid UserId, UserInfoResponse UserInfo)> UpdateUserFromAccessToken(string accessToken,
-      CancellationToken ct)
+      CancellationToken ct = default)
     {
       var userInfo = await ReadUserInfo(accessToken, ct);
       if (string.IsNullOrEmpty(userInfo.Sub)) throw new InvalidOperationException("Sub null in userInfo");

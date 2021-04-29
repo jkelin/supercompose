@@ -88,6 +88,10 @@ namespace SuperCompose.Services
 
     public async Task ProcessNodeUpdates(Guid nodeId, CancellationToken ct)
     {
+      var tenantId = (await ctx.Nodes.FirstOrDefaultAsync(x => x.Id ==
+        nodeId, cancellationToken: ct)).TenantId;
+      using var _ = connectionLog.BeginScope(tenantId: tenantId, nodeId: nodeId);
+      
       try
       {
         while (!ct.IsCancellationRequested)
