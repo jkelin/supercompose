@@ -1,3 +1,4 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 
 #nullable disable
@@ -22,6 +23,7 @@ namespace SuperCompose.Context
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+     
       modelBuilder.HasPostgresEnum<ConnectionLogSeverity>();
 
       modelBuilder.HasPostgresExtension("uuid-ossp")
@@ -131,6 +133,31 @@ namespace SuperCompose.Context
       });
 
       modelBuilder.Entity<User>(entity => { });
+
+      foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+      {
+        foreach (var property in entityType.GetProperties())
+        {
+          if (property.ClrType == typeof(DateTime))
+          {
+            modelBuilder.Entity(entityType.ClrType)
+              .Property<DateTime>(property.Name)
+              .HasConversion(
+                v => v.ToUniversalTime(),
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+          }
+          else if (property.ClrType == typeof(DateTime?))
+          {
+            modelBuilder.Entity(entityType.ClrType)
+              .Property<DateTime?>(property.Name)
+              .HasConversion(
+                v => v.HasValue ? v.Value.ToUniversalTime() : v,
+                v => v.HasValue
+                  ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)
+                  : v);
+          }
+        }
+      }
 
       OnModelCreatingPartial(modelBuilder);
     }

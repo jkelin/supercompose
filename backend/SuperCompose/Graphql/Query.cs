@@ -86,10 +86,10 @@ namespace SuperCompose.Graphql
     }
 
     [Authorize]
+    [UsePaging(MaxPageSize = 1000)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    [UsePaging(MaxPageSize = 1000)]
     public IQueryable<ConnectionLog> GetConnectionLogs(
       [Service] IDbContextFactory<SuperComposeContext> ctx,
       [GlobalState("ClaimsPrincipal")] ClaimsPrincipal user)
