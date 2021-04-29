@@ -136,30 +136,31 @@ namespace SuperCompose.Services
 
       await foreach (var (result, error, status) in stream.WithCancellation(ct))
       {
-        logger.LogTrace("Event received {Result}", result);
-        
         if (status != null)
         {
+          logger.LogWarning("Stream code: {Code}", status);
           throw new Exception("Stream has ended"); // TODO;
         }
         else if (error != null)
         {
+          logger.LogWarning("Stream error: {Error}", error);
           throw new Exception("Stream has had an error"); // TODO;
         }
         else if (result != null)
         {
+          logger.LogTrace("Event received {Result}", result);
+          
           var msg = JsonConvert.DeserializeObject<Message>(result);
 
+          if (string.IsNullOrEmpty(msg.Action) || msg.Actor == null ||
+              msg.Actor.Attributes == null)
+          {
+            logger.LogWarning("Deserialized message is invalid {@Message}", msg);
+            throw new InvalidOperationException("Invalid message received from stream");
+          }
 
-          var a = msg.Action;
           var isCriticalAction =
-            a == "create" || a == "destroy" || a == "die" || a == "kill" ||
-            a == "oom" ||
-            a == "pause" ||
-            a == "rename" || a == "resize" || a == "restart" || a == "start" ||
-            a == "stop" ||
-            a == "unpause" ||
-            a == "update";
+            msg.Action is "create" or "destroy" or "die" or "kill" or "oom" or "pause" or "rename" or "resize" or "restart" or "start" or "stop" or "unpause" or "update";
           if (isCriticalAction &&
               msg.Actor.Attributes.TryGetValue("com.docker.compose.project",
                 out var project) &&
