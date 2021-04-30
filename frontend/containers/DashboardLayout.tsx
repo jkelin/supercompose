@@ -14,7 +14,7 @@ export const DashboardLayout: React.FC<{}> = (props) => {
       <Head>
         <style>{`html, body { background-color: rgba(249, 250, 251) }`}</style>
       </Head>
-      <main className="mx-auto container">
+      <main className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-8">
         <Head>
           <title>SuperCompose</title>
           <link rel="icon" href="/favicon.svg" />

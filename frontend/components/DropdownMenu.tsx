@@ -1,77 +1,85 @@
 import classnames from 'classnames';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
-
-const DropdownContext = React.createContext<{
-  setOpen: (val: boolean) => unknown;
-  isOpen: boolean;
-  id: string;
-}>(undefined as any);
-
-export const Dropdown: React.FC<{ id: string }> = (props) => {
-  const [isOpen, setOpen] = useState(false);
-
-  return (
-    <DropdownContext.Provider
-      value={useMemo(() => ({ isOpen, setOpen, id: props.id }), [
-        isOpen,
-        setOpen,
-        props,
-      ])}
-    >
-      {props.children}
-    </DropdownContext.Provider>
-  );
-};
-
-export const DropdownButton: React.FC<{ className: string }> = (props) => {
-  const ctx = useContext(DropdownContext);
-
-  return (
-    <button
-      type="button"
-      className={props.className}
-      onClick={useCallback(() => ctx.setOpen(true), [ctx])}
-      id={ctx.id}
-      aria-haspopup="true"
-    >
-      <span className="sr-only">Open dropdown</span>
-      {props.children}
-    </button>
-  );
-};
+import React, {
+  Fragment,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Menu, Transition } from '@headlessui/react';
 
 export const DropdownMenu: React.FC<{ className?: string }> = (props) => {
-  const ctx = useContext(DropdownContext);
-  const onClose = useCallback(() => ctx.setOpen(false), [ctx]);
-
   return (
-    <>
-      {ctx.isOpen && (
-        <button
-          type="button"
-          className="fixed left-0 top-0 w-screen h-screen opacity-0"
-          onClick={onClose}
+    <div className={classnames(props.className, 'flex items-center')}>
+      <Menu as="div" className="relative inline-block text-left">
+        {props.children}
+      </Menu>
+    </div>
+  );
+};
+
+export const DropdownItems: React.FC<{ className?: string }> = (props) => {
+  return (
+    <Menu.Items className={props.className} static>
+      {({ open }) => (
+        <Transition
+          show={open}
+          as={Fragment}
+          enter="transition ease-out duration-100"
+          enterFrom="transform opacity-0 scale-95"
+          enterTo="transform opacity-100 scale-100"
+          leave="transition ease-in duration-75"
+          leaveFrom="transform opacity-100 scale-100"
+          leaveTo="transform opacity-0 scale-95"
         >
-          <span className="sr-only">Close dropdown</span>
+          <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+            {props.children}
+          </div>
+        </Transition>
+      )}
+    </Menu.Items>
+  );
+};
+
+export const DropdownButton: React.FC<{ className?: string }> = (props) => {
+  return (
+    <Menu.Button className={props.className}>{props.children}</Menu.Button>
+  );
+};
+
+export const DropdownItemText: React.FC<{
+  className?: string;
+}> = (props) => {
+  return (
+    <div className="block px-4 py-2 text-sm text-gray-700 border-b border-gray-300">
+      <div>{props.children}</div>
+    </div>
+  );
+};
+
+export const DropdownItemButton: React.FC<{
+  className?: string;
+  disabled?: boolean;
+  onClick?: () => unknown;
+}> = (props) => {
+  return (
+    <Menu.Item disabled={props.disabled} onClick={props.onClick}>
+      {(x) => (
+        <button
+          onClick={props.onClick}
+          className={classnames(
+            props.className,
+            'block w-full text-left px-4 py-2 text-sm text-gray-700 last:rounded-b-md',
+            x.active && 'bg-gray-100',
+          )}
+          disabled={props.disabled}
+          role="menuitem"
+          type="button"
+        >
+          {props.children}
         </button>
       )}
-      <div
-        className={classnames(
-          'origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5',
-          ctx.isOpen
-            ? 'transform opacity-100 scale-100'
-            : 'transform opacity-0 scale-95',
-          ctx.isOpen
-            ? 'transition ease-out duration-100'
-            : 'transition ease-in duration-75',
-          props.className,
-        )}
-        role="menu"
-        aria-orientation="vertical"
-        aria-labelledby={ctx.id}
-      >
-        {props.children}
-      </div>
-    </>
+    </Menu.Item>
   );
 };
