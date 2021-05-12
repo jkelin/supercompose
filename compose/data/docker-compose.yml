@@ -19,15 +19,24 @@ services:
       - POSTGRESQL_USERNAME=postgres
       - POSTGRESQL_PASSWORD=postgres
       - POSTGRESQL_database=supercompose
-  rabbitmq:
-    image: bitnami/rabbitmq:3.8
+  # rabbitmq:
+  #   image: bitnami/rabbitmq:3.8
+  #   ports:
+  #     - 5672:5672
+  #   volumes:
+  #     - rabbitmq-data:/bitnami
+  #   environment:
+  #     - RABBITMQ_USERNAME=rabbitmq
+  #     - RABBITMQ_PASSWORD=rabbitmq
+  jaeger:
+    image: jaegertracing/all-in-one:1.22
     ports:
-      - 5672:5672
-    volumes:
-      - rabbitmq-data:/bitnami
-    environment:
-      - RABBITMQ_USERNAME=rabbitmq
-      - RABBITMQ_PASSWORD=rabbitmq
+      - "6831:6831/udp"
+      - "16686:16686"
+  zipkin:
+    image: openzipkin/zipkin-slim
+    ports:
+      - "9411:9411"
 
 volumes:
   postgres-data:

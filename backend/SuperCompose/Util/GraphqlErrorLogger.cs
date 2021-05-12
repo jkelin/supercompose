@@ -9,17 +9,22 @@ using Sentry;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using OpenTelemetry.Trace;
 
 namespace SuperCompose.Util
 {
   public class GraphqlErrorLogger : DiagnosticEventListener
   {
-    private static Stopwatch _queryTimer;
     private readonly ILogger<GraphqlErrorLogger> _logger;
 
     public GraphqlErrorLogger(ILogger<GraphqlErrorLogger> logger)
     {
       _logger = logger;
+    }
+    
+    public override IActivityScope ExecuteRequest(IRequestContext context)
+    {
+      return new RequestScope(context);
     }
 
     public override void TaskError(IExecutionTask task, IError error)
@@ -91,6 +96,39 @@ namespace SuperCompose.Util
         );
 
       SentrySdk.CaptureException(exception);
+    }
+
+
+    private class RequestScope : IActivityScope
+    {
+      private readonly IRequestContext context;
+
+      static readonly ActivitySource ActivitySource =
+        new ActivitySource("GraphQL");
+
+      private Activity? activity;
+      
+      public RequestScope(IRequestContext context)
+      {
+        this.context = context;
+        activity = ActivitySource.StartActivity("GraphQLRequest");
+      }
+
+      public void Dispose()
+      {
+        activity?.AddTag("document", context.Request.Query?.ToString().Replace("\n", Environment.NewLine));
+
+        if (context.Variables != null)
+        {
+          foreach (var variable in context.Variables)
+          {
+            activity?.AddTag($"variable.{variable.Name.Value}", variable.Value
+            .Value);
+          }
+        }
+        
+        activity?.Dispose();
+      }
     }
   }
 }

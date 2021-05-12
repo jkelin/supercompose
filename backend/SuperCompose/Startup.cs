@@ -40,6 +40,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Trace;
 using SuperCompose.Auth;
 
 namespace SuperCompose
@@ -196,6 +197,30 @@ namespace SuperCompose
         .AddScoped<IAuthorizationHandler, TenantNodeAuthorizationHandler>()
         .AddScoped<IAuthorizationHandler, TenantComposeAuthorizationHandler>()
         .AddScoped<IAuthorizationHandler, TenantDeploymentAuthorizationHandler>();
+      
+      // OpenTracing
+      services.AddOpenTelemetryTracing(
+        (builder) =>
+        {
+          builder.AddSource("GraphQL");
+          builder
+            .AddAspNetCoreInstrumentation(options =>
+            {
+              options.RecordException = true;
+            })
+            .AddHttpClientInstrumentation()
+            // .AddEntityFrameworkCoreInstrumentation()
+            .AddRedisInstrumentation(
+              ConnectionMultiplexer.Connect(
+              configuration.GetConnectionString("Redis")))
+            .AddZipkinExporter()
+            .AddJaegerExporter(options =>
+            {
+              var uri = new Uri(configuration.GetConnectionString("Jaeger"));
+              options.AgentHost = uri.Host;
+              options.AgentPort = uri.Port;
+            });
+        });
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
