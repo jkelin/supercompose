@@ -31,6 +31,7 @@ services:
       - Auth__Authority
       - Auth__Audience
       - ASPNETCORE_ENVIRONMENT
+      - Seq_ServerUrl=http://seq:5341
     logging:
       driver: json-file
       options:

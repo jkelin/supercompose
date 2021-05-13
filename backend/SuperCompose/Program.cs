@@ -29,7 +29,7 @@ namespace SuperCompose
         {
           webBuilder.ConfigureLogging((c, l) =>
           {
-            l.AddSeq();
+            l.AddSeq(c.Configuration.GetSection("Seq"));
             l.AddConfiguration(c.Configuration);
             // Adding Sentry integration to Microsoft.Extensions.Logging
             l.AddSentry(o =>
