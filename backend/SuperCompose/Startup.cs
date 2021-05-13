@@ -59,6 +59,8 @@ namespace SuperCompose
     // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
     public void ConfigureServices(IServiceCollection services)
     {
+      //services.AddLogging(l => { l.AddSeq(configuration.GetSection("Seq")); });
+      
       // Redis
       services.AddSingleton<IConnectionMultiplexer>(action =>
         ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")));

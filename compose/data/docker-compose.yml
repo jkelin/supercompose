@@ -19,17 +19,28 @@ services:
       - POSTGRESQL_USERNAME=postgres
       - POSTGRESQL_PASSWORD=postgres
       - POSTGRESQL_database=supercompose
-  rabbitmq:
-    image: bitnami/rabbitmq:3.8
+  # rabbitmq:
+  #   image: bitnami/rabbitmq:3.8
+  #   ports:
+  #     - 5672:5672
+  #   volumes:
+  #     - rabbitmq-data:/bitnami
+  #   environment:
+  #     - RABBITMQ_USERNAME=rabbitmq
+  #     - RABBITMQ_PASSWORD=rabbitmq
+  seq:
+    image: datalust/seq:2021.2
     ports:
-      - 5672:5672
+      - 5341:5341
+      - 5342:80
     volumes:
-      - rabbitmq-data:/bitnami
+      - seq-data:/data
     environment:
-      - RABBITMQ_USERNAME=rabbitmq
-      - RABBITMQ_PASSWORD=rabbitmq
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINPASSWORDHASH=FAtxDl6Z+F3Ptsgxxr8AOtVMCiN5A+91DI0w2zzzu7Cl/AvcWQ== # supercompose
 
 volumes:
   postgres-data:
   redis-data:
-  rabbitmq-data:
+  # rabbitmq-data:
+  seq-data:

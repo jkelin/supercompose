@@ -27,9 +27,9 @@ namespace SuperCompose
       return Host.CreateDefaultBuilder(args)
         .ConfigureWebHostDefaults(webBuilder =>
         {
-          webBuilder.UseStartup<Startup>();
           webBuilder.ConfigureLogging((c, l) =>
           {
+            l.AddSeq();
             l.AddConfiguration(c.Configuration);
             // Adding Sentry integration to Microsoft.Extensions.Logging
             l.AddSentry(o =>
@@ -39,6 +39,7 @@ namespace SuperCompose
               o.Debug = true;
             });
           });
+          webBuilder.UseStartup<Startup>();
         });
     }
 

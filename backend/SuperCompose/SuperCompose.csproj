@@ -40,6 +40,7 @@
     <PackageReference Include="RedLock.net" Version="2.2.0" />
     <PackageReference Include="Sentry.AspNetCore" Version="3.3.4" />
     <PackageReference Include="Sentry.Extensions.Logging" Version="3.3.4" />
+    <PackageReference Include="Seq.Extensions.Logging" Version="6.0.0" />
     <PackageReference Include="SSH.NET" Version="2020.0.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
     <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="7.0.0" />
