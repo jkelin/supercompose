@@ -40,6 +40,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using SuperCompose.Auth;
 
 namespace SuperCompose
@@ -59,8 +60,6 @@ namespace SuperCompose
     // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
     public void ConfigureServices(IServiceCollection services)
     {
-      //services.AddLogging(l => { l.AddSeq(configuration.GetSection("Seq")); });
-      
       // Redis
       services.AddSingleton<IConnectionMultiplexer>(action =>
         ConnectionMultiplexer.Connect(configuration.GetConnectionString("Redis")));
@@ -126,8 +125,8 @@ namespace SuperCompose
         .AddSorting()
         .AddProjections()
         .AddDiagnosticEventListener(sp =>
-          new GraphqlErrorLogger(
-            sp.GetApplicationService<ILogger<GraphqlErrorLogger>>()
+          new GraphqlLogger(
+            sp.GetApplicationService<ILogger<GraphqlLogger>>()
           ))
         .AddApolloTracing()
         .AddAuthorization()
@@ -206,6 +205,7 @@ namespace SuperCompose
     {
       if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
+      app.UseSerilogRequestLogging();
       app.UseResponseCompression();
       app.UseAuthentication();
       app.UseRouting();

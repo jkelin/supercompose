@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
 using System.Threading.Tasks;
+using Serilog;
+using Serilog.Events;
 using SuperCompose.Context;
 
 namespace SuperCompose
@@ -25,20 +27,26 @@ namespace SuperCompose
     public static IHostBuilder CreateHostBuilder(string[] args)
     {
       return Host.CreateDefaultBuilder(args)
+        .UseSerilog((host, logger) =>
+        {
+          logger.ReadFrom.Configuration(host.Configuration);
+          
+          logger.WriteTo.Sentry(o =>
+          {
+            o.MinimumBreadcrumbLevel = LogEventLevel.Debug;
+            o.MaxBreadcrumbs = 50;
+            o.Debug = true;
+          });
+          
+          logger.WriteTo.Seq(
+            host.Configuration["Seq:ServerUrl"],
+            Enum.TryParse(host.Configuration["Seq:LogLevel"], out LogEventLevel level) ? level : LogEventLevel.Information 
+          );
+
+          logger.WriteTo.Console();
+        })
         .ConfigureWebHostDefaults(webBuilder =>
         {
-          webBuilder.ConfigureLogging((c, l) =>
-          {
-            l.AddSeq(c.Configuration.GetSection("Seq"));
-            l.AddConfiguration(c.Configuration);
-            // Adding Sentry integration to Microsoft.Extensions.Logging
-            l.AddSentry(o =>
-            {
-              o.MinimumBreadcrumbLevel = LogLevel.Debug;
-              o.MaxBreadcrumbs = 50;
-              o.Debug = true;
-            });
-          });
           webBuilder.UseStartup<Startup>();
         });
     }

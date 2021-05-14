@@ -12,12 +12,12 @@ using System.Linq;
 
 namespace SuperCompose.Util
 {
-  public class GraphqlErrorLogger : DiagnosticEventListener
+  public class GraphqlLogger : DiagnosticEventListener
   {
     private static Stopwatch _queryTimer;
-    private readonly ILogger<GraphqlErrorLogger> _logger;
+    private readonly ILogger<GraphqlLogger> _logger;
 
-    public GraphqlErrorLogger(ILogger<GraphqlErrorLogger> logger)
+    public GraphqlLogger(ILogger<GraphqlLogger> logger)
     {
       _logger = logger;
     }
