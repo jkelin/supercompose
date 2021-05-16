@@ -9,10 +9,13 @@ using Sentry;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using Serilog;
+using Serilog.Core;
+using ILogger = Serilog.ILogger;
 
 namespace SuperCompose.Util
 {
-  public class GraphqlLogger : DiagnosticEventListener
+  public class GraphqlLogger : DiagnosticEventListener, IDiagnosticEventListener
   {
     private static Stopwatch _queryTimer;
     private readonly ILogger<GraphqlLogger> _logger;
@@ -20,6 +23,11 @@ namespace SuperCompose.Util
     public GraphqlLogger(ILogger<GraphqlLogger> logger)
     {
       _logger = logger;
+    }
+
+    public override IActivityScope ExecuteRequest(IRequestContext context)
+    {
+      return new RequestScope(context, _logger);
     }
 
     public override void TaskError(IExecutionTask task, IError error)
@@ -36,7 +44,7 @@ namespace SuperCompose.Util
 
       base.RequestError(context, exception);
     }
-
+    
     //public override void SyntaxError(IRequestContext context, IError error)
     //{
     //  if (error.Exception != null)
@@ -70,7 +78,7 @@ namespace SuperCompose.Util
       using var scope = _logger.BeginScope(new
       {
         Resolver = field != null ? $"{field.DeclaringType.Name}.{field.Name}" : null,
-        Document = document != null ? document.ToString().Replace("\n", Environment.NewLine) : null,
+        Document = document?.ToString().Replace("\n", Environment.NewLine),
         Variables = variables != null
           ? string.Join(Environment.NewLine, variables.Select(x => $"{x.Name}: {x.Value}"))
           : null
@@ -80,7 +88,7 @@ namespace SuperCompose.Util
         _logger.LogWarning(
           eventId,
           exception,
-          "GraphQL exception in field {name}",
+          "GraphQL exception in field {Name}",
           $"{field.DeclaringType.Name}.{field.Name}"
         );
       else
@@ -91,6 +99,31 @@ namespace SuperCompose.Util
         );
 
       SentrySdk.CaptureException(exception);
+    }
+
+    private class RequestScope : IActivityScope
+    {
+      private readonly IRequestContext context;
+      private readonly ILogger<GraphqlLogger> logger;
+      private bool disposed;
+
+      public RequestScope(IRequestContext context, ILogger<GraphqlLogger> logger)
+      {
+        this.context = context;
+        this.logger = logger;
+      }
+      
+      public void Dispose()
+      {
+        if (disposed) return;
+        
+        var document = context.Document?.ToString().Replace("\r", "").Replace("\n", Environment.NewLine);
+        var variables = context.Variables?.ToDictionary(x => x.Name, x => x.Value.ToString());
+
+        logger.LogTrace("GraphQL Request finished for {@Document} with variables {@Variables}", document, variables);
+
+        disposed = true;
+      }
     }
   }
 }

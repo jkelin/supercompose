@@ -40,10 +40,11 @@ namespace SuperCompose
           
           logger.WriteTo.Seq(
             host.Configuration["Seq:ServerUrl"],
-            Enum.TryParse(host.Configuration["Seq:LogLevel"], out LogEventLevel level) ? level : LogEventLevel.Information 
+            Enum.TryParse(host.Configuration["Seq:MinimumLevel"], out LogEventLevel level) ? level : LogEventLevel.Information 
           );
 
           logger.WriteTo.Console();
+          logger.Enrich.FromLogContext();
         })
         .ConfigureWebHostDefaults(webBuilder =>
         {
