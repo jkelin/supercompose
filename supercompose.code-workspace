@@ -8,6 +8,9 @@
     },
     {
       "path": "frontend"
+    },
+    {
+      "path": "proxy"
     }
   ],
   "settings": {}

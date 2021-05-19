@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+  </head>
+  <body>
+    <script>
+      var sse;
+
+      function go() {
+        var containerId = document
+          .getElementById("container")
+          .getAttribute("value");
+        var auth = document.getElementById("pkey").getAttribute("value");
+
+        if (sse) {
+          sse.close();
+        }
+
+        sse = new EventSource(
+          `http://localhost:8080/containers/${encodeURIComponent(
+            containerId
+          )}/stats?authorize=${encodeURIComponent(auth)}`
+        );
+        sse.onmessage = function (event) {
+          console.log(event.data);
+        };
+        sse.onerror = function (event) {
+          console.log("SSE onerror", event);
+        };
+        sse.onopen = function () {
+          console.log("SSE onopen");
+        };
+      }
+    </script>
+
+    <form action="#" onsubmit="go()">
+      <input type="text" placeholder="Private key" id="pkey" />
+      <br />
+      <input type="text" placeholder="Container id" id="container" />
+      <br />
+      <button>Connect to SSE</button>
+    </form>
+  </body>
+</html>
