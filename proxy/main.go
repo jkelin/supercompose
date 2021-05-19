@@ -375,6 +375,41 @@ func containerStatsRoute(app *iris.Application) {
 	})
 }
 
+func systemdGetService(app *iris.Application) {
+	app.Get("/systemd/service", func(ctx iris.Context) {
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		if err != nil {
+			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+				Title("Connection error").
+				Type("connection_err").
+				Key("error", err))
+			return
+		}
+		defer handle.Close()
+
+		systemd, err := handle.conn.GetSystemdConnection()
+		if err != nil {
+			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+				Title("Systemd connection error").
+				Type("systemd_connection_err").
+				Key("error", err))
+			return
+		}
+		defer systemd.Close()
+
+		services, err := systemd.GetService(ctx.URLParam("name"))
+		if err != nil {
+			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+				Title("Systemd services detail error").
+				Type("systemd_command_err").
+				Key("error", err))
+			return
+		}
+
+		ctx.JSON(services)
+	})
+}
+
 func FromParameter(param string) jwt.TokenExtractor {
 	return func(ctx *context.Context) string {
 		return ctx.URLParam(param)
@@ -417,6 +452,7 @@ func main() {
 
 	app.Use(iris.Compression)
 
+	systemdGetService(app)
 	writeFileRoute(app)
 	readFileRoute(app)
 	commandRoute(app)

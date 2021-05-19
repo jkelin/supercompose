@@ -3,13 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/client"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/docker/docker/client"
+	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
 type SshConnectionArgs struct {
@@ -27,6 +30,7 @@ type SshConnection struct {
 	shellSession *ssh.Session
 	ctx          context.Context
 	dockerClient *client.Client
+	uid          int
 }
 
 const (
@@ -188,6 +192,15 @@ func ConnectToHost(args *SshConnectionArgs) (*SshConnection, error) {
 	), client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Printf("Failed to initialize docker client because %s\n", err)
+		return nil, err
+	}
+
+	uidResult, err := conn.RunCommand("id -u")
+	if err != nil {
+		return nil, err
+	}
+	conn.uid, err = strconv.Atoi(strings.TrimSpace(uidResult.Stdout))
+	if err != nil {
 		return nil, err
 	}
 

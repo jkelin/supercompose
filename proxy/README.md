@@ -1,6 +1,6 @@
 # Smart SSH proxy
 
-Simple, stateful but persistence free SSH proxy and multiplexer. Exposes remote SSH server services through HTTP interface. Supports shell commands, SFTP and Docker.
+Simple, stateful but persistence free SSH proxy and multiplexer. Exposes remote SSH server services through HTTP interface. Supports shell commands, SFTP, Docker and Systemd (via DBUS).
 
 It is intended for low latency and high reliability. Slowest part of SSH is opening the SSH connection itself and authenticating - issuing shell commands, making file operations or piping docker socket generally happens sub 100ms on open SSH connection.
 
@@ -14,10 +14,10 @@ API docs: https://documenter.getpostman.com/view/15868536/TzRa63fv
 - Single SSH connection can multiplex several shell/sftp/socket sessions
 - Docker streaming APIs are re-exposed as Server Sent Events (SSE)
 - File write operation uses `mv` instead of in-place overwrites, so that files are not inconsistently half written when connection fails
+- Systemd service unit integration through DBUS
 
 ## TODO
 
-- systemd unit management through DBUS
 - Better logging
 - Open Telemetry
 - Docker socket reexported as-is
