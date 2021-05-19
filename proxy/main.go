@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/viper"
 	"io"
 	"log"
 	"os"
@@ -383,6 +384,10 @@ func FromParameter(param string) jwt.TokenExtractor {
 func main() {
 	go RunConnectionManager()
 
+	viper.SetDefault("JWT_KEY", "your-256-bit-secret")
+	viper.SetDefault("JWE_KEY", nil)
+	viper.AutomaticEnv()
+
 	app := iris.New()
 	app.Validator = validator.New()
 
@@ -396,9 +401,12 @@ func main() {
 	})
 	app.UseRouter(crs)
 
-	verifier := jwt.NewVerifier(jwt.HS256, []byte("your-256-bit-secret"))
+	verifier := jwt.NewVerifier(jwt.HS256, []byte(viper.GetString("JWT_KEY")))
 	verifier.WithDefaultBlocklist()
 	verifier.Extractors = append(verifier.Extractors, FromParameter("authorize"))
+	if viper.IsSet("JWE_KEY") {
+		verifier.WithDecryption([]byte(viper.GetString("JWE_KEY")), nil)
+	}
 	verifyMiddleware := verifier.Verify(func() interface{} {
 		return new(SshConnectionArgs)
 	})
@@ -406,14 +414,14 @@ func main() {
 	app.Use(verifyMiddleware)
 
 	containerStatsRoute(app)
-	writeFileRoute(app)
 
 	app.Use(iris.Compression)
 
+	writeFileRoute(app)
 	readFileRoute(app)
 	commandRoute(app)
 	containersRoute(app)
 	containerInspectRoute(app)
 
-	app.Listen(":8080")
+	app.Listen(":8080", iris.WithSocketSharding)
 }
