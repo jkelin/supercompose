@@ -4,7 +4,7 @@ Simple, stateful but persistence free SSH proxy and multiplexer. Exposes remote 
 
 It is intended for low latency and high reliability. Slowest part of SSH is opening the SSH connection itself and authenticating - issuing shell commands, making file operations or piping docker socket generally happens sub 100ms on open SSH connection.
 
-API docs: https://documenter.getpostman.com/view/15868536/TzRa63fv#035ebbd4-9343-4c80-ad29-fb5919415d7d
+API docs: https://documenter.getpostman.com/view/15868536/TzRa63fv
 
 #### Features
 
