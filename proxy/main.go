@@ -100,6 +100,7 @@ func main() {
 	app.Use(iris.Compression)
 
 	SystemdGetServiceRoute(app)
+	SystemdReloadRoute(app)
 	SystemdStartServiceRoute(app)
 	SystemdStopServiceRoute(app)
 	SystemdRestartServiceRoute(app)
@@ -108,6 +109,9 @@ func main() {
 
 	writeFileRoute(app)
 	readFileRoute(app)
+	upsertFileRoute(app)
+	deleteFileRoute(app)
+
 	commandRoute(app)
 	containersRoute(app)
 	containerInspectRoute(app)

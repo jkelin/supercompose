@@ -223,23 +223,6 @@ func SystemdEnableServiceRoute(app *iris.Application) {
 			return
 		}
 
-		_, err = systemd.systemdConn.ReloadUnit(ctx.URLParam("id"), "replace", nil)
-		if err != nil {
-			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
-				Title("Enabling systemd service failed").
-				Type("systemd_enable_service").
-				DetailErr(err))
-			return
-		}
-
-		if err := systemd.systemdConn.Reload(); err != nil {
-			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
-				Title("Reloading systemd services failed").
-				Type("systemd_reload").
-				DetailErr(err))
-			return
-		}
-
 		ctx.StatusCode(iris.StatusOK)
 	})
 }
@@ -265,6 +248,20 @@ func SystemdDisableServiceRoute(app *iris.Application) {
 			return
 		}
 
+		ctx.StatusCode(iris.StatusOK)
+	})
+}
+
+func SystemdReloadRoute(app *iris.Application) {
+	app.Post("/systemd/reload", func(ctx iris.Context) {
+		handle, systemd, problem := acquireSystemd(ctx)
+		if problem != nil {
+			ctx.StopWithProblem(iris.StatusBadRequest, problem)
+			return
+		}
+		defer handle.Close()
+		defer systemd.Close()
+
 		if err := systemd.systemdConn.Reload(); err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Reloading systemd services failed").
@@ -276,3 +273,86 @@ func SystemdDisableServiceRoute(app *iris.Application) {
 		ctx.StatusCode(iris.StatusOK)
 	})
 }
+
+//func UpdateSystemdServiceRoute(app *iris.Application) {
+//  type UpdateSystemdServiceRequest struct {
+//    Contents     []byte `json:"contents" validate:"required"`
+//    Path         string `json:"path" validate:"required"`
+//    IsActive  bool   `json:"is_active" validate:"required"`
+//    IsEnabled  bool   `json:"is_enabled" validate:"required"`
+//  }
+//
+//	app.Post("/systemd/service", func(ctx iris.Context) {
+//    var body UpdateSystemdServiceRequest
+//    if err := ctx.ReadBody(&body); err != nil {
+//      ctx.StopWithError(iris.StatusBadRequest, err)
+//      return
+//    }
+//
+//		handle, systemd, problem := acquireSystemd(ctx)
+//		if problem != nil {
+//			ctx.StopWithProblem(iris.StatusBadRequest, problem)
+//			return
+//		}
+//		defer handle.Close()
+//		defer systemd.Close()
+//
+//    serviceStatus, err := systemd.SystemdGetService(body.Path)
+//    if err != nil {
+//      ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+//        Title("Systemd services detail error").
+//        Type("systemd_get_service").
+//        DetailErr(err))
+//      return
+//    }
+//
+//    modified, err := handle.conn.upsertFile(body.Path, 1_000_000, false, body.Contents)
+//    if err != nil {
+//      ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+//        Title("Failed to update systemd file").
+//        Type("file_update").
+//        DetailErr(err))
+//    }
+//
+//    if serviceStatus == nil || serviceStatus.IsEnabled != body.IsEnabled {
+//      units := make([]string, 1)
+//      units[0] = ctx.URLParam(body.Path)
+//
+//      if body.IsEnabled {
+//        if _, _, err := systemd.systemdConn.EnableUnitFiles(units, false, true); err != nil {
+//          ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+//            Title("Enabling systemd service failed").
+//            Type("systemd_enable_service").
+//            DetailErr(err))
+//          return
+//        }
+//      } else {
+//        if _, err := systemd.systemdConn.DisableUnitFiles(units, false); err != nil {
+//          ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+//            Title("Disabling systemd service failed").
+//            Type("systemd_disable_service").
+//            DetailErr(err))
+//          return
+//        }
+//      }
+//    }
+//
+//    if modified || serviceStatus == nil || serviceStatus.IsEnabled != body.IsEnabled {
+//      if err := systemd.systemdConn.Reload(); err != nil {
+//        ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+//          Title("Reloading systemd services failed").
+//          Type("systemd_reload").
+//          DetailErr(err))
+//        return
+//      }
+//    }
+//
+//    if serviceStatus == nil || serviceStatus.IsActive != body.IsActive {
+//      if body.IsActive {
+//
+//      }
+//    }
+//
+//		ctx.StatusCode(iris.StatusOK)
+//	})
+//}
