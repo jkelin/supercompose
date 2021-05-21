@@ -8,6 +8,7 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
 	"io"
+	"log"
 	"os"
 	"path"
 	"time"
@@ -20,6 +21,8 @@ type FileInfo struct {
 }
 
 func (conn *SshConnection) readFile(path string, maxSize int64) (*FileInfo, error) {
+	log.Printf("Reading file at %s", path)
+
 	fileHandle, err := conn.sftpClient.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %w", err)
@@ -56,6 +59,8 @@ func (conn *SshConnection) readFile(path string, maxSize int64) (*FileInfo, erro
 }
 
 func (conn *SshConnection) writeFile(path string, contents []byte) error {
+	log.Printf("Writing file at %s", path)
+
 	// We first write into a temp file and then move it onto the target location
 	// Swapping the file like this ensures that we are not leaving the target file half overwritten
 
@@ -79,6 +84,7 @@ func (conn *SshConnection) writeFile(path string, contents []byte) error {
 }
 
 func (conn *SshConnection) ensureDirectoryExists(path string) error {
+	log.Printf("Ensuring directory exists at %s", path)
 	dirStat, dirStatError := conn.sftpClient.Stat(path)
 	if dirStatError == os.ErrNotExist {
 		mkdirError := conn.sftpClient.MkdirAll(path)
@@ -101,6 +107,7 @@ func (conn *SshConnection) ensureDirectoryExists(path string) error {
 }
 
 func (conn *SshConnection) upsertFile(filePath string, createDir bool, targetContents []byte) (bool, error) {
+	log.Printf("Upserting file at %s", filePath)
 	fileHandle, err := conn.sftpClient.Open(filePath)
 	write := false
 	if err != nil {
@@ -275,6 +282,7 @@ func deleteFileRoute(app *iris.Application) {
 		}
 		defer handle.Close()
 
+		log.Printf("Deleting file at %s", ctx.URLParam("path"))
 		if err := handle.conn.sftpClient.Remove(ctx.URLParam("path")); err != nil && !errors.Is(err, os.ErrNotExist) {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Could not delete file").

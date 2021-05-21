@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	systemdDbus "github.com/coreos/go-systemd/dbus"
 	"github.com/docker/docker/client"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -11,24 +12,27 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type SshConnectionArgs struct {
 	Host     string `json:"host" validate:"required"`
 	Username string `json:"username" validate:"required"`
-	Pkey     string `json:"pkey" validate:"required"`
+	Pkey     string `json:"pkey"`
+	Password string `json:"password"`
 }
 
 type SshConnection struct {
 	io.Closer
-	id           string
-	args         SshConnectionArgs
-	client       *ssh.Client
-	sftpClient   *sftp.Client
-	shellSession *ssh.Session
-	ctx          context.Context
-	dockerClient *client.Client
-	uid          int
+	id            string
+	args          SshConnectionArgs
+	client        *ssh.Client
+	sftpClient    *sftp.Client
+	shellSession  *ssh.Session
+	ctx           context.Context
+	dockerClient  *client.Client
+	uid           int
+	systemdHandle *systemdDbus.Conn
 }
 
 const (
@@ -44,6 +48,10 @@ type CommandResult struct {
 }
 
 func (conn *SshConnection) Close() error {
+	if conn.systemdHandle != nil {
+		conn.systemdHandle.Close()
+	}
+
 	if err := conn.sftpClient.Close(); err != nil {
 		return err
 	}
@@ -58,18 +66,27 @@ func (conn *SshConnection) Close() error {
 func ConnectToHost(args *SshConnectionArgs) (*SshConnection, error) {
 	id := fmt.Sprintf("%s@%s", args.Username, args.Host)
 
-	// Create the Signer for this private key.
-	signer, err := ssh.ParsePrivateKey([]byte(args.Pkey))
-	if err != nil {
-		log.Printf("Unable to parse private key: %v", err)
-		return nil, err
+	var authMethod []ssh.AuthMethod
+
+	if len(args.Pkey) > 0 {
+		// Create the Signer for this private key.
+		signer, err := ssh.ParsePrivateKey([]byte(args.Pkey))
+		if err != nil {
+			log.Printf("Unable to parse private key: %v", err)
+			return nil, err
+		}
+
+		authMethod = append(authMethod, ssh.PublicKeys(signer))
+	}
+
+	if len(args.Password) > 0 {
+		authMethod = append(authMethod, ssh.Password(args.Password))
 	}
 
 	sshConfig := &ssh.ClientConfig{
-		User: args.Username,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
+		Timeout:         30 * time.Second,
+		User:            args.Username,
+		Auth:            authMethod,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 

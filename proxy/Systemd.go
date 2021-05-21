@@ -6,6 +6,7 @@ import (
 	"github.com/godbus/dbus"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
+	"log"
 	"strconv"
 )
 
@@ -15,37 +16,43 @@ type SystemdHandle struct {
 }
 
 func (conn *SshConnection) GetSystemdConnection() (*SystemdHandle, error) {
-	connection, err := systemdDbus.NewConnection(func() (*dbus.Conn, error) {
-		socketConn, err := conn.client.Dial("unix", "/run/systemd/private")
-		if err != nil {
-			return nil, err
-		}
+	if conn.systemdHandle == nil {
+		log.Printf("Connecting to systemd")
 
-		dbusConn, err := dbus.NewConn(socketConn)
-		if err != nil {
-			return nil, err
-		}
-
-		methods := []dbus.Auth{dbus.AuthExternal(strconv.Itoa(conn.uid))}
-
-		err = dbusConn.Auth(methods)
-		if err != nil {
-			if err := conn.Close(); err != nil {
+		connection, err := systemdDbus.NewConnection(func() (*dbus.Conn, error) {
+			socketConn, err := conn.client.Dial("unix", "/run/systemd/private")
+			if err != nil {
 				return nil, err
 			}
 
+			dbusConn, err := dbus.NewConn(socketConn)
+			if err != nil {
+				return nil, err
+			}
+
+			methods := []dbus.Auth{dbus.AuthExternal(strconv.Itoa(conn.uid))}
+
+			err = dbusConn.Auth(methods)
+			if err != nil {
+				if err := conn.Close(); err != nil {
+					return nil, err
+				}
+
+				return nil, err
+			}
+
+			return dbusConn, nil
+		})
+		if err != nil {
 			return nil, err
 		}
 
-		return dbusConn, nil
-	})
-	if err != nil {
-		return nil, err
+		conn.systemdHandle = connection
 	}
 
 	return &SystemdHandle{
 		sshConn:     conn,
-		systemdConn: connection,
+		systemdConn: conn.systemdHandle,
 	}, nil
 }
 
@@ -68,6 +75,8 @@ type SystemdService struct {
 }
 
 func (handle *SystemdHandle) SystemdGetService(name string) (*SystemdService, error) {
+	log.Printf("Getting systemd service %s", name)
+
 	unit, err := handle.systemdConn.GetUnitProperties(name)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting systemd unit properties because: %w", err)
@@ -118,7 +127,6 @@ func SystemdGetServiceRoute(app *iris.Application) {
 			return
 		}
 		defer handle.Close()
-		defer systemd.Close()
 
 		services, err := systemd.SystemdGetService(ctx.URLParam("id"))
 		if err != nil {
@@ -141,8 +149,8 @@ func SystemdStartServiceRoute(app *iris.Application) {
 			return
 		}
 		defer handle.Close()
-		defer systemd.Close()
 
+		log.Printf("Starting service %s", ctx.URLParam("id"))
 		_, err := systemd.systemdConn.StartUnit(ctx.URLParam("id"), "replace", nil)
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
@@ -164,8 +172,8 @@ func SystemdStopServiceRoute(app *iris.Application) {
 			return
 		}
 		defer handle.Close()
-		defer systemd.Close()
 
+		log.Printf("Stopping service %s", ctx.URLParam("id"))
 		_, err := systemd.systemdConn.StopUnit(ctx.URLParam("id"), "replace", nil)
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
@@ -187,8 +195,8 @@ func SystemdRestartServiceRoute(app *iris.Application) {
 			return
 		}
 		defer handle.Close()
-		defer systemd.Close()
 
+		log.Printf("Restarting service %s", ctx.URLParam("id"))
 		_, err := systemd.systemdConn.ReloadOrRestartUnit(ctx.URLParam("id"), "replace", nil)
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
@@ -210,8 +218,8 @@ func SystemdEnableServiceRoute(app *iris.Application) {
 			return
 		}
 		defer handle.Close()
-		defer systemd.Close()
 
+		log.Printf("Enabling service %s", ctx.URLParam("id"))
 		units := make([]string, 1)
 		units[0] = ctx.URLParam("id")
 		_, _, err := systemd.systemdConn.EnableUnitFiles(units, false, true)
@@ -235,8 +243,8 @@ func SystemdDisableServiceRoute(app *iris.Application) {
 			return
 		}
 		defer handle.Close()
-		defer systemd.Close()
 
+		log.Printf("Disabling service %s", ctx.URLParam("id"))
 		units := make([]string, 1)
 		units[0] = ctx.URLParam("id")
 		_, err := systemd.systemdConn.DisableUnitFiles(units, false)
@@ -260,8 +268,8 @@ func SystemdReloadRoute(app *iris.Application) {
 			return
 		}
 		defer handle.Close()
-		defer systemd.Close()
 
+		log.Printf("Reloading systemd")
 		if err := systemd.systemdConn.Reload(); err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Reloading systemd services failed").

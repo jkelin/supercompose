@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
+	"log"
 )
 
 func containerInspectRoute(app *iris.Application) {
@@ -21,6 +22,7 @@ func containerInspectRoute(app *iris.Application) {
 		}
 		defer handle.Close()
 
+		log.Printf("Inspecting container %s", ctx.Params().Get("id"))
 		containers, _, err := handle.conn.dockerClient.ContainerInspectWithRaw(handle.conn.ctx, ctx.Params().Get("id"), true)
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
@@ -46,6 +48,7 @@ func containersRoute(app *iris.Application) {
 		}
 		defer handle.Close()
 
+		log.Printf("Reading containers")
 		containerFilters := filters.NewArgs()
 		containerFilters.Add("label", "com.docker.compose.service")
 		containers, err := handle.conn.dockerClient.ContainerList(handle.conn.ctx, types.ContainerListOptions{
@@ -76,6 +79,7 @@ func containerStatsRoute(app *iris.Application) {
 		}
 		defer handle.Close()
 
+		log.Printf("Reading container stats for %s", ctx.Params().Get("id"))
 		statStream, err := handle.conn.dockerClient.ContainerStats(handle.conn.ctx, ctx.Params().Get("id"), true)
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
