@@ -71,6 +71,7 @@ func ConnectToHost(ctx context.Context, args *SshConnectionCredentials) (*SshCon
 	var authMethod []ssh.AuthMethod
 
 	if len(args.Pkey) > 0 {
+		span.AddEvent("Parsing private key")
 		// Create the Signer for this private key.
 		signer, err := ssh.ParsePrivateKey([]byte(args.Pkey))
 		if err != nil {
@@ -92,6 +93,7 @@ func ConnectToHost(ctx context.Context, args *SshConnectionCredentials) (*SshCon
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
+	span.AddEvent("Dialing")
 	log.Printf("Connecting to: %s\n", id)
 	sshClient, err := ssh.Dial("tcp", args.Host, sshConfig)
 	if err != nil {
