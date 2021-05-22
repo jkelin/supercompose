@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-type SshConnectionArgs struct {
+type SshConnectionCredentials struct {
 	Host     string `json:"host" validate:"required"`
 	Username string `json:"username" validate:"required"`
 	Pkey     string `json:"pkey"`
@@ -25,7 +25,7 @@ type SshConnectionArgs struct {
 type SshConnection struct {
 	io.Closer
 	id            string
-	args          SshConnectionArgs
+	args          SshConnectionCredentials
 	client        *ssh.Client
 	sftpClient    *sftp.Client
 	shellSession  *ssh.Session
@@ -34,10 +34,6 @@ type SshConnection struct {
 	uid           int
 	systemdHandle *systemdDbus.Conn
 }
-
-const (
-	CommandErrorTimeout = "command_timeout"
-)
 
 type CommandResult struct {
 	Cmd    string `json:"command"`
@@ -63,7 +59,7 @@ func (conn *SshConnection) Close() error {
 	return nil
 }
 
-func ConnectToHost(args *SshConnectionArgs) (*SshConnection, error) {
+func ConnectToHost(args *SshConnectionCredentials) (*SshConnection, error) {
 	id := fmt.Sprintf("%s@%s", args.Username, args.Host)
 
 	var authMethod []ssh.AuthMethod

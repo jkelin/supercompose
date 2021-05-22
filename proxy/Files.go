@@ -173,7 +173,7 @@ func writeFileRoute(app *iris.Application) {
 			return
 		}
 
-		connectionHandle, fileStatError := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		connectionHandle, fileStatError := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if fileStatError != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").
@@ -204,7 +204,7 @@ func writeFileRoute(app *iris.Application) {
 
 func readFileRoute(app *iris.Application) {
 	app.Get("/files/read", func(ctx iris.Context) {
-		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").
@@ -245,7 +245,7 @@ func upsertFileRoute(app *iris.Application) {
 			return
 		}
 
-		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").
@@ -272,7 +272,7 @@ func upsertFileRoute(app *iris.Application) {
 
 func deleteFileRoute(app *iris.Application) {
 	app.Post("/files/delete", func(ctx iris.Context) {
-		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").

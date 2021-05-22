@@ -98,7 +98,7 @@ func (handle *SystemdHandle) SystemdGetService(name string) (*SystemdService, er
 }
 
 func acquireSystemd(ctx iris.Context) (*ConnectionHandle, *SystemdHandle, iris.Problem) {
-	handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+	handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 	if err != nil {
 		return nil, nil, iris.NewProblem().
 			Title("Connection to target host failed").

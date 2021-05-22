@@ -90,7 +90,7 @@ func main() {
 		verifier.WithDecryption([]byte(viper.GetString("JWE_KEY")), nil)
 	}
 	verifyMiddleware := verifier.Verify(func() interface{} {
-		return new(SshConnectionArgs)
+		return new(SshConnectionCredentials)
 	})
 
 	app.Use(verifyMiddleware)

@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
 )
 
 type connectionManager struct {
-	connections map[string]*connectionWrapper
+	connections map[SshConnectionCredentials]*connectionWrapper
 	mu          sync.Mutex
 }
 
@@ -30,7 +29,7 @@ const closeConnectionAfter = 10 * time.Minute
 
 func RunConnectionManager() {
 	manager = connectionManager{
-		connections: make(map[string]*connectionWrapper),
+		connections: make(map[SshConnectionCredentials]*connectionWrapper),
 	}
 
 	for {
@@ -56,12 +55,10 @@ func RunConnectionManager() {
 	}
 }
 
-func GetConnection(args *SshConnectionArgs) (*ConnectionHandle, error) {
-	argsHash := fmt.Sprintf("%s@%s %s", args.Username, args.Host, args.Pkey)
-
+func GetConnection(args *SshConnectionCredentials) (*ConnectionHandle, error) {
 	manager.mu.Lock()
 
-	conn := manager.connections[argsHash]
+	conn := manager.connections[*args]
 
 	if conn == nil {
 		manager.mu.Unlock()
@@ -71,14 +68,14 @@ func GetConnection(args *SshConnectionArgs) (*ConnectionHandle, error) {
 		}
 
 		manager.mu.Lock()
-		conn = manager.connections[argsHash]
+		conn = manager.connections[*args]
 		if conn == nil {
 			conn = &connectionWrapper{
 				conn:    host,
 				handles: 0,
 			}
 
-			manager.connections[argsHash] = conn
+			manager.connections[*args] = conn
 		}
 	}
 

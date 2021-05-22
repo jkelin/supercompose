@@ -58,7 +58,7 @@ func (conn *SshConnection) RunCommand(cmd string) (*CommandResult, error) {
 			break
 		}
 	case <-time.After(30 * time.Second):
-		result.Error = CommandErrorTimeout
+		result.Error = "timeout"
 		return &result, nil
 	}
 
@@ -82,7 +82,7 @@ func (conn *SshConnection) RunCommand(cmd string) (*CommandResult, error) {
 
 func commandRoute(app *iris.Application) {
 	app.Get("/command", func(ctx iris.Context) {
-		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").

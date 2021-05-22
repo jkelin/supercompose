@@ -12,7 +12,7 @@ import (
 
 func containerInspectRoute(app *iris.Application) {
 	app.Get("/containers/:id/json", func(ctx iris.Context) {
-		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").
@@ -38,7 +38,7 @@ func containerInspectRoute(app *iris.Application) {
 
 func containersRoute(app *iris.Application) {
 	app.Get("/containers/json", func(ctx iris.Context) {
-		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").
@@ -69,7 +69,7 @@ func containersRoute(app *iris.Application) {
 
 func containerStatsRoute(app *iris.Application) {
 	app.Get("/containers/:id/stats", func(ctx iris.Context) {
-		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionArgs))
+		handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Connection to target host failed").
