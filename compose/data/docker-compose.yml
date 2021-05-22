@@ -39,8 +39,22 @@ services:
       - ACCEPT_EULA=Y
       - SEQ_FIRSTRUN_ADMINPASSWORDHASH=FAtxDl6Z+F3Ptsgxxr8AOtVMCiN5A+91DI0w2zzzu7Cl/AvcWQ== # supercompose
 
+  jaeger:
+    image: jaegertracing/opentelemetry-all-in-one
+    environment:
+      - "SPAN_STORAGE_TYPE=badger"
+      - "BADGER_EPHEMERAL=false"
+      - "BADGER_DIRECTORY_VALUE=/badger/data"
+      - "BADGER_DIRECTORY_KEY=/badger/key"
+    volumes:
+      - jaeger-data:/badger
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+
 volumes:
   postgres-data:
   redis-data:
-  # rabbitmq-data:
   seq-data:
+  jaeger-data:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"sync"
 	"time"
@@ -55,14 +56,14 @@ func RunConnectionManager() {
 	}
 }
 
-func GetConnection(args *SshConnectionCredentials) (*ConnectionHandle, error) {
+func GetConnection(ctx context.Context, args *SshConnectionCredentials) (*ConnectionHandle, error) {
 	manager.mu.Lock()
 
 	conn := manager.connections[*args]
 
 	if conn == nil {
 		manager.mu.Unlock()
-		host, err := ConnectToHost(args)
+		host, err := ConnectToHost(ctx, args)
 		if err != nil {
 			return nil, err
 		}

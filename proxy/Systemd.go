@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	systemdDbus "github.com/coreos/go-systemd/dbus"
 	"github.com/godbus/dbus"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
+	"go.opentelemetry.io/otel"
 	"log"
 	"strconv"
 )
@@ -15,18 +17,24 @@ type SystemdHandle struct {
 	systemdConn *systemdDbus.Conn
 }
 
-func (conn *SshConnection) GetSystemdConnection() (*SystemdHandle, error) {
+var systemdTracer = otel.Tracer("Systemd")
+
+func (conn *SshConnection) GetSystemdConnection(ctx context.Context) (*SystemdHandle, error) {
 	if conn.systemdHandle == nil {
 		log.Printf("Connecting to systemd")
+		_, span := sshTracer.Start(ctx, "Connecting to systemd")
+		defer span.End()
 
 		connection, err := systemdDbus.NewConnection(func() (*dbus.Conn, error) {
 			socketConn, err := conn.client.Dial("unix", "/run/systemd/private")
 			if err != nil {
+				span.RecordError(err)
 				return nil, err
 			}
 
 			dbusConn, err := dbus.NewConn(socketConn)
 			if err != nil {
+				span.RecordError(err)
 				return nil, err
 			}
 
@@ -35,6 +43,7 @@ func (conn *SshConnection) GetSystemdConnection() (*SystemdHandle, error) {
 			err = dbusConn.Auth(methods)
 			if err != nil {
 				if err := conn.Close(); err != nil {
+					span.RecordError(err)
 					return nil, err
 				}
 
@@ -44,6 +53,7 @@ func (conn *SshConnection) GetSystemdConnection() (*SystemdHandle, error) {
 			return dbusConn, nil
 		})
 		if err != nil {
+			span.RecordError(err)
 			return nil, err
 		}
 
@@ -98,7 +108,7 @@ func (handle *SystemdHandle) SystemdGetService(name string) (*SystemdService, er
 }
 
 func acquireSystemd(ctx iris.Context) (*ConnectionHandle, *SystemdHandle, iris.Problem) {
-	handle, err := GetConnection(jwt.Get(ctx).(*SshConnectionCredentials))
+	handle, err := GetConnection(ctx.Request().Context(), jwt.Get(ctx).(*SshConnectionCredentials))
 	if err != nil {
 		return nil, nil, iris.NewProblem().
 			Title("Connection to target host failed").
@@ -107,7 +117,7 @@ func acquireSystemd(ctx iris.Context) (*ConnectionHandle, *SystemdHandle, iris.P
 			DetailErr(err)
 	}
 
-	systemd, err := handle.conn.GetSystemdConnection()
+	systemd, err := handle.conn.GetSystemdConnection(ctx.Request().Context())
 	if err != nil {
 		return nil, nil, iris.NewProblem().
 			Title("Systemd connection error").
@@ -138,7 +148,7 @@ func SystemdGetServiceRoute(app *iris.Application) {
 		}
 
 		ctx.JSON(services)
-	})
+	}).SetName("Systemd service detail")
 }
 
 func SystemdStartServiceRoute(app *iris.Application) {
@@ -161,7 +171,7 @@ func SystemdStartServiceRoute(app *iris.Application) {
 		}
 
 		ctx.StatusCode(iris.StatusOK)
-	})
+	}).SetName("Systemd service start")
 }
 
 func SystemdStopServiceRoute(app *iris.Application) {
@@ -184,7 +194,7 @@ func SystemdStopServiceRoute(app *iris.Application) {
 		}
 
 		ctx.StatusCode(iris.StatusOK)
-	})
+	}).SetName("Systemd service stop")
 }
 
 func SystemdRestartServiceRoute(app *iris.Application) {
@@ -207,7 +217,7 @@ func SystemdRestartServiceRoute(app *iris.Application) {
 		}
 
 		ctx.StatusCode(iris.StatusOK)
-	})
+	}).SetName("Systemd service restart")
 }
 
 func SystemdEnableServiceRoute(app *iris.Application) {
@@ -232,7 +242,7 @@ func SystemdEnableServiceRoute(app *iris.Application) {
 		}
 
 		ctx.StatusCode(iris.StatusOK)
-	})
+	}).SetName("Systemd service enable")
 }
 
 func SystemdDisableServiceRoute(app *iris.Application) {
@@ -257,7 +267,7 @@ func SystemdDisableServiceRoute(app *iris.Application) {
 		}
 
 		ctx.StatusCode(iris.StatusOK)
-	})
+	}).SetName("Systemd service disable")
 }
 
 func SystemdReloadRoute(app *iris.Application) {
@@ -279,7 +289,7 @@ func SystemdReloadRoute(app *iris.Application) {
 		}
 
 		ctx.StatusCode(iris.StatusOK)
-	})
+	}).SetName("Systemd reload")
 }
 
 //func UpdateSystemdServiceRoute(app *iris.Application) {
