@@ -27,11 +27,24 @@ services:
       - ConnectionStrings__SupercomposeContext
       - ConnectionStrings__KeysContext
       - ConnectionStrings__Redis
+      - Proxy__Url=http://proxy:8080
+      - Proxy__JWT
       - SENTRY_DSN
       - Auth__Authority
       - Auth__Audience
       - ASPNETCORE_ENVIRONMENT
       - Seq__ServerUrl=http://seq:5341
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+    restart: always
+
+  proxy:
+    build: ../../proxy
+    environment:
+      - "JWT_KEY={$Proxy__JWT}"
+      - JAEGER_URL=http://jaeger:14268/api/traces
     logging:
       driver: json-file
       options:
@@ -59,9 +72,7 @@ services:
     volumes:
       - jaeger-data:/badger
     ports:
-      - "6831:6831/udp"
       - "16686:16686"
-      - "14268:14268"
 
 volumes:
   redis-data:
