@@ -7,6 +7,7 @@ using HotChocolate.Types;
 using Microsoft.Extensions.Logging;
 using Sentry;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Serilog;
@@ -106,11 +107,13 @@ namespace SuperCompose.Util
       private readonly IRequestContext context;
       private readonly ILogger<GraphqlLogger> logger;
       private bool disposed;
+      private readonly Activity? activity;
 
       public RequestScope(IRequestContext context, ILogger<GraphqlLogger> logger)
       {
         this.context = context;
         this.logger = logger;
+        activity = Extensions.SuperComposeActivitySource.StartActivity("GraphQL request", ActivityKind.Server);
       }
       
       public void Dispose()
@@ -118,9 +121,25 @@ namespace SuperCompose.Util
         if (disposed) return;
         
         var document = context.Document?.ToString().Replace("\r", "").Replace("\n", Environment.NewLine);
-        var variables = context.Variables?.ToDictionary(x => x.Name, x => x.Value.ToString());
+        var variables = context.Variables?.ToDictionary(x => x.Name.Value, x => x.Value.ToString());
 
+        if (!string.IsNullOrEmpty(document))
+        {
+          activity?.AddTag("graphql.document", document);
+        }
+        if (variables != null)
+        {
+          foreach (var (key, value) in variables)
+          {
+            if (key is not (not "password" or "compose" or "pkey" or "privateKey")) continue;
+
+            activity?.AddTag("graphql.variables." + key, value);
+          }
+        }
+        
         logger.LogTrace("GraphQL Request finished for {@Document} with variables {@Variables}", document, variables);
+        activity?.Stop();
+        activity?.Dispose();
 
         disposed = true;
       }

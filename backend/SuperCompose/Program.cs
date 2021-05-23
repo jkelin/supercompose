@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Serilog;
 using Serilog.Events;
@@ -17,6 +18,9 @@ namespace SuperCompose
     public static void Main(string[] args)
     {
       var host = CreateHostBuilder(args).Build();
+
+      Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+      Activity.ForceDefaultIdFormat = true;
 
       Migrate(host.Services).Wait();
 

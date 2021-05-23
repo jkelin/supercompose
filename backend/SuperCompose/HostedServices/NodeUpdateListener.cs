@@ -6,11 +6,14 @@ using RedLockNet;
 using Sentry;
 using StackExchange.Redis;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using OpenTelemetry.Trace;
 using SuperCompose.Context;
 using SuperCompose.Services;
+using SuperCompose.Util;
 
 namespace SuperCompose.HostedServices
 {
@@ -79,9 +82,12 @@ namespace SuperCompose.HostedServices
     private async Task HandleNodeUpdate(Guid nodeId, CancellationToken ct)
     {
       using var _ = logger.BeginScope(new {nodeId});
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("HandleNodeUpdate");
+      activity?.AddBaggage("supercompose.nodeid", nodeId.ToString());
 
       try
       {
+        activity?.AddEvent(new ActivityEvent("Acquiring lock"));
         using var redLock = await lockFactory.CreateLockAsync(
           nodeId.ToString(),
           TimeSpan.FromSeconds(10),
@@ -94,8 +100,11 @@ namespace SuperCompose.HostedServices
         if (!redLock.IsAcquired)
         {
           logger.LogDebug("Already being processed (lock not acquired)");
+          activity?.AddEvent(new ActivityEvent("Already being processed"));
           return;
         }
+
+        activity?.AddEvent(new ActivityEvent("Lock acquired"));
 
         using var scope = provider.CreateScope();
         var nodeService = scope.ServiceProvider.GetRequiredService<NodeUpdaterService>();
@@ -113,6 +122,7 @@ namespace SuperCompose.HostedServices
       {
         logger.LogWarning(ex, "Error while processing node update");
         SentrySdk.CaptureException(ex);
+        activity.RecordException(ex);
       }
     }
   }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ namespace SuperCompose.Util
 {
   public static class Extensions
   {
+    public static readonly ActivitySource SuperComposeActivitySource = new("SuperCompose");
 
     public static Guid Tenant(this ClaimsPrincipal claims)
     {

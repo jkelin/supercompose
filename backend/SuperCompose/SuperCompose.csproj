@@ -5,6 +5,10 @@
     <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
     <NullableContextOptions>enable</NullableContextOptions>
+    <Title>SuperCompose</Title>
+    <PackageProjectUrl>https://supercompose.net</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jkelin/supercompose</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +40,10 @@
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="5.0.5" />
     <PackageReference Include="Nito.AsyncEx" Version="5.1.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.5.1" />
+    <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.0.1" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc4" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc4" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc4" />
     <PackageReference Include="protobuf-net" Version="3.0.101" />
     <PackageReference Include="protobuf-net.BuildTools" Version="3.0.101" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageReference Include="RedLock.net" Version="2.2.0" />

@@ -40,6 +40,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Trace;
 using Serilog;
 using SuperCompose.Auth;
 
@@ -200,6 +201,23 @@ namespace SuperCompose
         .AddScoped<IAuthorizationHandler, TenantNodeAuthorizationHandler>()
         .AddScoped<IAuthorizationHandler, TenantComposeAuthorizationHandler>()
         .AddScoped<IAuthorizationHandler, TenantDeploymentAuthorizationHandler>();
+      
+      // OpenTelemetry
+      services.AddOpenTelemetryTracing((builder) =>
+      {
+        builder.AddSource(Extensions.SuperComposeActivitySource.Name);
+        
+        builder.AddAspNetCoreInstrumentation();
+        builder.AddHttpClientInstrumentation();
+        if (Uri.TryCreate(configuration.GetConnectionString("Jaeger"), UriKind.Absolute, out var uri))
+        {
+          builder.AddJaegerExporter(opts =>
+          {
+            opts.AgentHost = uri.Host;
+            opts.AgentPort = uri.Port;
+          });
+        }
+      });
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
