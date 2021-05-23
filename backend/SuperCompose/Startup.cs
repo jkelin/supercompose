@@ -78,6 +78,7 @@ namespace SuperCompose
           configuration.GetConnectionString("KeysContext")));
 
       // Redis distributed cache
+      services.AddMemoryCache();
       services.AddStackExchangeRedisCache(action =>
       {
         action.InstanceName = "Redis";
@@ -166,6 +167,7 @@ namespace SuperCompose
         .AddScoped<NodeAgentService>()
         .AddScoped<PubSubService>()
         .AddScoped<AuthService>()
+        .AddScoped<ProxyClient>()
         .AddScoped<NodeService>();
 
       // Custom hosted services
@@ -176,6 +178,7 @@ namespace SuperCompose
 
       // HTTP Clients
       services.AddHttpClient("OIDC", client => { client.BaseAddress = new Uri(configuration["Auth:Authority"]); });
+      services.AddHttpClient("proxy", client => { client.BaseAddress = new Uri(configuration["Proxy:Url"]); });
 
       // Auth
       services

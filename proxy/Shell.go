@@ -100,8 +100,8 @@ func (conn *SshConnection) RunCommand(ctx context.Context, cmd string) (*Command
 		return nil, errReadErr
 	}
 
-	result.Stdout = string(stdout)
-	result.Stderr = string(stderr)
+	result.Stdout = stdout
+	result.Stderr = stderr
 
 	return &result, nil
 }

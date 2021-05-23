@@ -141,8 +141,8 @@ func injectOpenTelemetry(app *iris.Application) {
 func main() {
 	go RunConnectionManager()
 
-	viper.SetDefault("JWT_KEY", "your-256-bit-secret")
-	viper.SetDefault("JWE_KEY", nil)
+	viper.SetDefault("JWT_KEY", "vGXyMPbgINeLaAR43zWx1C9R89nVrFqy")
+	//viper.SetDefault("JWE_KEY", "iXbm3fmDPPcgSxLJ4riJCoGN6915oXyg")
 	viper.SetDefault("JAEGER_URL", nil)
 	viper.AutomaticEnv()
 
@@ -156,9 +156,9 @@ func main() {
 	verifier := jwt.NewVerifier(jwt.HS256, []byte(viper.GetString("JWT_KEY")))
 	verifier.WithDefaultBlocklist()
 	verifier.Extractors = append(verifier.Extractors, FromParameter("authorize"))
-	if viper.IsSet("JWE_KEY") {
-		verifier.WithDecryption([]byte(viper.GetString("JWE_KEY")), nil)
-	}
+	//if viper.IsSet("JWE_KEY") {
+	//	verifier.WithDecryption([]byte(viper.GetString("JWE_KEY")), nil)
+	//}
 	verifyMiddleware := verifier.Verify(func() interface{} {
 		return new(SshConnectionCredentials)
 	})

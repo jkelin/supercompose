@@ -37,8 +37,8 @@ type SshConnection struct {
 
 type CommandResult struct {
 	Cmd    string `json:"command"`
-	Stdout string `json:"stdout"`
-	Stderr string `json:"stderr"`
+	Stdout []byte `json:"stdout"`
+	Stderr []byte `json:"stderr"`
 	Code   int    `json:"code"`
 	Error  string `json:"error"`
 }
@@ -150,7 +150,7 @@ func ConnectToHost(ctx context.Context, args *SshConnectionCredentials) (*SshCon
 		span.RecordError(err)
 		return nil, err
 	}
-	conn.uid, err = strconv.Atoi(strings.TrimSpace(uidResult.Stdout))
+	conn.uid, err = strconv.Atoi(strings.TrimSpace(string(uidResult.Stdout)))
 	if err != nil {
 		span.RecordError(err)
 		return nil, err

@@ -1,0 +1,204 @@
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
+using System.Security.Claims;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using Renci.SshNet.Security;
+using SuperCompose.Exceptions;
+using SuperCompose.Util;
+
+namespace SuperCompose.Services
+{
+  public class ProxyClient
+  {
+    private readonly IHttpClientFactory clientFactory;
+    private readonly IConfiguration config;
+    private readonly IMemoryCache cache;
+    private readonly ILogger<ProxyClient> logger;
+
+    public ProxyClient(IHttpClientFactory clientFactory, IConfiguration config, IMemoryCache cache, ILogger<ProxyClient> logger)
+    {
+      this.clientFactory = clientFactory;
+      this.config = config;
+      this.cache = cache;
+      this.logger = logger;
+    }
+
+    private string MintJwtFromCredentials(ConnectionParams credentials)
+    {
+      try
+      {
+        var tokenHandler = new JwtSecurityTokenHandler();
+
+        var claims = new List<Claim>
+        {
+          new("host", $"{credentials.host}:{credentials.port}"),
+          new("username", credentials.username),
+        };
+
+        if (!string.IsNullOrEmpty(credentials.password))
+        {
+          claims.Add(new Claim("password", credentials.password));
+        }
+
+        if (!string.IsNullOrEmpty(credentials.privateKey))
+        {
+          claims.Add(new Claim("pkey", credentials.privateKey));
+        }
+
+        
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+          Subject = new ClaimsIdentity(claims),
+          Expires = DateTime.UtcNow + TimeSpan.FromHours(2),
+          SigningCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Proxy:JWT"])),
+            SecurityAlgorithms.HmacSha256Signature
+          ),
+          Audience = "proxy" 
+        };
+
+        return tokenHandler.CreateEncodedJwt(tokenDescriptor);
+      }
+      catch (Exception ex)
+      {
+        logger.LogCritical(ex, "Failed to mint JWT for proxy");
+        throw;
+      }
+    }
+
+    private async Task<HttpClient> ClientFor(ConnectionParams credentials)
+    {
+      var client = clientFactory.CreateClient("proxy");
+
+      var jwt = await cache.GetOrCreate(credentials, entry =>
+              {
+                  entry.SlidingExpiration = TimeSpan.FromHours(1);
+                  return Task.FromResult(MintJwtFromCredentials(entry.Key as ConnectionParams ?? throw new InvalidOperationException()));
+              });
+      
+      client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", jwt);
+
+      return client;
+    }
+
+    private async Task<HttpContent> Request(string path, object? body, HttpMethod method, ConnectionParams credentials, CancellationToken ct = default)
+    {
+      using var client = await ClientFor(credentials);
+
+      var request = new HttpRequestMessage();
+      if (body != null)
+      {
+        request.Content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8);
+      }
+
+      request.Method = method;
+      request.RequestUri = new Uri(path, UriKind.Relative);
+
+      var resp = await client.SendAsync(request, ct);
+
+      if (!resp.IsSuccessStatusCode)
+      {
+        var errorResponse = await resp.Content.ReadFromJsonAsync<ProxyClientErrorResponse>(cancellationToken: ct)
+                            ?? throw new InvalidOperationException("Could not read error response");
+
+        throw new ProxyClientException(errorResponse.Title)
+        {
+          ErrorResponse = errorResponse
+        };
+      }
+
+      return resp.Content;
+    }
+
+    private async Task<TResp> Get<TResp>(string path, ConnectionParams credentials, CancellationToken ct = default)
+    {
+      var resp = await Request(path, null, HttpMethod.Get, credentials, ct);
+      return await resp.ReadFromJsonAsync<TResp>(cancellationToken: ct) ?? throw new InvalidOperationException("Could not parse response from proxy call");
+    }
+
+    private async Task<TResp> Post<TResp>(string path, object body, ConnectionParams credentials, CancellationToken ct = default)
+    {
+      var resp = await Request(path, body, HttpMethod.Post, credentials, ct);
+      return await resp.ReadFromJsonAsync<TResp>(cancellationToken: ct) ?? throw new InvalidOperationException("Could not parse response from proxy call");
+    }
+
+    private async Task Post(string path, object? body, ConnectionParams credentials, CancellationToken ct = default)
+    {
+      var resp = await Request(path, body, HttpMethod.Post, credentials, ct);
+    }
+
+    public Task WriteFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = default)
+      => Post($"/files/write", new { path, contents, create_folder = createFolder }, credentials, ct);
+
+    public record FileResponse(byte[] Contents, DateTime ModTime, long Size);
+
+    public Task<FileResponse> ReadFile(ConnectionParams credentials, string path, CancellationToken ct = default)
+      => Get<FileResponse>($"/files/read?path={HttpUtility.UrlEncode(path)}", credentials, ct);
+
+    public record UpsertFileResponse(bool Updated);
+    
+    public Task<UpsertFileResponse> UpsertFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = default)
+      => Post<UpsertFileResponse>($"/files/upsert", new { path, contents, create_folder = createFolder}, credentials, ct);
+
+    public Task<UpsertFileResponse> UpsertFile(ConnectionParams credentials, string path, string contents, bool createFolder, CancellationToken ct = default)
+      => UpsertFile(credentials, path, Encoding.UTF8.GetBytes(contents), createFolder, ct);
+
+
+    public Task DeleteFile(ConnectionParams credentials, string path, CancellationToken ct = default)
+      => Post($"/files/delete?path={HttpUtility.UrlEncode(path)}", null, credentials, ct);
+
+    public record RunCommandResponse(string Command, byte[]? Stdout, byte[]? Stderr, int? Code, string? Error);
+
+    public Task<RunCommandResponse> RunCommand(ConnectionParams credentials, string command, CancellationToken ct = default)
+      => Get<RunCommandResponse>($"/command?command={HttpUtility.UrlEncode(command)}", credentials, ct);
+
+    public record SystemdGetServiceResponse(
+      string Title,
+      string Description,
+      string Path,
+      bool IsEnabled,
+      bool IsActive,
+      bool IsRunning,
+      bool IsFailed,
+      bool IsLoading,
+      string LoadState,
+      string ActiveState,
+      string SubState
+    );
+
+    public Task<SystemdGetServiceResponse> SystemdGetService(ConnectionParams credentials, string id, CancellationToken ct = default)
+      => Get<SystemdGetServiceResponse>($"/systemd/service?id={HttpUtility.UrlEncode(id)}", credentials, ct);
+
+    public Task SystemdStartService(ConnectionParams credentials, string id, CancellationToken ct = default)
+      => Post($"/systemd/service/start?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+
+    public Task SystemdStopService(ConnectionParams credentials, string id, CancellationToken ct = default)
+      => Post($"/systemd/service/stop?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+
+    public Task SystemdEnableService(ConnectionParams credentials, string id, CancellationToken ct = default)
+      => Post($"/systemd/service/enable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+
+    public Task SystemdDisableService(ConnectionParams credentials, string id, CancellationToken ct = default)
+      => Post($"/systemd/service/disable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+
+    public Task SystemdRestartService(ConnectionParams credentials, string id, CancellationToken ct = default)
+      => Post($"/systemd/service/restart?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+
+    public Task SystemdReload(ConnectionParams credentials, CancellationToken ct = default)
+      => Post($"/systemd/reload", null, credentials, ct);
+  }
+}

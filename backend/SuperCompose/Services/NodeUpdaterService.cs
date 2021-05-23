@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using SuperCompose.Exceptions;
 using Renci.SshNet.Common;
 using SuperCompose.Context;
@@ -33,6 +34,8 @@ namespace SuperCompose.Services
     private readonly ConnectionService connectionService;
     private readonly CryptoService cryptoService;
     private readonly ConnectionLogService connectionLog;
+    private readonly ProxyClient proxyClient;
+    private readonly IMemoryCache cache;
 
     public NodeUpdaterService(
       ILogger<NodeUpdaterService> logger,
@@ -40,7 +43,9 @@ namespace SuperCompose.Services
       IConnectionMultiplexer multiplexer,
       ConnectionService connectionService,
       CryptoService cryptoService,
-      ConnectionLogService connectionLog
+      ConnectionLogService connectionLog,
+      ProxyClient proxyClient,
+      IMemoryCache cache
     )
     {
       this.logger = logger;
@@ -49,6 +54,8 @@ namespace SuperCompose.Services
       this.connectionService = connectionService;
       this.cryptoService = cryptoService;
       this.connectionLog = connectionLog;
+      this.proxyClient = proxyClient;
+      this.cache = cache;
     }
 
     public async Task NotifyAboutNodeChange(Guid nodeId)
@@ -114,15 +121,19 @@ namespace SuperCompose.Services
           var deployments = node.Deployments.Where(ShouldUpdateDeployment).ToList();
           if (!deployments.Any()) return;
 
-          using var ssh = await OpenSsh(node, ct);
+          // using var ssh = await OpenSsh(node, ct);
+
+          var connectionParams = await GetCredentials(node);
+
 
           if (deployments.Any(x => x.LastDeployedNodeVersion != node.Version))
-            if (!await VerifyNode(node, ssh, ct))
+            if (!await VerifyNode(connectionParams, ct))
               return;
 
-          using var sftp = await OpenSftp(node, ct);
+          // using var sftp = await OpenSftp(node, ct);
 
-          foreach (var deployment in deployments) await ApplyDeployment(deployment, ssh, sftp, ct);
+
+          foreach (var deployment in deployments) await ApplyDeployment(connectionParams, deployment, ct);
         }
       }
       catch (TaskCanceledException)
@@ -157,11 +168,9 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task<SshClient> OpenSsh(Node node, CancellationToken ct)
+    private async Task<ConnectionParams> GetCredentials(Node node)
     {
-      logger.LogDebug("Pending changes detected, opening ssh connection");
-
-      var connectionParams = new ConnectionParams
+      return new ConnectionParams
       (
         node.Host,
         node.Username,
@@ -169,69 +178,57 @@ namespace SuperCompose.Services
         node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
         node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
       );
-
-      connectionLog.Info($"Connecting SSH to {node.Username}@{node.Host}:{node.Port}");
-      var ssh = await connectionService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
-
-      ct.ThrowIfCancellationRequested();
-
-      return ssh;
     }
 
-    private async Task<SftpClient> OpenSftp(Node node, CancellationToken ct)
-    {
-      logger.LogDebug("Pending changes detected, opening sftp connection");
+    // private async Task<SshClient> OpenSsh(Node node, CancellationToken ct)
+    // {
+    //   logger.LogDebug("Pending changes detected, opening ssh connection");
+    //
+    //   var connectionParams = await GetCredentials(node);
+    //
+    //   connectionLog.Info($"Connecting SSH to {node.Username}@{node.Host}:{node.Port}");
+    //   var ssh = await connectionService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+    //
+    //   ct.ThrowIfCancellationRequested();
+    //
+    //   return ssh;
+    // }
+    //
+    // private async Task<SftpClient> OpenSftp(Node node, CancellationToken ct)
+    // {
+    //   logger.LogDebug("Pending changes detected, opening sftp connection");
+    //
+    //   var connectionParams = await GetCredentials(node);
+    //
+    //   connectionLog.Info($"Connecting SFTP to {node.Username}@{node.Host}:{node.Port}");
+    //   var sftp = await connectionService.CreateSftpConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+    //
+    //   ct.ThrowIfCancellationRequested();
+    //
+    //   return sftp;
+    // }
 
-      var connectionParams = new ConnectionParams
-      (
-        node.Host,
-        node.Username,
-        node.Port,
-        node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
-        node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
-      );
-
-      connectionLog.Info($"Connecting SFTP to {node.Username}@{node.Host}:{node.Port}");
-      var sftp = await connectionService.CreateSftpConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
-
-      ct.ThrowIfCancellationRequested();
-
-      return sftp;
-    }
-
-    private async Task<(string result, string error, int status)> RunCommand(SshClient ssh, string command,
-      CancellationToken ct)
-    {
-      connectionLog.Info($"Running command: {command}");
-
-      var result = await connectionService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
-
-      if (result.code != 0) connectionLog.Info($"Command failed with status: {result.code}");
-
-      return result;
-    }
-
-    private async Task<bool> VerifyNode(Node node, SshClient ssh, CancellationToken ct)
+    private async Task<bool> VerifyNode(ConnectionParams credentials, CancellationToken ct)
     {
       connectionLog.Info("Verifying node");
 
-      var systemctlVersion = await RunCommand(ssh, "systemctl --version", ct);
-      if (systemctlVersion.status != 0)
+      var systemctlVersion = await proxyClient.RunCommand(credentials, "systemctl --version", ct);
+      if (systemctlVersion.Code != 0)
       {
         logger.LogDebug("systemd unavailable");
         throw new NodeReconciliationFailedException("systemd unavailable, stopping node configuration");
       }
 
-      var dockerVersion = await RunCommand(ssh, "docker --version", ct);
-      if (dockerVersion.status != 0)
+      var dockerVersion = await proxyClient.RunCommand(credentials, "docker --version", ct);
+      if (dockerVersion.Code != 0)
       {
         logger.LogDebug("docker unavailable");
         connectionLog.Error("docker unavailable, stopping node configuration");
         throw new NodeReconciliationFailedException("docker unavailable, stopping node configuration");
       }
 
-      var dockerComposeVersion = await RunCommand(ssh, "docker-compose --version", ct);
-      if (dockerComposeVersion.status != 0)
+      var dockerComposeVersion = await proxyClient.RunCommand(credentials, "docker-compose --version", ct);
+      if (dockerComposeVersion.Code != 0)
       {
         logger.LogDebug("docker-compose unavailable");
         connectionLog.Error("docker-compose unavailable, stopping node configuration");
@@ -242,29 +239,29 @@ namespace SuperCompose.Services
     }
 
 
-    private async Task UpdateFile(SftpClient sftp, string path, string contents, CancellationToken ct)
-    {
-      connectionLog.Info($"Reading file {path}");
-      var targetBytes = Encoding.UTF8.GetBytes(contents.Replace("\r\n", "\n"));
+    // private async Task UpdateFile(SftpClient sftp, string path, string contents, CancellationToken ct)
+    // {
+    //   connectionLog.Info($"Reading file {path}");
+    //   var targetBytes = Encoding.UTF8.GetBytes(contents.Replace("\r\n", "\n"));
+    //
+    //   var shouldWrite = true;
+    //   try
+    //   {
+    //     var current = await connectionService.ReadFile(sftp, path, ct);
+    //     shouldWrite = !current.SequenceEqual(targetBytes);
+    //   }
+    //   catch (SftpPathNotFoundException)
+    //   {
+    //   }
+    //
+    //   if (shouldWrite)
+    //   {
+    //     connectionLog.Info($"File outdated, updating {path}");
+    //     await connectionService.WriteFile(sftp, path, targetBytes);
+    //   }
+    // }
 
-      var shouldWrite = true;
-      try
-      {
-        var current = await connectionService.ReadFile(sftp, path, ct);
-        shouldWrite = !current.SequenceEqual(targetBytes);
-      }
-      catch (SftpPathNotFoundException)
-      {
-      }
-
-      if (shouldWrite)
-      {
-        connectionLog.Info($"File outdated, updating {path}");
-        await connectionService.WriteFile(sftp, path, targetBytes);
-      }
-    }
-
-    private async Task ApplyDeployment(Deployment deployment, SshClient ssh, SftpClient sftp, CancellationToken ct)
+    private async Task ApplyDeployment(ConnectionParams credentials, Deployment deployment, CancellationToken ct)
     {
       // TODO cleanup current version
       using var _ = connectionLog.BeginScope(tenantId: deployment.TenantId, deploymentId: deployment.Id);
@@ -273,9 +270,9 @@ namespace SuperCompose.Services
       {
         var (target, last) = CalculateDeploymentState(deployment);
 
-        await EnsureComposeAndServiceDeployment(deployment, ssh, sftp, ct);
-        await EnsureServiceInCorrectState(deployment, ssh, ct);
-        await EnsureRestarted(deployment, ssh, ct);
+        await EnsureComposeAndServiceDeployment(credentials, deployment, ct);
+        await EnsureServiceInCorrectState(credentials, deployment, ct);
+        await EnsureRestarted(credentials, deployment, ct);
 
         deployment.LastDeployedComposeVersionId = deployment.Compose.CurrentId;
         deployment.LastDeployedNodeVersion = deployment.Node.Version;
@@ -312,60 +309,53 @@ namespace SuperCompose.Services
       );
     }
 
-    private async Task EnsureComposeAndServiceDeployment(Deployment deployment, SshClient ssh, SftpClient sftp,
-      CancellationToken ct)
+    private async Task EnsureComposeAndServiceDeployment(ConnectionParams credentials, Deployment deployment, CancellationToken ct)
     {
       var targetCompose = deployment.Compose.Current;
 
       var (target, last) = CalculateDeploymentState(deployment);
+      await proxyClient.UpsertFile(credentials, targetCompose.ComposePath, targetCompose.Content, true, ct);
 
-      await EnsureDockerCompose(deployment, sftp, targetCompose, ct);
+      // await EnsureDockerCompose(deployment, sftp, targetCompose, ct);
 
-      if (target.UseService) await EnsureSystemdService(deployment, ssh, sftp, targetCompose, ct);
+      if (target.UseService) await EnsureSystemdService(credentials, deployment, targetCompose, ct);
     }
 
-    private async Task EnsureDockerCompose(Deployment deployment, SftpClient sftp,
-      ComposeVersion targetCompose, CancellationToken ct)
+    // private async Task EnsureDockerCompose(Deployment deployment, SftpClient sftp,
+    //   ComposeVersion targetCompose, CancellationToken ct)
+    // {
+    //   try
+    //   {
+    //     connectionLog.Info($"Ensuring directory exists {targetCompose.Directory}");
+    //     await connectionService.EnsureDirectoryExists(sftp, targetCompose.Directory, ct);
+    //     ct.ThrowIfCancellationRequested();
+    //   }
+    //   catch (SftpPermissionDeniedException ex)
+    //   {
+    //     throw new DeploymentReconciliationFailedException("Docker compose folder creation failed", ex);
+    //   }
+    //
+    //
+    //   try
+    //   {
+    //     connectionLog.Info($"Updating docker-compose.yml");
+    //     await UpdateFile(sftp, targetCompose.ComposePath, targetCompose.Content, ct);
+    //   }
+    //   catch (SftpPermissionDeniedException ex)
+    //   {
+    //     throw new DeploymentReconciliationFailedException(
+    //       "Docker-compose.yml synchronization failed due to permission error", ex);
+    //   }
+    // }
+
+    private async Task EnsureSystemdService(ConnectionParams credentials, Deployment deployment, ComposeVersion targetCompose, CancellationToken ct)
     {
       try
       {
-        connectionLog.Info($"Ensuring directory exists {targetCompose.Directory}");
-        await connectionService.EnsureDirectoryExists(sftp, targetCompose.Directory, ct);
-        ct.ThrowIfCancellationRequested();
-      }
-      catch (SftpPermissionDeniedException ex)
-      {
-        throw new DeploymentReconciliationFailedException("Docker compose folder creation failed", ex);
-      }
-
-
-      try
-      {
-        connectionLog.Info($"Updating docker-compose.yml");
-        await UpdateFile(sftp, targetCompose.ComposePath, targetCompose.Content, ct);
-      }
-      catch (SftpPermissionDeniedException ex)
-      {
-        throw new DeploymentReconciliationFailedException(
-          "Docker-compose.yml synchronization failed due to permission error", ex);
-      }
-    }
-
-    private async Task EnsureSystemdService(Deployment deployment, SshClient ssh, SftpClient sftp,
-      ComposeVersion targetCompose, CancellationToken ct)
-    {
-      try
-      {
-        var serviceFile = await GenerateSystemdServiceFile(deployment, ssh, ct);
+        var serviceFile = await GenerateSystemdServiceFile(credentials, deployment, ct);
         connectionLog.Info($"Updating systemd service");
-        await UpdateFile(sftp, targetCompose.ServicePath, serviceFile, ct);
-        ct.ThrowIfCancellationRequested();
-
-        var reloadResult = await RunCommand(ssh, "systemctl daemon-reload", ct);
-
-        if (reloadResult.status != 0)
-          throw new DeploymentReconciliationFailedException(
-            $"Systemd service reload failed with code  {reloadResult.status}");
+        await proxyClient.UpsertFile(credentials, targetCompose.ServicePath, Encoding.UTF8.GetBytes(serviceFile), false, ct);
+        await proxyClient.SystemdReload(credentials, ct);
       }
       catch (SftpPermissionDeniedException ex)
       {
@@ -374,7 +364,7 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task EnsureServiceInCorrectState(Deployment deployment, SshClient ssh, CancellationToken ct)
+    private async Task EnsureServiceInCorrectState(ConnectionParams credentials, Deployment deployment, CancellationToken ct)
     {
       var lastCompose = deployment.LastDeployedComposeVersion;
       var targetCompose = deployment.Compose.Current;
@@ -386,9 +376,13 @@ namespace SuperCompose.Services
         if (target.DeploymentEnabled)
         {
           if (target.UseService)
-            await StartSystemdService(deployment, targetCompose, ssh, ct);
+          {
+            await proxyClient.SystemdStartService(credentials, targetCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdEnableService(credentials, targetCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdReload(credentials, ct);
+          }
           else
-            await StartDockerCompose(deployment, targetCompose, ssh, ct);
+            await StartDockerCompose(credentials, targetCompose, ct);
         }
       }
       else
@@ -397,121 +391,96 @@ namespace SuperCompose.Services
         if (last.DeploymentEnabled && last.UseService != target.UseService)
         {
           if (last.UseService)
-            await StopSystemdService(deployment, lastCompose, ssh, ct);
+          {
+            await proxyClient.SystemdStopService(credentials, lastCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdDisableService(credentials, lastCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdReload(credentials, ct);
+          }
           else
-            await StopDockerCompose(deployment, targetCompose, ssh, ct);
+            await StopDockerCompose(credentials, targetCompose, ct);
         }
 
         if (target.DeploymentEnabled)
         {
           // We don't have to worry about the old state at this point. Only redeploy if there are changes.
-          if (target.UseService) await StartSystemdService(deployment, targetCompose, ssh, ct);
-          else await StartDockerCompose(deployment, targetCompose, ssh, ct);
+          if (target.UseService)
+          {
+            await proxyClient.SystemdStartService(credentials, targetCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdEnableService(credentials, targetCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdReload(credentials, ct);
+          }
+          else await StartDockerCompose(credentials, targetCompose, ct);
         }
         else
         {
-          if (target.UseService) await StopSystemdService(deployment, targetCompose, ssh, ct);
-          else await StopDockerCompose(deployment, targetCompose, ssh, ct);
+          if (target.UseService)
+          {
+            await proxyClient.SystemdStopService(credentials, targetCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdDisableService(credentials, targetCompose.ServiceName + ".service", ct);
+            await proxyClient.SystemdReload(credentials, ct);
+          }
+          else await StopDockerCompose(credentials, targetCompose, ct);
         }
       }
     }
 
-    private async Task EnsureRestarted(Deployment deployment, SshClient ssh, CancellationToken ct)
+    private async Task EnsureRestarted(ConnectionParams credentials, Deployment deployment, CancellationToken ct)
     {
       if (RedeployRequested(deployment))
       {
         var (target, last) = CalculateDeploymentState(deployment);
 
         if (target.UseService)
-          await RestartSystemdService(deployment, deployment.Compose.Current, ssh, ct);
+          await proxyClient.SystemdRestartService(credentials, deployment.Compose!.Current.ServiceName + ".service", ct);
         else
-          await RestartDockerCompose(deployment, deployment.Compose.Current, ssh, ct);
+          await RestartDockerCompose(credentials, deployment.Compose.Current, ct);
       }
     }
 
-    private async Task RestartSystemdService(Deployment deployment, ComposeVersion compose, SshClient ssh,
-      CancellationToken ct)
+    private record DockerComposeCredentials(ConnectionParams Credentials);
+
+    private async Task<string> GetDockerComposePath(ConnectionParams credentials, CancellationToken ct = default)
     {
-      var serviceStartResult =
-        await RunCommand(ssh, $"systemctl restart {compose.ServiceName}", ct);
-
-      if (serviceStartResult.status != 0)
-        throw new DeploymentReconciliationFailedException("Systemd service failed to restart");
-    }
-
-    private async Task RestartDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
-      CancellationToken ct)
-    {
-      var startCommand =
-        await RunCommand(ssh, $"/usr/local/bin/docker-compose --file '{compose.ComposePath}' restart", ct);
-
-      if (startCommand.status != 0)
-        throw new DeploymentReconciliationFailedException($"Docker-compose failed to restart");
-    }
-
-    private async Task StopSystemdService(Deployment deployment, ComposeVersion compose, SshClient ssh,
-      CancellationToken ct)
-    {
-      var serviceStartResult =
-        await RunCommand(ssh, $"systemctl stop {compose.ServiceName}", ct);
-
-      if (serviceStartResult.status != 0)
-        throw new DeploymentReconciliationFailedException("Systemd service failed to stop");
-
-      var serviceEnableResult =
-        await RunCommand(ssh, $"systemctl disable {compose.ServiceName}", ct);
-
-      if (serviceEnableResult.status != 0)
-        throw new DeploymentReconciliationFailedException("Systemd service failed to be disabled");
-    }
-
-    private async Task StartSystemdService(Deployment deployment, ComposeVersion compose, SshClient ssh,
-      CancellationToken ct)
-    {
-      var serviceStartResult =
-        await RunCommand(ssh, $"systemctl start {compose.ServiceName}", ct);
-
-      if (serviceStartResult.status != 0)
-        throw new DeploymentReconciliationFailedException("Systemd service failed to start");
-
-      var serviceEnableResult =
-        await RunCommand(ssh, $"systemctl enable {compose.ServiceName}", ct);
-
-      if (serviceEnableResult.status != 0)
-        throw new DeploymentReconciliationFailedException("Systemd service failed to be enabled");
-    }
-
-    private async Task StopDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
-      CancellationToken ct)
-    {
-      var startCommand =
-        await RunCommand(ssh, $"/usr/local/bin/docker-compose --file '{compose.ComposePath}' down", ct);
-
-      if (startCommand.status != 0)
-        throw new DeploymentReconciliationFailedException($"Docker-compose failed to stop");
-    }
-
-    private async Task StartDockerCompose(Deployment deployment, ComposeVersion compose, SshClient ssh,
-      CancellationToken ct)
-    {
-      var startCommand =
-        await RunCommand(ssh, $"/usr/local/bin/docker-compose --file '{compose.ComposePath}' up -d --remove-orphans",
-          ct);
-
-      if (startCommand.status != 0)
-        throw new DeploymentReconciliationFailedException("Docker-compose failed to start");
-    }
-
-    private async Task<string> GenerateSystemdServiceFile(Deployment deployment, SshClient ssh, CancellationToken ct)
-    {
-      var whichDockerCompose = await RunCommand(ssh, "which docker-compose", ct);
-      if (whichDockerCompose.status != 0)
+      return await cache.GetOrCreateAsync(new DockerComposeCredentials(credentials), async entry =>
       {
-        connectionLog.Error("Could not resolve docker-compose location which is needed for systemd service");
-        throw new NodeReconciliationFailedException("Could not resolve docker-compose location");
-      }
+        entry.SlidingExpiration = TimeSpan.FromHours(1);
+        var cred = entry.Key as DockerComposeCredentials ?? throw new InvalidOperationException();
 
-      var dockerComposeLocation = whichDockerCompose.result.Trim();
+
+        var result = await proxyClient.RunCommand(cred.Credentials, "which docker-compose", ct);
+
+        if (string.IsNullOrEmpty(result.Error) && result.Code == 0 && result.Stdout != null)
+        {
+          return Encoding.UTF8.GetString(result.Stdout).Trim();
+        }
+        else
+        {
+          throw new DeploymentReconciliationFailedException("Unable to find docker-compose");
+        }
+      });
+    }
+    
+    private async Task RestartDockerCompose(ConnectionParams credentials, ComposeVersion compose, CancellationToken ct)
+    {
+      var composePath = await GetDockerComposePath(credentials, ct);
+      await proxyClient.RunCommand(credentials, $"{composePath} --file '{compose.ComposePath}' restart", ct);
+    }
+
+    private async Task StopDockerCompose(ConnectionParams credentials,ComposeVersion compose, CancellationToken ct)
+    {
+      var composePath = await GetDockerComposePath(credentials, ct);
+      await proxyClient.RunCommand(credentials, $"{composePath} --file '{compose.ComposePath}' down", ct);
+    }
+
+    private async Task StartDockerCompose(ConnectionParams credentials, ComposeVersion compose, CancellationToken ct)
+    {
+      var composePath = await GetDockerComposePath(credentials, ct);
+      await proxyClient.RunCommand(credentials, $"{composePath} --file '{compose.ComposePath}'  up -d --remove-orphans", ct);
+    }
+
+    private async Task<string> GenerateSystemdServiceFile(ConnectionParams credentials, Deployment deployment, CancellationToken ct)
+    {
+      var composePath = await GetDockerComposePath(credentials, ct);
 
       return $@"
 [Unit]
@@ -525,8 +494,8 @@ RemainAfterExit=true
 Environment=""COMPOSE_PROJECT_NAME={deployment.Compose.Current.ServiceName}""
 Environment=""COMPOSE_FILE={deployment.Compose.Current.Directory}/docker-compose.yml""
 WorkingDirectory={deployment.Compose.Current.Directory}
-ExecStart={dockerComposeLocation} --project-directory ""{deployment.Compose.Current.Directory}"" --project-name ""{deployment.Compose.Current.ServiceName}"" up -d --remove-orphans
-ExecStop={dockerComposeLocation} down
+ExecStart={composePath} --project-directory ""{deployment.Compose.Current.Directory}"" --project-name ""{deployment.Compose.Current.ServiceName}"" up -d --remove-orphans
+ExecStop={composePath} down
 
 [Install]
 WantedBy=multi-user.target".Trim().Replace("\r\n", "\n");
