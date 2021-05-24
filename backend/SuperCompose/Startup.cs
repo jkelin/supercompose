@@ -40,6 +40,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using SuperCompose.Auth;
@@ -206,9 +207,13 @@ namespace SuperCompose
       services.AddOpenTelemetryTracing((builder) =>
       {
         builder.AddSource(Extensions.SuperComposeActivitySource.Name);
+
+        builder.SetResourceBuilder(ResourceBuilder
+          .CreateDefault()
+          .AddService(env.ApplicationName));
         
-        builder.AddAspNetCoreInstrumentation();
-        builder.AddHttpClientInstrumentation();
+        builder.AddAspNetCoreInstrumentation(opts => opts.RecordException = true);
+        builder.AddHttpClientInstrumentation(opts => opts.RecordException = true);
         if (Uri.TryCreate(configuration.GetConnectionString("Jaeger"), UriKind.Absolute, out var uri))
         {
           builder.AddJaegerExporter(opts =>

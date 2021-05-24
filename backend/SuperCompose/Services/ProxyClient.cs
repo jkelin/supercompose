@@ -141,59 +141,62 @@ namespace SuperCompose.Services
 
     private async Task Post(string path, object? body, ConnectionParams credentials, CancellationToken ct = default)
     {
-      var resp = await Request(path, body, HttpMethod.Post, credentials, ct);
+      await Request(path, body, HttpMethod.Post, credentials, ct);
     }
 
-    public Task WriteFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = default)
+    public async Task WriteFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.WriteFile");
       activity?.AddTag("proxy.path", path);
       activity?.AddTag("proxy.create_folder", createFolder);
       
-      return Post($"/files/write", new {path, contents, create_folder = createFolder}, credentials, ct);
+      await Post($"/files/write", new {path, contents, create_folder = createFolder}, credentials, ct);
     } 
 
     public record FileResponse(byte[] Contents, DateTime ModTime, long Size);
 
-    public Task<FileResponse> ReadFile(ConnectionParams credentials, string path, CancellationToken ct = default)
+    public async Task<FileResponse> ReadFile(ConnectionParams credentials, string path, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.ReadFile");
       activity?.AddTag("proxy.path", path);
       
-      return Get<FileResponse>($"/files/read?path={HttpUtility.UrlEncode(path)}", credentials, ct);
+      return await Get<FileResponse>($"/files/read?path={HttpUtility.UrlEncode(path)}", credentials, ct);
     }
 
     public record UpsertFileResponse(bool Updated);
     
-    public Task<UpsertFileResponse> UpsertFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = default)
+    public async Task<UpsertFileResponse> UpsertFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = 
+    default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.UpsertFile");
       activity?.AddTag("proxy.path", path);
       activity?.AddTag("proxy.create_folder", createFolder);
       
-      return Post<UpsertFileResponse>($"/files/upsert", new {path, contents, create_folder = createFolder}, credentials, ct);
+      return await Post<UpsertFileResponse>($"/files/upsert", new {path, contents, create_folder = createFolder}, credentials, ct);
     }
 
     public Task<UpsertFileResponse> UpsertFile(ConnectionParams credentials, string path, string contents, bool createFolder, CancellationToken ct = default)
       => UpsertFile(credentials, path, Encoding.UTF8.GetBytes(contents), createFolder, ct);
 
 
-    public Task DeleteFile(ConnectionParams credentials, string path, CancellationToken ct = default)
+    public async Task<bool> DeleteFile(ConnectionParams credentials, string path, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.DeleteFile");
       activity?.AddTag("proxy.path", path);
       
-      return Post($"/files/delete?path={HttpUtility.UrlEncode(path)}", null, credentials, ct);
+      await Post($"/files/delete?path={HttpUtility.UrlEncode(path)}", null, credentials, ct);
+
+      return false; // TODO
     }
 
     public record RunCommandResponse(string Command, byte[]? Stdout, byte[]? Stderr, int? Code, string? Error);
 
-    public Task<RunCommandResponse> RunCommand(ConnectionParams credentials, string command, CancellationToken ct = default)
+    public async Task<RunCommandResponse> RunCommand(ConnectionParams credentials, string command, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.RunCommand");
       activity?.AddTag("proxy.path", command);
       
-      return Get<RunCommandResponse>($"/command?command={HttpUtility.UrlEncode(command)}", credentials, ct);
+      return await Get<RunCommandResponse>($"/command?command={HttpUtility.UrlEncode(command)}", credentials, ct);
     }
 
     public record SystemdGetServiceResponse(
@@ -210,59 +213,59 @@ namespace SuperCompose.Services
       string SubState
     );
 
-    public Task<SystemdGetServiceResponse> SystemdGetService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task<SystemdGetServiceResponse> SystemdGetService(ConnectionParams credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdGetService");
       activity?.AddTag("proxy.id", id);
       
-      return Get<SystemdGetServiceResponse>($"/systemd/service?id={HttpUtility.UrlEncode(id)}", credentials, ct);
+      return await Get<SystemdGetServiceResponse>($"/systemd/service?id={HttpUtility.UrlEncode(id)}", credentials, ct);
     }
 
-    public Task SystemdStartService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdStartService(ConnectionParams credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdStartService");
       activity?.AddTag("proxy.id", id);
       
-      return Post($"/systemd/service/start?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+      await Post($"/systemd/service/start?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public Task SystemdStopService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdStopService(ConnectionParams credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdStopService");
       activity?.AddTag("proxy.id", id);
       
-      return Post($"/systemd/service/stop?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+      await Post($"/systemd/service/stop?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public Task SystemdEnableService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdEnableService(ConnectionParams credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdEnableService");
       activity?.AddTag("proxy.id", id);
       
-      return Post($"/systemd/service/enable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+      await Post($"/systemd/service/enable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public Task SystemdDisableService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdDisableService(ConnectionParams credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdDisableService");
       activity?.AddTag("proxy.id", id);
-      
-      return Post($"/systemd/service/disable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+
+      await Post($"/systemd/service/disable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public Task SystemdRestartService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdRestartService(ConnectionParams credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdRestartService");
       activity?.AddTag("proxy.id", id);
       
-      return Post($"/systemd/service/restart?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
+      await Post($"/systemd/service/restart?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public Task SystemdReload(ConnectionParams credentials, CancellationToken ct = default)
+    public async Task SystemdReload(ConnectionParams credentials, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdReload");
       
-      return Post($"/systemd/reload", null, credentials, ct);
+      await Post($"/systemd/reload", null, credentials, ct);
     }
   }
 }

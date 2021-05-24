@@ -27,6 +27,7 @@ services:
       - ConnectionStrings__SupercomposeContext
       - ConnectionStrings__KeysContext
       - ConnectionStrings__Redis
+      - ConnectionStrings__Jaeger=udp://jaeger:6831
       - Proxy__Url=http://proxy:8080
       - Proxy__JWT
       - Proxy__JWE
