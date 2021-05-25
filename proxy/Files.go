@@ -20,7 +20,7 @@ import (
 
 type FileInfo struct {
 	Contents []byte `json:"contents"`
-	ModTime  string `json:"mod_time"`
+	ModTime  string `json:"modTime"`
 	Size     int64  `json:"size"`
 }
 
@@ -210,6 +210,37 @@ func (conn *SshConnection) upsertFile(ctx context.Context, filePath string, crea
 	return write, nil
 }
 
+func (conn *SshConnection) deleteFile(ctx context.Context, filePath string) (bool, error) {
+	_, span := sshTracer.Start(ctx, fmt.Sprintf("Delete file %s", filePath))
+	defer span.End()
+
+	log.Printf("Deleting file at %s", filePath)
+
+	span.AddEvent("Reading file stats")
+	stat, err := conn.sftpClient.Stat(filePath)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			span.AddEvent("Path does not exist")
+
+			return false, nil
+		}
+
+		span.RecordError(err)
+		return false, fmt.Errorf("error reading file metadata: %w", err)
+	}
+
+	if stat.IsDir() {
+		span.RecordError(fmt.Errorf("cannot delete a directory"))
+		return false, fmt.Errorf("cannot delete a directory")
+	}
+
+	if err := conn.sftpClient.Remove(filePath); err != nil {
+		return false, fmt.Errorf("error reading file metadata: %w", err)
+	}
+
+	return true, nil
+}
+
 func writeFileRoute(app *iris.Application) {
 	type FileWriteRequest struct {
 		Contents     []byte `json:"contents" validate:"required"`
@@ -329,6 +360,10 @@ func upsertFileRoute(app *iris.Application) {
 }
 
 func deleteFileRoute(app *iris.Application) {
+	type FileDeleteResponse struct {
+		Deleted bool `json:"deleted"`
+	}
+
 	app.Post("/files/delete", func(ctx iris.Context) {
 		handle, err := GetConnection(ctx.Request().Context(), jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
@@ -341,6 +376,7 @@ func deleteFileRoute(app *iris.Application) {
 		defer handle.Close()
 
 		log.Printf("Deleting file at %s", ctx.URLParam("path"))
+		deleted, err := handle.conn.deleteFile(ctx.Request().Context(), ctx.URLParam("path"))
 		if err := handle.conn.sftpClient.Remove(ctx.URLParam("path")); err != nil && !errors.Is(err, os.ErrNotExist) {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Could not delete file").
@@ -348,5 +384,9 @@ func deleteFileRoute(app *iris.Application) {
 				DetailErr(err))
 			return
 		}
+
+		ctx.JSON(FileDeleteResponse{
+			Deleted: deleted,
+		})
 	}).SetName("File delete")
 }

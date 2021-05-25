@@ -74,14 +74,14 @@ type SystemdService struct {
 	Id          string `json:"title"`
 	Description string `json:"description"`
 	Path        string `json:"path"`
-	IsEnabled   bool   `json:"is_enabled"`
-	IsActive    bool   `json:"is_active"`
-	IsRunning   bool   `json:"is_running"`
-	IsFailed    bool   `json:"is_failed"`
-	IsLoading   bool   `json:"is_loading"`
-	LoadState   string `json:"load_state"`   // loaded, error, masked
-	ActiveState string `json:"active_state"` // active, reloading, inactive, failed, activating, deactivating. active
-	SubState    string `json:"sub_state"`
+	IsEnabled   bool   `json:"isEnabled"`
+	IsActive    bool   `json:"isActive"`
+	IsRunning   bool   `json:"isRunning"`
+	IsFailed    bool   `json:"isFailed"`
+	IsLoading   bool   `json:"isLoading"`
+	LoadState   string `json:"loadState"`   // loaded, error, masked
+	ActiveState string `json:"activeState"` // active, reloading, inactive, failed, activating, deactivating. active
+	SubState    string `json:"subState"`
 }
 
 func (handle *SystemdHandle) SystemdGetService(name string) (*SystemdService, error) {
@@ -232,7 +232,7 @@ func SystemdEnableServiceRoute(app *iris.Application) {
 		log.Printf("Enabling service %s", ctx.URLParam("id"))
 		units := make([]string, 1)
 		units[0] = ctx.URLParam("id")
-		_, _, err := systemd.systemdConn.EnableUnitFiles(units, false, true)
+		_, _, err := systemd.systemdConn.EnableUnitFiles(units, false, false)
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Enabling systemd service failed").
@@ -272,19 +272,45 @@ func SystemdDisableServiceRoute(app *iris.Application) {
 
 func SystemdReloadRoute(app *iris.Application) {
 	app.Post("/systemd/reload", func(ctx iris.Context) {
-		handle, systemd, problem := acquireSystemd(ctx)
-		if problem != nil {
-			ctx.StopWithProblem(iris.StatusBadRequest, problem)
+		//handle, systemd, problem := acquireSystemd(ctx)
+		//if problem != nil {
+		//	ctx.StopWithProblem(iris.StatusBadRequest, problem)
+		//	return
+		//}
+		//defer handle.Close()
+
+		handle, err := GetConnection(ctx.Request().Context(), jwt.Get(ctx).(*SshConnectionCredentials))
+		if err != nil {
+			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+				Title("Connection to target host failed").
+				Type("connection_err").
+				DetailErr(err))
 			return
 		}
 		defer handle.Close()
 
 		log.Printf("Reloading systemd")
-		if err := systemd.systemdConn.Reload(); err != nil {
+		//if err := systemd.systemdConn.Reload(); err != nil {
+		//	ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+		//		Title("Reloading systemd services failed").
+		//		Type("systemd_reload").
+		//		DetailErr(err))
+		//	return
+		//}
+
+		// Reloading via command is four times faster for me for whatever reason
+		res, err := handle.conn.RunCommand(ctx.Request().Context(), "systemctl daemon-reload")
+		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
 				Title("Reloading systemd services failed").
 				Type("systemd_reload").
 				DetailErr(err))
+			return
+		} else if res.Code != 0 {
+			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+				Title("Reloading systemd services failed").
+				Type("systemd_reload").
+				DetailErr(fmt.Errorf("%s", string(res.Stderr))))
 			return
 		}
 

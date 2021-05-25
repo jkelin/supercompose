@@ -21,5 +21,10 @@ namespace SuperCompose.Util
     {
       return claims.FindAll("tenant").Select(x => Guid.Parse(x.Value)).ToArray();
     }
+
+    public const string ActivityTenantIdName = "supercompose.tenantid";
+    public const string ActivityComposeIdName = "supercompose.composeid";
+    public const string ActivityNodeIdName = "supercompose.nodeid";
+    public const string ActivityDeploymentIdName = "supercompose.deploymentid";
   }
 }

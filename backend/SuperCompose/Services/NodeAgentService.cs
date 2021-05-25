@@ -45,13 +45,20 @@ namespace SuperCompose.Services
 
     public async Task RunNodeAgent(Guid nodeId, CancellationToken ct = default)
     {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("RunNodeAgent");
+
+      activity?.AddTag(Extensions.ActivityNodeIdName, nodeId.ToString());
+      activity?.AddBaggage(Extensions.ActivityNodeIdName, nodeId.ToString());
+      
       var tenantId = await ctx.Nodes
         .Where(x => x.Id == nodeId)
         .Select(x => x.TenantId)
         .FirstOrDefaultAsync(ct);
-      
-      using var _ = connectionLog.BeginScope(tenantId, nodeId: nodeId);
-      using var _2 = logger.BeginScope(new {nodeId});
+
+      activity?.AddTag(Extensions.ActivityTenantIdName, tenantId.ToString());
+      activity?.AddBaggage(Extensions.ActivityTenantIdName, tenantId.ToString());
+
+      using var _ = logger.BeginScope(new {nodeId});
 
       try
       {
@@ -101,6 +108,8 @@ namespace SuperCompose.Services
 
     private async Task<SshClient> OpenSsh(Node node, CancellationToken ct)
     {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("OpenSsh");
+      
       logger.LogDebug("Pending changes detected, opening ssh connection");
 
       var connectionParams = new ConnectionParams
@@ -124,6 +133,8 @@ namespace SuperCompose.Services
       SshClient ssh,
       [EnumeratorCancellation] CancellationToken ct = default)
     {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ListenForEvents");
+      
       var args = new[]
       {
         "--filter='label=com.docker.compose.project'",
@@ -177,6 +188,8 @@ namespace SuperCompose.Services
 
     private async Task ReloadContainersFor(IQueryable<Deployment> query, SshClient ssh, CancellationToken ct = default)
     {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ReloadContainersFor");
+      
       var deployments = await query.Include(x => x.LastDeployedComposeVersion)
         .Include(x => x.Compose)
         .Include(x => x.Containers)
@@ -225,6 +238,11 @@ namespace SuperCompose.Services
       IEnumerable<ContainerInspectResponse> deploymentInspects,
       Deployment deployment, CancellationToken ct)
     {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("UpdateContainersForDeployment");
+      
+      activity?.AddTag(Extensions.ActivityDeploymentIdName, deployment.Id.ToString());
+      activity?.AddBaggage(Extensions.ActivityDeploymentIdName, deployment.Id.ToString());
+      
       logger.LogTrace("Updating containers for deployment {Deployment}", deployment.Id);
       
       var processedContainers = new HashSet<Container>();
@@ -351,6 +369,8 @@ namespace SuperCompose.Services
     private async Task<IReadOnlyCollection<ContainerListResult>> ListContainers(SshClient ssh,
       CancellationToken ct = default)
     {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ListContainers");
+      
       const string? command =
         "docker container ls --all --format='{{json .}}' --filter='label=com.docker.compose.project'";
       var (stdout, stderr, code) = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);

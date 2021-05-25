@@ -83,7 +83,6 @@ namespace SuperCompose.HostedServices
     {
       using var _ = logger.BeginScope(new {nodeId});
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("HandleNodeUpdate");
-      activity?.AddBaggage("supercompose.nodeid", nodeId.ToString());
 
       try
       {

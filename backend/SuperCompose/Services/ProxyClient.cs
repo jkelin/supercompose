@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -18,6 +19,7 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using OpenTelemetry.Trace;
 using Renci.SshNet.Security;
+using SuperCompose.Context;
 using SuperCompose.Exceptions;
 using SuperCompose.Util;
 
@@ -29,13 +31,16 @@ namespace SuperCompose.Services
     private readonly IConfiguration config;
     private readonly IMemoryCache cache;
     private readonly ILogger<ProxyClient> logger;
+    private readonly ConnectionLogService connectionLog;
 
-    public ProxyClient(IHttpClientFactory clientFactory, IConfiguration config, IMemoryCache cache, ILogger<ProxyClient> logger)
+    public ProxyClient(IHttpClientFactory clientFactory, IConfiguration config, IMemoryCache cache, ILogger<ProxyClient> logger,
+      ConnectionLogService connectionLog)
     {
       this.clientFactory = clientFactory;
       this.config = config;
       this.cache = cache;
       this.logger = logger;
+      this.connectionLog = connectionLog;
     }
 
     private string MintJwtFromCredentials(ConnectionParams credentials)
@@ -83,24 +88,18 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task<HttpClient> ClientFor(ConnectionParams credentials)
+    private HttpClient ClientFor(ConnectionParams credentials)
     {
       var client = clientFactory.CreateClient("proxy");
 
-      var jwt = await cache.GetOrCreate(credentials, entry =>
-              {
-                  entry.SlidingExpiration = TimeSpan.FromHours(1);
-                  return Task.FromResult(MintJwtFromCredentials(entry.Key as ConnectionParams ?? throw new InvalidOperationException()));
-              });
-      
-      client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", jwt);
+      client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", MintJwtFromCredentials(credentials));
 
       return client;
     }
 
     private async Task<HttpContent> Request(string path, object? body, HttpMethod method, ConnectionParams credentials, CancellationToken ct = default)
     {
-      using var client = await ClientFor(credentials);
+      using var client = ClientFor(credentials);
 
       var request = new HttpRequestMessage();
       if (body != null)
@@ -149,6 +148,8 @@ namespace SuperCompose.Services
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.WriteFile");
       activity?.AddTag("proxy.path", path);
       activity?.AddTag("proxy.create_folder", createFolder);
+
+      connectionLog.Info($"Writing file '{path}'");
       
       await Post($"/files/write", new {path, contents, create_folder = createFolder}, credentials, ct);
     } 
@@ -159,7 +160,9 @@ namespace SuperCompose.Services
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.ReadFile");
       activity?.AddTag("proxy.path", path);
-      
+
+      connectionLog.Info($"Reading file '{path}'");
+
       return await Get<FileResponse>($"/files/read?path={HttpUtility.UrlEncode(path)}", credentials, ct);
     }
 
@@ -171,6 +174,8 @@ namespace SuperCompose.Services
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.UpsertFile");
       activity?.AddTag("proxy.path", path);
       activity?.AddTag("proxy.create_folder", createFolder);
+
+      connectionLog.Info($"Updating file '{path}'");
       
       return await Post<UpsertFileResponse>($"/files/upsert", new {path, contents, create_folder = createFolder}, credentials, ct);
     }
@@ -179,14 +184,18 @@ namespace SuperCompose.Services
       => UpsertFile(credentials, path, Encoding.UTF8.GetBytes(contents), createFolder, ct);
 
 
+    public record DeleteFileResponse(bool Deleted);
+    
     public async Task<bool> DeleteFile(ConnectionParams credentials, string path, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.DeleteFile");
       activity?.AddTag("proxy.path", path);
-      
-      await Post($"/files/delete?path={HttpUtility.UrlEncode(path)}", null, credentials, ct);
 
-      return false; // TODO
+      connectionLog.Info($"Deleting file '{path}'");
+      
+      var resp = await Post<DeleteFileResponse>($"/files/delete?path={HttpUtility.UrlEncode(path)}", null, credentials, ct);
+
+      return resp.Deleted;
     }
 
     public record RunCommandResponse(string Command, byte[]? Stdout, byte[]? Stderr, int? Code, string? Error);
@@ -195,6 +204,8 @@ namespace SuperCompose.Services
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.RunCommand");
       activity?.AddTag("proxy.path", command);
+
+      connectionLog.Info($"Running command '{command}'");
       
       return await Get<RunCommandResponse>($"/command?command={HttpUtility.UrlEncode(command)}", credentials, ct);
     }
@@ -217,7 +228,9 @@ namespace SuperCompose.Services
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdGetService");
       activity?.AddTag("proxy.id", id);
-      
+
+      connectionLog.Info($"Getting status of systemd service '{id}'");
+
       return await Get<SystemdGetServiceResponse>($"/systemd/service?id={HttpUtility.UrlEncode(id)}", credentials, ct);
     }
 
@@ -225,6 +238,8 @@ namespace SuperCompose.Services
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdStartService");
       activity?.AddTag("proxy.id", id);
+
+      connectionLog.Info($"Starting systemd service '{id}'");
       
       await Post($"/systemd/service/start?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
@@ -233,6 +248,8 @@ namespace SuperCompose.Services
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdStopService");
       activity?.AddTag("proxy.id", id);
+
+      connectionLog.Info($"Stopping systemd service '{id}'");
       
       await Post($"/systemd/service/stop?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
@@ -241,6 +258,8 @@ namespace SuperCompose.Services
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdEnableService");
       activity?.AddTag("proxy.id", id);
+
+      connectionLog.Info($"Enabling systemd service '{id}'");
       
       await Post($"/systemd/service/enable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
@@ -250,6 +269,8 @@ namespace SuperCompose.Services
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdDisableService");
       activity?.AddTag("proxy.id", id);
 
+      connectionLog.Info($"Disabling systemd service '{id}'");
+
       await Post($"/systemd/service/disable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
@@ -257,6 +278,8 @@ namespace SuperCompose.Services
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdRestartService");
       activity?.AddTag("proxy.id", id);
+
+      connectionLog.Info($"Restarting systemd service '{id}'");
       
       await Post($"/systemd/service/restart?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
@@ -264,6 +287,8 @@ namespace SuperCompose.Services
     public async Task SystemdReload(ConnectionParams credentials, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdReload");
+
+      connectionLog.Info($"Reloading systemd");
       
       await Post($"/systemd/reload", null, credentials, ct);
     }

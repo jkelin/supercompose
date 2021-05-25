@@ -1,18 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using SuperCompose.Context;
 using SuperCompose.HostedServices;
+using SuperCompose.Util;
 
 namespace SuperCompose.Services
 {
   public class ConnectionLogService
   {
     private readonly IMediator mediator;
-    private readonly AsyncLocal<Scope?> currentScope = new();
 
     public ConnectionLogService(IMediator mediator)
     {
@@ -20,12 +21,36 @@ namespace SuperCompose.Services
     }
 
     private async ValueTask Log(ConnectionLogSeverity severity, string message, Exception? exception = null,
-      Dictionary<string, dynamic>? metadata = null)
+      Dictionary<string, dynamic>? metadata = null, Guid? nodeId = null, Guid? deploymentId = null, Guid? composeId = null, Guid? tenantId = null)
     {
-      if (currentScope.Value == null)
+
+      var nodeIdString = Activity.Current?.GetBaggageItem(Extensions.ActivityNodeIdName);
+      if (nodeId == null && !string.IsNullOrEmpty(nodeIdString) && Guid.TryParse(nodeIdString, out var nodeIdParsed))
       {
-        throw new InvalidOperationException(
-          "Scope has not yet begun for this connection log");
+        nodeId = nodeIdParsed;
+      }
+
+      var tenantIdString = Activity.Current?.GetBaggageItem(Extensions.ActivityTenantIdName);
+      if (tenantId == null && !string.IsNullOrEmpty(tenantIdString) && Guid.TryParse(tenantIdString, out var tenantIdParsed))
+      {
+        tenantId = tenantIdParsed;
+      }
+
+      var deploymentIdString = Activity.Current?.GetBaggageItem(Extensions.ActivityDeploymentIdName);
+      if (deploymentId == null && !string.IsNullOrEmpty(deploymentIdString) && Guid.TryParse(deploymentIdString, out var deploymentIdParsed))
+      {
+        deploymentId = deploymentIdParsed;
+      }
+
+      var composeIdString = Activity.Current?.GetBaggageItem(Extensions.ActivityComposeIdName);
+      if (composeId == null && !string.IsNullOrEmpty(composeIdString) && Guid.TryParse(composeIdString, out var composeIdParsed))
+      {
+        composeId = composeIdParsed;
+      }
+
+      if (tenantId == null)
+      {
+        throw new InvalidOperationException("TenantId not set while creating connection log");
       }
       
       await mediator.Publish(new SaveConnectionLog
@@ -34,10 +59,10 @@ namespace SuperCompose.Services
         {
           Severity = severity,
           Message = message,
-          NodeId = currentScope.Value.NodeId,
-          DeploymentId = currentScope.Value.DeploymentId,
-          ComposeId = currentScope.Value.ComposeId,
-          TenantId = currentScope.Value.TenantId,
+          NodeId = nodeId,
+          DeploymentId = deploymentId,
+          ComposeId = composeId,
+          TenantId = tenantId.Value,
           Time = DateTime.UtcNow,
           Error = exception != null ? $"{exception.GetType().Name}: {exception.Message}" : null,
           Metadata = metadata
@@ -58,41 +83,6 @@ namespace SuperCompose.Services
     public void Warning(string message, Exception? exception = null, Dictionary<string, dynamic>? metadata = null)
     {
       var _ = Log(ConnectionLogSeverity.Warning, message, exception, metadata);
-    }
-
-    public IDisposable BeginScope(Guid tenantId,
-      Guid? nodeId = null,
-      Guid? deploymentId = null,
-      Guid? composeId = null)
-    {
-      currentScope.Value ??= new Scope(() => currentScope.Value = null);
-
-      currentScope.Value.NodeId ??= nodeId;
-      currentScope.Value.DeploymentId ??= deploymentId;
-      currentScope.Value.ComposeId ??= composeId;
-      currentScope.Value.TenantId = tenantId;
-
-      return currentScope.Value;
-    }
-
-    private class Scope : IDisposable
-    {
-      private readonly Action onDispose;
-
-      public Guid? NodeId = null;
-      public Guid? DeploymentId = null;
-      public Guid? ComposeId = null;
-      public Guid TenantId;
-
-      public Scope(Action onDispose)
-      {
-        this.onDispose = onDispose;
-      }
-
-      public void Dispose()
-      {
-        onDispose();
-      }
     }
   }
 }

@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SuperCompose.Context;
 using SuperCompose.Services;
+using SuperCompose.Util;
 
 namespace SuperCompose.HostedServices
 {
@@ -112,6 +113,7 @@ namespace SuperCompose.HostedServices
       while (!ct.IsCancellationRequested)
       {
         using var scope = provider.CreateScope();
+        using var activity = Extensions.SuperComposeActivitySource.StartActivity("RunNodeAgent");
 
         try
         {
