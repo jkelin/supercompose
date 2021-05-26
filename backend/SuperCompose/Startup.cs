@@ -157,11 +157,14 @@ namespace SuperCompose
 
       // Custom services
       services
+        .AddTransient<DockerJsonSerializer>()
+        .AddTransient<CryptoService>();
+      
+      services
         .AddScoped<Query>()
         .AddScoped<Mutation>()
         .AddScoped<Subscription>()
         .AddScoped<ComposeService>()
-        .AddScoped<CryptoService>()
         .AddScoped<DeploymentService>()
         .AddScoped<ConnectionService>()
         .AddScoped<NodeUpdaterService>()

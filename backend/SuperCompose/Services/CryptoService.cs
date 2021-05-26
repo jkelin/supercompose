@@ -7,6 +7,8 @@ using ProtoBuf;
 using System.Security.Cryptography;
 using System.IO;
 using Microsoft.AspNetCore.DataProtection;
+using SuperCompose.Context;
+using SuperCompose.Util;
 
 namespace SuperCompose.Services
 {
@@ -32,6 +34,19 @@ namespace SuperCompose.Services
 
       var bytes = await Task.Run(() => protector.Unprotect(encrypted));
       return Encoding.UTF8.GetString(bytes);
+    }
+
+    public async Task<NodeCredentials> GetNodeCredentials(Node node)
+    {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("Get credentials for node");
+      return new NodeCredentials
+      (
+        node.Host,
+        node.Username,
+        node.Port,
+        node.Password == null ? null : await DecryptSecret(node.Password),
+        node.PrivateKey == null ? null : await DecryptSecret(node.PrivateKey)
+      );
     }
   }
 }

@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Nito.Disposables;
+using OpenTelemetry.Trace;
 using Renci.SshNet;
 using Renci.SshNet.Common;
 using SuperCompose.Context;
@@ -31,9 +32,11 @@ namespace SuperCompose.Services
     private readonly ILogger<NodeAgentService> logger;
     private readonly PubSubService pubSub;
     private readonly ConnectionLogService connectionLog;
+    private readonly ProxyClient proxyClient;
+    private readonly NodeService nodeService;
 
     public NodeAgentService(SuperComposeContext ctx, ConnectionService connService, CryptoService cryptoService,
-      ILogger<NodeAgentService> logger, PubSubService pubSub, ConnectionLogService connectionLog)
+      ILogger<NodeAgentService> logger, PubSubService pubSub, ConnectionLogService connectionLog, ProxyClient proxyClient, NodeService nodeService)
     {
       this.ctx = ctx;
       this.connService = connService;
@@ -41,6 +44,8 @@ namespace SuperCompose.Services
       this.logger = logger;
       this.pubSub = pubSub;
       this.connectionLog = connectionLog;
+      this.proxyClient = proxyClient;
+      this.nodeService = nodeService;
     }
 
     public async Task RunNodeAgent(Guid nodeId, CancellationToken ct = default)
@@ -67,7 +72,9 @@ namespace SuperCompose.Services
 
         var client = await OpenSsh(node, ct);
 
-        await ReloadContainersFor(ctx.Deployments.Where(x => x.NodeId == nodeId && x.Enabled == true), client, ct);
+        var credentials = await cryptoService.GetNodeCredentials(node);
+
+        await ReloadContainersFor(credentials, ctx.Deployments.Where(x => x.NodeId == nodeId && x.Enabled == true), ct);
         var events = ListenForEvents(client, ct);
 
         await foreach (var ee in events.WithCancellation(ct))
@@ -76,7 +83,7 @@ namespace SuperCompose.Services
           .compose);
           var query = ctx.Deployments.Where(x =>
             x.NodeId == nodeId && x.LastDeployedComposeVersion.ServiceName == ee.compose);
-          await ReloadContainersFor(query, client, ct);
+          await ReloadContainersFor(credentials, query, ct);
         }
       }
       catch (TaskCanceledException)
@@ -86,6 +93,12 @@ namespace SuperCompose.Services
       {
         logger.LogInformation("Node agent connection failed failed {why}", ex.Message);
         connectionLog.Error($"Node connection failed", ex);
+      }
+      catch (ProxyClientException ex)
+      {
+        logger.LogInformation("Node agent connection failed {why}", ex.Message);
+        connectionLog.Error($"Node connection failed", ex);
+        activity.RecordException(ex);
       }
       catch (ContainerInfoException ex)
       {
@@ -112,7 +125,7 @@ namespace SuperCompose.Services
       
       logger.LogDebug("Pending changes detected, opening ssh connection");
 
-      var connectionParams = new ConnectionParams
+      var credentials = new NodeCredentials
       (
         node.Host,
         node.Username,
@@ -122,7 +135,7 @@ namespace SuperCompose.Services
       );
 
       connectionLog.Info($"Connecting SSH to {node.Username}@{node.Host}:{node.Port}");
-      var ssh = await connService.CreateSshConnection(connectionParams, TimeSpan.FromSeconds(10), ct);
+      var ssh = await connService.CreateSshConnection(credentials, TimeSpan.FromSeconds(10), ct);
 
       ct.ThrowIfCancellationRequested();
 
@@ -186,7 +199,7 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task ReloadContainersFor(IQueryable<Deployment> query, SshClient ssh, CancellationToken ct = default)
+    private async Task ReloadContainersFor(NodeCredentials credentials, IQueryable<Deployment> query, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ReloadContainersFor");
       
@@ -197,7 +210,7 @@ namespace SuperCompose.Services
 
       logger.LogDebug("Reloading containers for {deployments}", string.Join(",", deployments.Select(x => x.Id)));
 
-      var list = await ListContainers(ssh, ct);
+      var list = await ListContainers(credentials, ct);
       await using var trx = await ctx.Database.BeginTransactionAsync(ct);
 
       var relevantContainers = FilterContainersForDeployments(list, deployments);
@@ -205,7 +218,7 @@ namespace SuperCompose.Services
 
       if (relevantContainers.Any())
       {
-        var inspected = await InspectContainers(ssh, relevantContainers, ct);
+        var inspected = await InspectContainers(credentials, relevantContainers.Select(x => x.ID), ct);
 
         foreach (var deployment in deployments)
         {
@@ -215,7 +228,7 @@ namespace SuperCompose.Services
               x.Config.Labels["com.docker.compose.project"] == deployment.LastDeployedComposeVersion.ServiceName
             );
 
-          var deploymentChanges = await UpdateContainersForDeployment(relevantInspects, deployment, ct);
+          var deploymentChanges = await UpdateContainersForDeployment(credentials, relevantInspects, deployment, ct);
           foreach (var change in deploymentChanges) changes.Enqueue(change);
         }
       }
@@ -235,8 +248,10 @@ namespace SuperCompose.Services
     }
 
     private async Task<IReadOnlyCollection<ContainerChange>> UpdateContainersForDeployment(
+      NodeCredentials credentials,
       IEnumerable<ContainerInspectResponse> deploymentInspects,
-      Deployment deployment, CancellationToken ct)
+      Deployment deployment,
+      CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("UpdateContainersForDeployment");
       
@@ -248,7 +263,9 @@ namespace SuperCompose.Services
       var processedContainers = new HashSet<Container>();
       var changes = new Queue<ContainerChange>();
 
-      foreach (var inspect in deploymentInspects)
+      var inspects = await InspectContainers(credentials, deploymentInspects.Select(x => x.ID), ct);
+
+      foreach (var inspect in inspects)
       {
         var labels = inspect.Config.Labels;
         var serviceName = labels["com.docker.compose.service"];
@@ -322,74 +339,43 @@ namespace SuperCompose.Services
       };
     }
 
-    private IReadOnlyCollection<ContainerListResult> FilterContainersForDeployments(
-      IEnumerable<ContainerListResult> listResult,
+    private ContainerListResponse[] FilterContainersForDeployments(
+      ContainerListResponse[] listResult,
       IEnumerable<Deployment> deployments)
     {
-      var matcher = new Regex(@"(?<name>[^=,]+)(=(?<value>[^=,]+))?");
+      // var matcher = new Regex(@"(?<name>[^=,]+)(=(?<value>[^=,]+))?");
       var projects = deployments.Select(x => x.LastDeployedComposeVersion.ServiceName);
 
-      var matched = listResult
-        .Select(x =>
-        {
-          var matches = matcher.Matches(x.Labels);
-          return x with
-          {
-            LabelsParsed = matches.ToDictionary(y => y.Groups["name"].Value, y => y.Groups["value"].Value)
-          };
-        });
+      // var matched = listResult
+      //   .Select(x =>
+      //   {
+      //     var matches = matcher.Matches(x.Labels);
+      //     return x with
+      //     {
+      //       LabelsParsed = matches.ToDictionary(y => y.Groups["name"].Value, y => y.Groups["value"].Value)
+      //     };
+      //   });
 
-      return matched
-        .Where(x => projects.Contains(x.LabelsParsed["com.docker.compose.project"]))
+      return listResult
+        .Where(x => projects.Contains(x.Labels["com.docker.compose.project"]))
         .ToArray();
     }
 
-    private async Task<IReadOnlyCollection<ContainerInspectResponse>> InspectContainers(SshClient ssh,
-      IEnumerable<ContainerListResult> containers,
+    private async Task<ContainerInspectResponse[]> InspectContainers(
+      NodeCredentials credentials,
+      IEnumerable<string> containers,
       CancellationToken ct = default)
     {
-      var command =
-        $"docker inspect --format '{{{{json .}}}}' {string.Join(" ", containers.Select(x => $"'{x.Names}'"))}";
-      var (stdout, stderr, code) = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
+      var promises = containers.Select(id => proxyClient.InspectContainer(credentials, id, ct)).ToArray();
 
-      if (code != 0 && !stderr.Contains("Error: No such object:"))
-        throw new ContainerInfoException("Could not inspect containers")
-        {
-          StdErr = stderr,
-          Command = command
-        };
-
-      return stdout
-        .Split("\n")
-        .Where(x => !string.IsNullOrEmpty(x))
-        .Select(x => JsonConvert.DeserializeObject<ContainerInspectResponse>(x)!)
-        .ToArray();
+      return await Task.WhenAll(promises);
     }
 
-    private async Task<IReadOnlyCollection<ContainerListResult>> ListContainers(SshClient ssh,
-      CancellationToken ct = default)
+    private async Task<ContainerListResponse[]> ListContainers(NodeCredentials credentials, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ListContainers");
-      
-      const string? command =
-        "docker container ls --all --format='{{json .}}' --filter='label=com.docker.compose.project'";
-      var (stdout, stderr, code) = await connService.RunCommand(ssh, command, TimeSpan.FromSeconds(10), ct);
 
-      if (code != 0)
-        throw new ContainerInfoException("Could not list containers")
-        {
-          StdErr = stderr,
-          Command = command
-        };
-
-      return stdout
-        .Split("\n")
-        .Where(x => !string.IsNullOrEmpty(x))
-        .Select(x => JsonConvert.DeserializeObject<ContainerListResult>(x)!)
-        .ToArray();
+      return await proxyClient.ListContainers(credentials, ct);
     }
-
-    private record ContainerListResult(string Id, string Labels, Dictionary<string, string>? LabelsParsed,
-      string Names);
   }
 }

@@ -120,7 +120,7 @@ namespace SuperCompose.Graphql
       var tenant = user.Tenant();
       try
       {
-        var id = await nodeService.Create(tenant, name, new ConnectionParams(host, username, port, password, privateKey));
+        var id = await nodeService.Create(tenant, name, new NodeCredentials(host, username, port, password, privateKey));
 
         return await ctxFactiry.CreateDbContext().Nodes.Where(x => x.Id == id)
           .Select(x => new SuccessfulNodeCreation {Node = x}).FirstAsync();
@@ -143,7 +143,7 @@ namespace SuperCompose.Graphql
     {
       try
       {
-        await conn.TestConnection(new ConnectionParams(host, username, port, password, privateKey), nodeId, ct);
+        await conn.TestConnection(new NodeCredentials(host, username, port, password, privateKey), nodeId, ct);
       }
       catch (NodeConnectionFailedException ex)
       {

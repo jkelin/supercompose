@@ -18,22 +18,19 @@ namespace SuperCompose.Services
     private readonly ConnectionService connectionService;
     private readonly CryptoService crypto;
     private readonly NodeUpdaterService nodeUpdater;
-    private readonly IAuthorizationService authorizationService;
 
-    public NodeService(SuperComposeContext ctx, ConnectionService connectionService, CryptoService crypto,
-      NodeUpdaterService nodeUpdater, IAuthorizationService authorizationService)
+    public NodeService(SuperComposeContext ctx, ConnectionService connectionService, NodeUpdaterService nodeUpdater, CryptoService crypto)
     {
       this.ctx = ctx;
       this.connectionService = connectionService;
-      this.crypto = crypto;
       this.nodeUpdater = nodeUpdater;
-      this.authorizationService = authorizationService;
+      this.crypto = crypto;
     }
 
     public async Task<Guid> Create(
       Guid tenantId,
       string name,
-      ConnectionParams conn
+      NodeCredentials conn
     )
     {
       await connectionService.TestConnection(conn);
@@ -103,7 +100,7 @@ namespace SuperCompose.Services
       node.Version = Guid.NewGuid();
 
       await connectionService.TestConnection(
-        new ConnectionParams(
+        new NodeCredentials(
           node.Host,
           node.Username,
           node.Port,

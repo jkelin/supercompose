@@ -35,7 +35,6 @@ namespace SuperCompose.Services
     private readonly ILogger<NodeUpdaterService> logger;
     private readonly SuperComposeContext ctx;
     private readonly IConnectionMultiplexer multiplexer;
-    private readonly ConnectionService connectionService;
     private readonly CryptoService cryptoService;
     private readonly ConnectionLogService connectionLog;
     private readonly ProxyClient proxyClient;
@@ -55,7 +54,6 @@ namespace SuperCompose.Services
       this.logger = logger;
       this.ctx = ctx;
       this.multiplexer = multiplexer;
-      this.connectionService = connectionService;
       this.cryptoService = cryptoService;
       this.connectionLog = connectionLog;
       this.proxyClient = proxyClient;
@@ -138,7 +136,7 @@ namespace SuperCompose.Services
 
           // using var ssh = await OpenSsh(node, ct);
 
-          var connectionParams = await GetCredentials(node);
+          var connectionParams = await cryptoService.GetNodeCredentials(node);
 
 
           if (deployments.Any(x => x.LastDeployedNodeVersion != node.Version))
@@ -175,6 +173,12 @@ namespace SuperCompose.Services
         await ctx.Nodes.Where(x => x.Id == nodeId).UpdateAsync(x => new Node {ReconciliationFailed = true}, ct);
         activity.RecordException(ex);
       }
+      catch (ProxyClientException ex)
+      {
+        logger.LogInformation("Node agent connection failed {why}", ex.Message);
+        connectionLog.Error($"Node connection failed", ex);
+        activity.RecordException(ex);
+      }
       catch (Exception ex)
       {
         logger.LogWarning(ex, "Unknown error when reconciling node {nodeId}", nodeId);
@@ -188,20 +192,7 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task<ConnectionParams> GetCredentials(Node node)
-    {
-      using var activity = Extensions.SuperComposeActivitySource.StartActivity("Get credentials for node");
-      return new ConnectionParams
-      (
-        node.Host,
-        node.Username,
-        node.Port,
-        node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
-        node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
-      );
-    }
-
-    private async Task<bool> VerifyNode(ConnectionParams credentials, CancellationToken ct)
+    private async Task<bool> VerifyNode(NodeCredentials credentials, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("Verify node");
       connectionLog.Info("Verifying node");
@@ -232,7 +223,7 @@ namespace SuperCompose.Services
       return true;
     }
 
-    private async Task ApplyDeployment(ConnectionParams credentials, Deployment deployment, CancellationToken ct)
+    private async Task ApplyDeployment(NodeCredentials credentials, Deployment deployment, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ApplyDeployment");
       activity?.AddTag(Extensions.ActivityDeploymentIdName, deployment.Id.ToString());
@@ -432,7 +423,7 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task RemoveService(ConnectionParams credentials, DeploymentInfo deployment, CancellationToken ct = default)
+    private async Task RemoveService(NodeCredentials credentials, DeploymentInfo deployment, CancellationToken ct = default)
     {
       if (!string.IsNullOrEmpty(deployment.ServicePath))
       {
@@ -445,7 +436,7 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task RemoveCompose(ConnectionParams credentials, DeploymentInfo deployment, CancellationToken ct = default)
+    private async Task RemoveCompose(NodeCredentials credentials, DeploymentInfo deployment, CancellationToken ct = default)
     {
       if (!string.IsNullOrEmpty(deployment.ComposePath))
       {
@@ -458,7 +449,7 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task<bool> GetComposeIsRunning(ConnectionParams credentials, ComposeVersion compose, CancellationToken ct = default)
+    private async Task<bool> GetComposeIsRunning(NodeCredentials credentials, ComposeVersion compose, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("GetComposeNeedsToStop");
       activity?.AddTag("supercompose.path", compose.ComposePath);
@@ -489,7 +480,7 @@ namespace SuperCompose.Services
       );
     }
 
-    private async Task<bool> UpdateComposeFile(ConnectionParams credentials, ComposeVersion composeVersion, CancellationToken ct)
+    private async Task<bool> UpdateComposeFile(NodeCredentials credentials, ComposeVersion composeVersion, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("UpdateComposeFile");
       
@@ -503,7 +494,7 @@ namespace SuperCompose.Services
       return resp.Updated;
     }
 
-    private async Task<bool> UpdateSystemdFile(ConnectionParams credentials, ComposeVersion compose, CancellationToken ct)
+    private async Task<bool> UpdateSystemdFile(NodeCredentials credentials, ComposeVersion compose, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("UpdateSystemdFile");
 
@@ -524,7 +515,7 @@ namespace SuperCompose.Services
       return resp.Updated;
     }
 
-    private async Task<string> GetDockerComposePath(ConnectionParams credentials, CancellationToken ct = default)
+    private async Task<string> GetDockerComposePath(NodeCredentials credentials, CancellationToken ct = default)
     {
       var key = $"{credentials.username}@{credentials.host}:{credentials.port}";
       var path = await cache.GetStringAsync(key, ct);
@@ -549,7 +540,7 @@ namespace SuperCompose.Services
       return path;
     }
     
-    private async Task RestartDockerCompose(ConnectionParams credentials, ComposeVersion compose, CancellationToken ct)
+    private async Task RestartDockerCompose(NodeCredentials credentials, ComposeVersion compose, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("RestartDockerCompose");
       
@@ -557,7 +548,7 @@ namespace SuperCompose.Services
       await proxyClient.RunCommand(credentials, $"{composePath} --file '{compose.ComposePath}' restart", ct);
     }
 
-    private async Task StopDockerCompose(ConnectionParams credentials,ComposeVersion compose, CancellationToken ct)
+    private async Task StopDockerCompose(NodeCredentials credentials,ComposeVersion compose, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("StopDockerCompose");
       
@@ -565,7 +556,7 @@ namespace SuperCompose.Services
       await proxyClient.RunCommand(credentials, $"{composePath} --file '{compose.ComposePath}' down", ct);
     }
 
-    private async Task StartDockerCompose(ConnectionParams credentials, ComposeVersion compose, CancellationToken ct)
+    private async Task StartDockerCompose(NodeCredentials credentials, ComposeVersion compose, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("StartDockerCompose");
       
@@ -573,7 +564,7 @@ namespace SuperCompose.Services
       await proxyClient.RunCommand(credentials, $"{composePath} --file '{compose.ComposePath}'  up -d --remove-orphans", ct);
     }
 
-    private async Task<string> GenerateSystemdServiceFile(ConnectionParams credentials, ComposeVersion composeVersion, CancellationToken ct)
+    private async Task<string> GenerateSystemdServiceFile(NodeCredentials credentials, ComposeVersion composeVersion, CancellationToken ct)
     {
       var composePath = await GetDockerComposePath(credentials, ct);
 

@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Docker.DotNet.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -32,18 +33,20 @@ namespace SuperCompose.Services
     private readonly IMemoryCache cache;
     private readonly ILogger<ProxyClient> logger;
     private readonly ConnectionLogService connectionLog;
+    private readonly DockerJsonSerializer dockerSerializer;
 
     public ProxyClient(IHttpClientFactory clientFactory, IConfiguration config, IMemoryCache cache, ILogger<ProxyClient> logger,
-      ConnectionLogService connectionLog)
+      ConnectionLogService connectionLog, DockerJsonSerializer dockerSerializer)
     {
       this.clientFactory = clientFactory;
       this.config = config;
       this.cache = cache;
       this.logger = logger;
       this.connectionLog = connectionLog;
+      this.dockerSerializer = dockerSerializer;
     }
 
-    private string MintJwtFromCredentials(ConnectionParams credentials)
+    private string MintJwtFromCredentials(NodeCredentials credentials)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.MintJwtFromCredentials");
       try
@@ -88,7 +91,7 @@ namespace SuperCompose.Services
       }
     }
 
-    private HttpClient ClientFor(ConnectionParams credentials)
+    private HttpClient ClientFor(NodeCredentials credentials)
     {
       var client = clientFactory.CreateClient("proxy");
 
@@ -97,7 +100,7 @@ namespace SuperCompose.Services
       return client;
     }
 
-    private async Task<HttpContent> Request(string path, object? body, HttpMethod method, ConnectionParams credentials, CancellationToken ct = default)
+    private async Task<HttpContent> Request(string path, object? body, HttpMethod method, NodeCredentials credentials, CancellationToken ct = default)
     {
       using var client = ClientFor(credentials);
 
@@ -116,34 +119,55 @@ namespace SuperCompose.Services
       {
         var errorResponse = await resp.Content.ReadFromJsonAsync<ProxyClientErrorResponse>(cancellationToken: ct)
                             ?? throw new InvalidOperationException("Could not read error response");
-
-        throw new ProxyClientException(errorResponse.Title)
+        
+        var exp = new ProxyClientException(errorResponse.Title)
         {
           ErrorResponse = errorResponse
         };
+
+        connectionLog.Error(
+          errorResponse.Title,
+          exp,
+          new Dictionary<string, dynamic>(
+            new []
+            {
+              new KeyValuePair<string, dynamic>("detail", errorResponse.Detail)
+            })
+          );
+
+        throw exp;
       }
 
       return resp.Content;
     }
 
-    private async Task<TResp> Get<TResp>(string path, ConnectionParams credentials, CancellationToken ct = default)
+    private async Task<TResp> Get<TResp>(string path, NodeCredentials credentials, CancellationToken ct = default)
     {
       var resp = await Request(path, null, HttpMethod.Get, credentials, ct);
       return await resp.ReadFromJsonAsync<TResp>(cancellationToken: ct) ?? throw new InvalidOperationException("Could not parse response from proxy call");
     }
 
-    private async Task<TResp> Post<TResp>(string path, object body, ConnectionParams credentials, CancellationToken ct = default)
+    private async Task<TResp> GetDocker<TResp>(string path, NodeCredentials credentials, CancellationToken ct = default)
+    {
+      var resp = await Request(path, null, HttpMethod.Get, credentials, ct);
+      var str = await resp.ReadAsStringAsync(cancellationToken: ct) ?? throw new InvalidOperationException("Could not parse response from proxy call");
+
+      return dockerSerializer.DeserializeObject<TResp>(str);
+    }
+
+
+    private async Task<TResp> Post<TResp>(string path, object body, NodeCredentials credentials, CancellationToken ct = default)
     {
       var resp = await Request(path, body, HttpMethod.Post, credentials, ct);
       return await resp.ReadFromJsonAsync<TResp>(cancellationToken: ct) ?? throw new InvalidOperationException("Could not parse response from proxy call");
     }
 
-    private async Task Post(string path, object? body, ConnectionParams credentials, CancellationToken ct = default)
+    private async Task Post(string path, object? body, NodeCredentials credentials, CancellationToken ct = default)
     {
       await Request(path, body, HttpMethod.Post, credentials, ct);
     }
 
-    public async Task WriteFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = default)
+    public async Task WriteFile(NodeCredentials credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.WriteFile");
       activity?.AddTag("proxy.path", path);
@@ -156,7 +180,7 @@ namespace SuperCompose.Services
 
     public record FileResponse(byte[] Contents, DateTime ModTime, long Size);
 
-    public async Task<FileResponse> ReadFile(ConnectionParams credentials, string path, CancellationToken ct = default)
+    public async Task<FileResponse> ReadFile(NodeCredentials credentials, string path, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.ReadFile");
       activity?.AddTag("proxy.path", path);
@@ -168,7 +192,7 @@ namespace SuperCompose.Services
 
     public record UpsertFileResponse(bool Updated);
     
-    public async Task<UpsertFileResponse> UpsertFile(ConnectionParams credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = 
+    public async Task<UpsertFileResponse> UpsertFile(NodeCredentials credentials, string path, byte[] contents, bool createFolder, CancellationToken ct = 
     default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.UpsertFile");
@@ -180,13 +204,13 @@ namespace SuperCompose.Services
       return await Post<UpsertFileResponse>($"/files/upsert", new {path, contents, create_folder = createFolder}, credentials, ct);
     }
 
-    public Task<UpsertFileResponse> UpsertFile(ConnectionParams credentials, string path, string contents, bool createFolder, CancellationToken ct = default)
+    public Task<UpsertFileResponse> UpsertFile(NodeCredentials credentials, string path, string contents, bool createFolder, CancellationToken ct = default)
       => UpsertFile(credentials, path, Encoding.UTF8.GetBytes(contents), createFolder, ct);
 
 
     public record DeleteFileResponse(bool Deleted);
     
-    public async Task<bool> DeleteFile(ConnectionParams credentials, string path, CancellationToken ct = default)
+    public async Task<bool> DeleteFile(NodeCredentials credentials, string path, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.DeleteFile");
       activity?.AddTag("proxy.path", path);
@@ -200,7 +224,7 @@ namespace SuperCompose.Services
 
     public record RunCommandResponse(string Command, byte[]? Stdout, byte[]? Stderr, int? Code, string? Error);
 
-    public async Task<RunCommandResponse> RunCommand(ConnectionParams credentials, string command, CancellationToken ct = default)
+    public async Task<RunCommandResponse> RunCommand(NodeCredentials credentials, string command, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.RunCommand");
       activity?.AddTag("proxy.path", command);
@@ -224,7 +248,7 @@ namespace SuperCompose.Services
       string SubState
     );
 
-    public async Task<SystemdGetServiceResponse> SystemdGetService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task<SystemdGetServiceResponse> SystemdGetService(NodeCredentials credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdGetService");
       activity?.AddTag("proxy.id", id);
@@ -234,7 +258,7 @@ namespace SuperCompose.Services
       return await Get<SystemdGetServiceResponse>($"/systemd/service?id={HttpUtility.UrlEncode(id)}", credentials, ct);
     }
 
-    public async Task SystemdStartService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdStartService(NodeCredentials credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdStartService");
       activity?.AddTag("proxy.id", id);
@@ -244,7 +268,7 @@ namespace SuperCompose.Services
       await Post($"/systemd/service/start?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public async Task SystemdStopService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdStopService(NodeCredentials credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdStopService");
       activity?.AddTag("proxy.id", id);
@@ -254,7 +278,7 @@ namespace SuperCompose.Services
       await Post($"/systemd/service/stop?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public async Task SystemdEnableService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdEnableService(NodeCredentials credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdEnableService");
       activity?.AddTag("proxy.id", id);
@@ -264,7 +288,7 @@ namespace SuperCompose.Services
       await Post($"/systemd/service/enable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public async Task SystemdDisableService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdDisableService(NodeCredentials credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdDisableService");
       activity?.AddTag("proxy.id", id);
@@ -274,7 +298,7 @@ namespace SuperCompose.Services
       await Post($"/systemd/service/disable?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public async Task SystemdRestartService(ConnectionParams credentials, string id, CancellationToken ct = default)
+    public async Task SystemdRestartService(NodeCredentials credentials, string id, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdRestartService");
       activity?.AddTag("proxy.id", id);
@@ -284,13 +308,30 @@ namespace SuperCompose.Services
       await Post($"/systemd/service/restart?id={HttpUtility.UrlEncode(id)}", null, credentials, ct);
     }
 
-    public async Task SystemdReload(ConnectionParams credentials, CancellationToken ct = default)
+    public async Task SystemdReload(NodeCredentials credentials, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.SystemdReload");
 
       connectionLog.Info($"Reloading systemd");
       
       await Post($"/systemd/reload", null, credentials, ct);
+    }
+
+    public async Task<ContainerListResponse[]> ListContainers(NodeCredentials credentials, CancellationToken ct = default)
+    {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.ListContainers");
+
+      connectionLog.Info($"Reading docker containers");
+
+      return await GetDocker<ContainerListResponse[]>($"/containers/json", credentials, ct);
+    }
+
+    public async Task<ContainerInspectResponse> InspectContainer(NodeCredentials credentials, string id, CancellationToken ct = default)
+    {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.InspectContainer");
+      activity?.AddTag("supercompose.containerId", id);
+
+      return await GetDocker<ContainerInspectResponse>($"/containers/{id}/json", credentials, ct);
     }
   }
 }

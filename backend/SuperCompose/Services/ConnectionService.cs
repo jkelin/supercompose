@@ -33,7 +33,7 @@ namespace SuperCompose.Services
     }
 
     /// <exception cref="NodeConnectionFailedException"></exception>
-    public async Task<SshClient> CreateSshConnection(ConnectionParams conn, TimeSpan timeout,
+    public async Task<SshClient> CreateSshConnection(NodeCredentials conn, TimeSpan timeout,
       CancellationToken ct)
     {
       logger.BeginScope(new
@@ -56,7 +56,7 @@ namespace SuperCompose.Services
     }
 
     /// <exception cref="NodeConnectionFailedException"></exception>
-    public async Task<SftpClient> CreateSftpConnection(ConnectionParams conn, TimeSpan timeout,
+    public async Task<SftpClient> CreateSftpConnection(NodeCredentials conn, TimeSpan timeout,
       CancellationToken ct)
     {
       logger.BeginScope(new
@@ -156,7 +156,7 @@ namespace SuperCompose.Services
       //}
     }
 
-    private async Task<ConnectionInfo> PrepareConnectionInfo(ConnectionParams conn, TimeSpan timeout)
+    private async Task<ConnectionInfo> PrepareConnectionInfo(NodeCredentials conn, TimeSpan timeout)
     {
       var authMethods = new List<AuthenticationMethod>();
 
@@ -195,7 +195,7 @@ namespace SuperCompose.Services
     }
 
     /// <exception cref="NodeConnectionFailedException"></exception>
-    private async Task CreateConnectionInner(BaseClient client, ConnectionParams conn, CancellationToken ct)
+    private async Task CreateConnectionInner(BaseClient client, NodeCredentials conn, CancellationToken ct)
     {
       try
       {
@@ -263,7 +263,7 @@ namespace SuperCompose.Services
       }
     }
 
-    public async Task TestConnection(ConnectionParams conn, Guid? nodeId = null, CancellationToken ct = default)
+    public async Task TestConnection(NodeCredentials conn, Guid? nodeId = null, CancellationToken ct = default)
     {
       if (nodeId != null)
       {
