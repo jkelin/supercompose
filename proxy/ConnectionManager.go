@@ -8,8 +8,9 @@ import (
 )
 
 type connectionManager struct {
-	connections map[SshConnectionCredentials]*connectionWrapper
-	mu          sync.Mutex
+	connectionDeduplicationMutex sync.Map
+	connections                  map[SshConnectionCredentials]*connectionWrapper
+	mu                           sync.Mutex
 }
 
 type ConnectionHandle struct {
@@ -30,7 +31,8 @@ const closeConnectionAfter = 10 * time.Minute
 
 func RunConnectionManager() {
 	manager = connectionManager{
-		connections: make(map[SshConnectionCredentials]*connectionWrapper),
+		connections:                  make(map[SshConnectionCredentials]*connectionWrapper),
+		connectionDeduplicationMutex: sync.Map{},
 	}
 
 	for {
@@ -57,8 +59,14 @@ func RunConnectionManager() {
 }
 
 func GetConnection(ctx context.Context, args *SshConnectionCredentials) (*ConnectionHandle, error) {
-	manager.mu.Lock()
+	dedupe, _ := manager.connectionDeduplicationMutex.LoadOrStore(*args, &sync.Mutex{})
 
+	_, span := sshTracer.Start(ctx, "Awaiting connection lock")
+	dedupe.(*sync.Mutex).Lock()
+	defer dedupe.(*sync.Mutex).Unlock()
+	span.End()
+
+	manager.mu.Lock()
 	conn := manager.connections[*args]
 
 	if conn == nil {
