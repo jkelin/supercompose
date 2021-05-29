@@ -68,9 +68,9 @@ namespace SuperCompose.Services
     private bool RedeployRequested(Deployment x)
     {
       var deplRequested = x.RedeploymentRequestedAt != null && x.RedeploymentRequestedAt > x.LastCheck;
-      var nodeRequested = x.Node!.RedeploymentRequestedAt != null && x.Node.RedeploymentRequestedAt > x.LastCheck;
-      var composeRequested = x.LastDeployedComposeVersion?.RedeploymentRequestedAt != null &&
-                             x.LastDeployedComposeVersion.RedeploymentRequestedAt > x.LastCheck;
+      var nodeRequested = x.Node?.RedeploymentRequestedAt != null && x.Node.RedeploymentRequestedAt > x.LastCheck;
+      var composeRequested = x.Compose?.Current?.RedeploymentRequestedAt != null &&
+                             x.Compose.Current.RedeploymentRequestedAt > x.LastCheck;
 
       return deplRequested ||
              nodeRequested ||
@@ -79,7 +79,7 @@ namespace SuperCompose.Services
 
     private bool HasDeploymentChanged(Deployment x)
     {
-      var nodeVersionChanged = x.Node!.Version != x.LastDeployedNodeVersion;
+      var nodeVersionChanged = x.Node?.Version != x.LastDeployedNodeVersion;
       var composeVersionChanged = x.Compose!.CurrentId != x.LastDeployedComposeVersionId;
       var lastCheckOutdated = x.LastCheck + NodeCheckInterval < DateTime.UtcNow;
 
@@ -89,7 +89,7 @@ namespace SuperCompose.Services
     private bool ShouldUpdateDeployment(Deployment x)
     {
       var deplReconDidntFail = x.ReconciliationFailed != true;
-      var enabledChanged = (x.Enabled && x.Node.Enabled) != x.LastDeployedAsEnabled;
+      var enabledChanged = x.Node != null && (x.Enabled && x.Node.Enabled) != x.LastDeployedAsEnabled;
       var deploymentUpdateable = enabledChanged || x.Enabled && HasDeploymentChanged(x);
 
       return deplReconDidntFail && deploymentUpdateable;
@@ -274,7 +274,7 @@ namespace SuperCompose.Services
         var lastServiceRunning = lastServiceStatus != null && lastServiceStatus.IsRunning;
         var lastServiceEnabled = lastServiceStatus != null && lastServiceStatus.IsEnabled;
         var lastDockerRunning = await lastComposeStatusTask;
-        var redeploymentRequested = deployment.RedeploymentRequestedAt != null && deployment.RedeploymentRequestedAt > deployment.LastCheck;
+        var redeploymentRequested = RedeployRequested(deployment);
         var restartRequired = composeChanged || serviceChanged || redeploymentRequested;
 
         activity?.AddTag("startStop.composeChanged", composeChanged);
@@ -288,6 +288,7 @@ namespace SuperCompose.Services
         activity?.AddTag("startStop.lastServiceEnabled", lastServiceEnabled);
         activity?.AddTag("startStop.lastDockerRunning", lastDockerRunning);
         activity?.AddTag("startStop.redeploymentRequested", redeploymentRequested);
+        activity?.AddTag("startStop.restartRequired", restartRequired);
 
         activity?.AddEvent(new ActivityEvent("System status acquired, updating resource enablement state"));
         connectionLog.Info($"System status acquired, updating resource enablement state");
