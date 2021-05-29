@@ -30,7 +30,6 @@ services:
       - ConnectionStrings__Jaeger=udp://jaeger:6831
       - Proxy__Url=http://proxy:8080
       - Proxy__JWT
-      - Proxy__JWE
       - SENTRY_DSN
       - Auth__Authority
       - Auth__Audience
@@ -46,7 +45,6 @@ services:
     build: ../../proxy
     environment:
       - "JWT_KEY={$Proxy__JWT}"
-      - "JWE_KEY={$Proxy__JWE}"
       - JAEGER_URL=http://jaeger:14268/api/traces
     logging:
       driver: json-file
