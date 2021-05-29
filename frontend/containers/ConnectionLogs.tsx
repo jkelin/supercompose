@@ -6,7 +6,7 @@ import {
   ConnectionLogSeverity,
 } from 'data';
 import { format } from 'date-fns';
-import { orderBy, takeRight, uniqBy } from 'lodash';
+import { orderBy, takeRight, takeRightWhile, takeWhile, uniqBy } from 'lodash';
 import React, {
   useCallback,
   useEffect,
@@ -17,6 +17,7 @@ import React, {
 } from 'react';
 import classNames from 'classnames';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import { Spinner } from 'components';
 
 const ConnectionLogRow: React.FC<{
   log: ConnectionLog;
@@ -58,6 +59,25 @@ const ConnectionLogRow: React.FC<{
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
+// Adds a new log to a sorted collection of connection logs
+function addConnectionLog(
+  oldLogs: ConnectionLog[],
+  newLog: ConnectionLog,
+): ConnectionLog[] {
+  const before = takeWhile(
+    oldLogs,
+    (x) => x.time <= newLog.time && x.id !== newLog.id,
+  );
+  const after = takeRightWhile(
+    oldLogs,
+    (x) => x.time > newLog.time && x.id !== newLog.id,
+  );
+
+  const outLogs = [...before, newLog, ...after];
+
+  return takeRight(outLogs, 500);
+}
+
 export const ConnectionLogs: React.FC<{
   deploymentId: string;
 }> = (props) => {
@@ -90,20 +110,10 @@ export const ConnectionLogs: React.FC<{
           return prev;
         }
 
-        const logs = takeRight(
-          orderBy(
-            uniqBy(
-              [
-                ...(prev.connectionLogs?.nodes as any),
-                subscriptionData.data.connectionLogs,
-              ],
-              (x) => x.id,
-            ),
-            ['time'],
-            ['desc'],
-          ),
-          500,
-        ).reverse();
+        const logs = addConnectionLog(
+          prev.connectionLogs?.nodes as any,
+          subscriptionData.data.connectionLogs as any,
+        );
 
         return {
           ...prev,
@@ -151,7 +161,19 @@ export const ConnectionLogs: React.FC<{
   }, [isScrolledToBottom]);
 
   if (!logs) {
-    return <div />;
+    return (
+      <div className="h-32 flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!logs.length) {
+    return (
+      <div className="h-32 flex items-center justify-center">
+        <p className="text-center font-semibold">No relevant logs found</p>
+      </div>
+    );
   }
 
   return (
