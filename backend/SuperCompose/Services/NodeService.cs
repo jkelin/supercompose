@@ -117,7 +117,7 @@ namespace SuperCompose.Services
       Guid id
     )
     {
-      await ctx.Nodes.Where(x => x.Id == id).DeleteAsync();
+      await ctx.BulkDeleteAsync(new[] { new Node { Id = id } });
     }
 
     public async Task Disable(Guid nodeId)

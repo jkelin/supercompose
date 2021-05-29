@@ -171,17 +171,6 @@ const EditNodeForm: React.FC<{
                 </p>
               </div>
 
-              <FieldContainer
-                name="name"
-                label="Display name"
-                text="Server display name will be visible throughout SuperCompose to help you tell apart your servers"
-              >
-                <TextField
-                  name="name"
-                  ref={form.register({ required: true })}
-                />
-              </FieldContainer>
-
               <div className="grid grid-cols-6 gap-6">
                 <FieldContainer
                   name="host"
@@ -234,6 +223,17 @@ const EditNodeForm: React.FC<{
                   <TextAreaField name="privateKey" ref={form.register()} />
                 </FieldContainer>
               </div>
+
+              <FieldContainer
+                name="name"
+                label="Display name"
+                text="Server display name will be visible throughout SuperCompose to help you tell apart your servers"
+              >
+                <TextField
+                  name="name"
+                  ref={form.register({ required: true })}
+                />
+              </FieldContainer>
 
               {globalError && (
                 <div className="bg-red-500 text-white rounded py-2 px-4 text-sm">

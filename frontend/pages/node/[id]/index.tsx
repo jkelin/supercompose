@@ -147,11 +147,13 @@ const NodeDetail: NextPage<{}> = (props) => {
             </NamedCodePill>
           </div>
 
-          <div className="mt-5 pb-1 mb-1 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Deployments
-            </h3>
-          </div>
+          {composes.length != 0 && (
+            <div className="mt-5 pb-1 mb-1 border-b border-gray-200">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Deployments
+              </h3>
+            </div>
+          )}
           <ul className="flex flex-col">
             {composes.map((x, i) => {
               const deployment = deploymentsQuery.data?.deployments.find(

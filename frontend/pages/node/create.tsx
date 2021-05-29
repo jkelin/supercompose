@@ -16,6 +16,7 @@ import {
   useCreateNodeMutation,
   useTestConnectionMutation,
 } from 'data';
+import { useDeriveNodeNameFromHost } from 'lib/util';
 import { useRouter } from 'next/dist/client/router';
 import Head from 'next/head';
 import React, { forwardRef, ReactNode, useCallback, useState } from 'react';
@@ -43,7 +44,7 @@ export default function CreateNode() {
   const toast = useToast();
 
   const form = useForm<FormData>({
-    defaultValues: { port: 22 },
+    defaultValues: { port: 22, username: 'root' },
   });
   const [testSuccess, setTestSuccess] = useState<boolean | undefined>(
     undefined,
@@ -69,6 +70,8 @@ export default function CreateNode() {
     },
     [form],
   );
+
+  useDeriveNodeNameFromHost(form);
 
   const onSubmit = form.handleSubmit(async (data) => {
     const resp = await createNode({
@@ -159,17 +162,6 @@ export default function CreateNode() {
                 </p>
               </div>
 
-              <FieldContainer
-                name="name"
-                label="Display name"
-                text="Server display name will be visible throughout SuperCompose to help you tell apart your servers"
-              >
-                <TextField
-                  name="name"
-                  ref={form.register({ required: true })}
-                />
-              </FieldContainer>
-
               <div className="grid grid-cols-5 gap-6">
                 <FieldContainer
                   name="host"
@@ -218,6 +210,17 @@ export default function CreateNode() {
                   <TextAreaField name="privateKey" ref={form.register()} />
                 </FieldContainer>
               </div>
+
+              <FieldContainer
+                name="name"
+                label="Display name"
+                text="Server display name will be visible throughout SuperCompose to help you tell apart your servers"
+              >
+                <TextField
+                  name="name"
+                  ref={form.register({ required: true })}
+                />
+              </FieldContainer>
 
               {globalError && (
                 <div className="bg-red-500 text-white rounded py-2 px-4 text-sm">
