@@ -181,7 +181,8 @@ namespace SuperCompose.Migrations
 
                     b.HasIndex("DeploymentId");
 
-                    b.HasIndex("DockerId");
+                    b.HasIndex("DockerId")
+                        .IsUnique();
 
                     b.HasIndex("Id");
 
