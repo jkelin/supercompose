@@ -27,11 +27,11 @@ namespace SuperCompose.Context
 
     [Required] public Guid CurrentId { get; set; }
 
+    public virtual Tenant Tenant { get; set; }
+
     [Required] public Guid TenantId { get; set; }
 
     public virtual ComposeVersion Current { get; set; }
-
-    public virtual Tenant Tenant { get; set; }
 
     public virtual ICollection<ComposeVersion> ComposeVersions { get; set; } = new List<ComposeVersion>();
     public virtual ICollection<Deployment> Deployments { get; set; } = new List<Deployment>();

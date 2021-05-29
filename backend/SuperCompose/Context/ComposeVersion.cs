@@ -20,8 +20,6 @@ namespace SuperCompose.Context
 
     [Required] public Guid ComposeId { get; init; }
 
-    [Required] public bool PendingDelete { get; init; } = false;
-    
 
     [Required] public Guid TenantId { get; set; }
 
@@ -34,8 +32,6 @@ namespace SuperCompose.Context
 
     public string ServicePath => $"/etc/systemd/system/{ServiceName}.service";
 
-
-    public Compose? CurrentCompose { get; init; }
     public Compose Compose { get; init; }
 
     public ICollection<Deployment> Deployments { get; init; } =

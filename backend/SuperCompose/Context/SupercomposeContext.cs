@@ -55,10 +55,13 @@ namespace SuperCompose.Context
       modelBuilder.Entity<Compose>(entity =>
       {
         entity.HasOne(d => d.Current)
-          .WithOne(p => p.CurrentCompose)
-          .HasForeignKey<Compose>(d => d.CurrentId)
-          .OnDelete(DeleteBehavior.ClientSetNull);
+          .WithMany()
+          .HasForeignKey(d => d.CurrentId)
+          .OnDelete(DeleteBehavior.Restrict);
 
+        entity.HasMany(d => d.ComposeVersions)
+          .WithOne(p => p.Compose);
+        
         entity.HasOne(d => d.Tenant)
           .WithMany(p => p.Composes)
           .HasForeignKey(d => d.TenantId)

@@ -43,8 +43,7 @@ namespace SuperCompose.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CurrentId")
-                        .IsUnique();
+                    b.HasIndex("CurrentId");
 
                     b.HasIndex("TenantId");
 
@@ -67,9 +66,6 @@ namespace SuperCompose.Migrations
                     b.Property<string>("Directory")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("PendingDelete")
-                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("RedeploymentRequestedAt")
                         .HasColumnType("timestamp without time zone");
@@ -347,8 +343,9 @@ namespace SuperCompose.Migrations
             modelBuilder.Entity("SuperCompose.Context.Compose", b =>
                 {
                     b.HasOne("SuperCompose.Context.ComposeVersion", "Current")
-                        .WithOne("CurrentCompose")
-                        .HasForeignKey("SuperCompose.Context.Compose", "CurrentId")
+                        .WithMany()
+                        .HasForeignKey("CurrentId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SuperCompose.Context.Tenant", "Tenant")
@@ -497,8 +494,6 @@ namespace SuperCompose.Migrations
 
             modelBuilder.Entity("SuperCompose.Context.ComposeVersion", b =>
                 {
-                    b.Navigation("CurrentCompose");
-
                     b.Navigation("Deployments");
                 });
 

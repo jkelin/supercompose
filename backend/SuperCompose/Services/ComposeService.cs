@@ -127,6 +127,7 @@ namespace SuperCompose.Services
         ServiceEnabled = compose.Current.ServiceEnabled,
         ServiceName = compose.Current.ServiceName,
         RedeploymentRequestedAt = DateTime.UtcNow,
+        TenantId = compose.TenantId,
         ComposeId = compose.Id
       };
 

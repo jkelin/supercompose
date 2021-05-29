@@ -250,9 +250,6 @@ namespace SuperCompose.Services
           .Include(x => x.Containers.Where(y => y.DockerId == containerId))
           .FirstOrDefaultAsync(ct);
 
-        logger.LogWarning("Container event {Compose} {Type} {Action} {Status} {Container} {Deployment}", composeName, type, action, status, containerId,
-          deployment?.Id);
-
         if (deployment == null) return;
 
         var container = deployment.Containers.FirstOrDefault(x => x.DockerId == containerId);
