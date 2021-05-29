@@ -625,7 +625,7 @@ namespace SuperCompose.Services
     {
       return $@"
 [Unit]
-Description={composeVersion} service with docker compose managed by supercompose
+Description={composeVersion.Compose.Name} service with docker compose managed by supercompose
 Requires=docker.service
 After=docker.service
 
