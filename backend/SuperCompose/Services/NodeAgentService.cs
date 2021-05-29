@@ -118,9 +118,12 @@ namespace SuperCompose.Services
 
       var deployments = await ctx.Deployments
         .Where(x => x.NodeId == nodeId)
-        .Where(x => x.LastDeployedComposeVersion != null)
         .Include(x => x.Containers)
-        .Select(x => new { Deployment = x, x.LastDeployedComposeVersion!.ServiceName })
+        .Select(x => new
+        {
+          Deployment = x,
+          ServiceName = x.LastDeployedComposeVersion!.ServiceName ?? x.Compose!.Current.ServiceName
+        })
         .ToArrayAsync(ct);
       
       var deploymentContainers = deployments.SelectMany(x => x.Deployment.Containers).ToArray();
@@ -241,9 +244,14 @@ namespace SuperCompose.Services
 
         var deployment = await ctx.Deployments
           .Where(x => x.NodeId == nodeId)
-          .Where(x => x.LastDeployedComposeVersion != null && x.LastDeployedComposeVersion.ServiceName == composeName)
+          .Where(x => x.LastDeployedComposeVersion != null
+            ? x.LastDeployedComposeVersion.ServiceName == composeName
+            : x.Compose!.Current.ServiceName == composeName)
           .Include(x => x.Containers.Where(y => y.DockerId == containerId))
           .FirstOrDefaultAsync(ct);
+
+        logger.LogWarning("Container event {Compose} {Type} {Action} {Status} {Container} {Deployment}", composeName, type, action, status, containerId,
+          deployment?.Id);
 
         if (deployment == null) return;
 
@@ -260,8 +268,6 @@ namespace SuperCompose.Services
 
         if (container != null)
         {
-          logger.LogWarning("Container event {Compose} {Type} {Action} {Status} {Container}", composeName, type, action, status, containerId);
-          
           switch (status)
           {
             case "kill" or "die":

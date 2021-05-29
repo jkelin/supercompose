@@ -87,14 +87,14 @@ namespace SuperCompose.HostedServices
       agents.AddOrUpdate(nodeId, (id) =>
       {
         CancellationTokenSource cts = new();
-        RunNodeAgent(nodeId, cts.Token).ConfigureAwait(false);
+        RunNodeAgent(id, cts.Token).ConfigureAwait(false);
         return cts;
       }, (id, oldCts) =>
       {
         oldCts.Cancel();
 
         CancellationTokenSource cts = new();
-        RunNodeAgent(nodeId, cts.Token).ConfigureAwait(false);
+        RunNodeAgent(id, cts.Token).ConfigureAwait(false);
         return cts;
       });
     }
