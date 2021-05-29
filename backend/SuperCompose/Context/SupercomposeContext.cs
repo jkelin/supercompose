@@ -124,6 +124,8 @@ namespace SuperCompose.Context
 
       modelBuilder.Entity<Container>(entity =>
       {
+        entity.HasIndex(x => x.DockerId).IsUnique();
+        
         entity.HasOne(d => d.Deployment)
           .WithMany(p => p.Containers)
           .HasForeignKey(d => d.DeploymentId)

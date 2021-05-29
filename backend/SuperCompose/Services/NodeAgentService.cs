@@ -219,7 +219,6 @@ namespace SuperCompose.Services
     private async Task HandleDockerEvent(NodeCredentials credentials, DockerEvent ee, Guid nodeId, CancellationToken ct = default)
     {
       await using var ctx = ctxFactory.CreateDbContext();
-      await using var trx = await ctx.Database.BeginTransactionAsync(ct);
       
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("HandleDockerEvent");
       
@@ -309,14 +308,12 @@ namespace SuperCompose.Services
         }
 
         await ctx.SaveChangesAsync(ct);
-        await trx.CommitAsync(ct);
         foreach (var change in changes) await pubSub.ContainerChanged(change, ct);
       }
       catch (Exception ex)
       {
         logger.LogWarning(ex, "Unknown error in node {NodeId} while handling event {Event}", nodeId, ee);
 
-        await trx.RollbackAsync(ct);
         activity.RecordException(ex);
         throw;
       }
@@ -333,59 +330,67 @@ namespace SuperCompose.Services
 
       activity?.SetTag("containerId", containerId.ToString());
 
-      await using var ctx = ctxFactory.CreateDbContext();
-      await using var trx = await ctx.Database.BeginTransactionAsync(ct);
-      
       var changes = new Queue<ContainerChange>();
       var inspect = await proxyClient.InspectContainer(credentials, containerId, ct);
-
-      var labels = inspect.Config.Labels;
-      if (labels == null || !int.TryParse(labels["com.docker.compose.container-number"], out var containerNumber))
+      
+      await using var strategyCtx = ctxFactory.CreateDbContext();
+      var strategy = strategyCtx.Database.CreateExecutionStrategy();
+      var outerContainer = await strategy.ExecuteAsync(async () =>
       {
-        throw new InvalidOperationException("Could not parse container-number label from container");
-      }
+        await using var ctx = ctxFactory.CreateDbContext();
+        await using var trx = await ctx.Database.BeginTransactionAsync(ct);
 
-      var container = await ctx.Containers.FirstOrDefaultAsync(x => x.DockerId == containerId, ct);
-      if (container == null)
-      {
-        container = new Container
+        var labels = inspect.Config.Labels;
+        if (labels == null || !int.TryParse(labels["com.docker.compose.container-number"], out var containerNumber))
         {
-          Id = Guid.NewGuid(),
-          DeploymentId = deployment.Id,
-          TenantId = deployment.TenantId,
-          DockerId = inspect.ID,
-        };
+          throw new InvalidOperationException("Could not parse container-number label from container");
+        }
 
-        ctx.Containers.Add(container);
-        changes.Enqueue(new ContainerChange(ContainerChangeKind.Created, container.Id, container.DeploymentId));
-      }
-      else
-      {
-        changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
-      }
+        var container = await ctx.Containers.FirstOrDefaultAsync(x => x.DockerId == containerId, ct);
+        if (container == null)
+        {
+          container = new Container
+          {
+            Id = Guid.NewGuid(),
+            DeploymentId = deployment.Id,
+            TenantId = deployment.TenantId,
+            DockerId = inspect.ID,
+          };
 
-      container.ContainerNumber = containerNumber;
-      container.ServiceName = labels["com.docker.compose.service"];
-      container.State = DockerStateToContainerState(inspect.State.Status);
-      container.ContainerName = inspect.Name[0] == '/' ? inspect.Name.Substring(1) : inspect.Name;
-      container.LastInspectAt = DateTime.UtcNow;
-      container.LastInspect = inspect;
+          ctx.Containers.Add(container);
+          changes.Enqueue(new ContainerChange(ContainerChangeKind.Created, container.Id, container.DeploymentId));
+        }
+        else
+        {
+          changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+        }
 
-      container.FinishedAt = DateTime.TryParse(inspect.State.FinishedAt, out var finishedAt) &&
-                             finishedAt > DateTime.UnixEpoch
-        ? finishedAt
-        : null;
+        container.ContainerNumber = containerNumber;
+        container.ServiceName = labels["com.docker.compose.service"];
+        container.State = DockerStateToContainerState(inspect.State.Status);
+        container.ContainerName = inspect.Name[0] == '/' ? inspect.Name.Substring(1) : inspect.Name;
+        container.LastInspectAt = DateTime.UtcNow;
+        container.LastInspect = inspect;
 
-      container.StartedAt = DateTime.TryParse(inspect.State.StartedAt, out var startedAt) &&
-                            startedAt > DateTime.UnixEpoch
-        ? startedAt
-        : null;
- 
-      await ctx.SaveChangesAsync(ct);
-      await trx.CommitAsync(ct);
+        container.FinishedAt = DateTime.TryParse(inspect.State.FinishedAt, out var finishedAt) &&
+                               finishedAt > DateTime.UnixEpoch
+          ? finishedAt
+          : null;
+
+        container.StartedAt = DateTime.TryParse(inspect.State.StartedAt, out var startedAt) &&
+                              startedAt > DateTime.UnixEpoch
+          ? startedAt
+          : null;
+
+        await ctx.SaveChangesAsync(ct);
+        await trx.CommitAsync(ct);
+
+        return container;
+      });
+      
       foreach (var change in changes) await pubSub.ContainerChanged(change, ct);
       
-      return container;
+      return outerContainer;
     }
 
 

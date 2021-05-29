@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -44,6 +45,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Polly;
 using Serilog;
 using SuperCompose.Auth;
 
@@ -70,16 +72,28 @@ namespace SuperCompose
 
       // Postgres main
       services.AddPooledDbContextFactory<SuperComposeContext>(options =>
-        options.UseNpgsql(
-          configuration.GetConnectionString("SuperComposeContext")));
+      {
+        options.UseNpgsql(configuration.GetConnectionString("SuperComposeContext"), sqlOpts =>
+        {
+          sqlOpts.EnableRetryOnFailure();
+        });
+      });
       services.AddDbContext<SuperComposeContext>(options =>
-        options.UseNpgsql(
-          configuration.GetConnectionString("SuperComposeContext")));
+      {
+        options.UseNpgsql(configuration.GetConnectionString("SuperComposeContext"), sqlOpts =>
+        {
+          sqlOpts.EnableRetryOnFailure();
+        });
+      });
 
       // Postgres encryption keys
       services.AddDbContext<KeysContext>(options =>
-        options.UseNpgsql(
-          configuration.GetConnectionString("KeysContext")));
+      {
+        options.UseNpgsql(configuration.GetConnectionString("KeysContext"), sqlOpts =>
+        {
+          sqlOpts.EnableRetryOnFailure();
+        });
+      });
 
       // Redis distributed cache
       services.AddMemoryCache();
@@ -110,6 +124,13 @@ namespace SuperCompose
       services
         .AddHealthChecks()
         .AddRedis(configuration.GetConnectionString("Redis"), "Redis")
+        .AddUrlGroup(opts =>
+        {
+          opts.AddUri(new Uri(new Uri(configuration["Proxy:Url"]), "/health"), uriOpts =>
+            {
+              uriOpts.UseGet().ExpectHttpCode(200).UseTimeout(TimeSpan.FromSeconds(1));
+            });
+        })
         .AddDbContextCheck<SuperComposeContext>()
         .AddDbContextCheck<KeysContext>();
       
@@ -187,6 +208,13 @@ namespace SuperCompose
       services.AddHttpClient("OIDC", client => { client.BaseAddress = new Uri(configuration["Auth:Authority"]); });
       services
         .AddHttpClient("proxy", client => { client.BaseAddress = new Uri(configuration["Proxy:Url"]); })
+        .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(new[]
+        {
+          TimeSpan.FromMilliseconds(100),
+          TimeSpan.FromSeconds(1),
+          TimeSpan.FromSeconds(5),
+          TimeSpan.FromSeconds(10)
+        }))
         .ConfigurePrimaryHttpMessageHandler(messageHandler =>
         {
           var handler = new HttpClientHandler();

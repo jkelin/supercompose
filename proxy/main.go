@@ -149,6 +149,10 @@ func main() {
 	app := iris.New()
 	app.Validator = validator.New()
 
+	app.Get("/health", func(ctx iris.Context) {
+		ctx.StatusCode(200)
+	})
+
 	app.Logger().SetLevel("debug")
 	app.Use(recover.New())
 	app.Use(logger.New())
