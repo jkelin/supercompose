@@ -134,16 +134,12 @@ namespace SuperCompose.Services
           var deployments = node.Deployments.Where(ShouldUpdateDeployment).ToList();
           if (!deployments.Any()) return;
 
-          // using var ssh = await OpenSsh(node, ct);
-
           var connectionParams = await cryptoService.GetNodeCredentials(node);
 
 
           if (deployments.Any(x => x.LastDeployedNodeVersion != node.Version))
             if (!await VerifyNode(connectionParams, ct))
               return;
-
-          // using var sftp = await OpenSftp(node, ct);
 
 
           foreach (var deployment in deployments) await ApplyDeployment(connectionParams, deployment, ct);
@@ -252,8 +248,8 @@ namespace SuperCompose.Services
         var targetSystemdUpdatedTask = target.UseService 
           ? UpdateSystemdFile(credentials, deployment.Compose!.Current, ct) // TODO if service path equal, but compose paths changed, we first need to stop the old service
           : Task.FromResult(false);
-        var lastComposeStatusTask = last?.ComposePath != null && last.ComposePath != target.ComposePath
-          ? GetComposeIsRunning(credentials, last.ComposePath, ct)
+        var lastComposeStatusTask = deployment.LastDeployedComposeVersion != null
+          ? GetComposeIsRunning(credentials, deployment.LastDeployedComposeVersion, ct)
           : Task.FromResult(false);
         var targetServiceStatusTask = target.UseService
           ? proxyClient.SystemdGetService(credentials, target.ServiceId, ct)
@@ -266,10 +262,37 @@ namespace SuperCompose.Services
 
         await Task.WhenAll(targetComposeUpdatedTask, targetSystemdUpdatedTask, lastComposeStatusTask, targetServiceStatusTask, lastServiceStatusTask);
 
+
+        var composeChanged = await targetComposeUpdatedTask;
+        var serviceChanged = await targetSystemdUpdatedTask;
+        var bothAreServices = last != null && target.UseService && last.UseService;
+        var bothAreComposes = last != null && !target.UseService && !last.UseService;
+        var composePathChanged = last == null || target.ComposePath != last.ComposePath;
+        var servicePathChanged = last == null || target.ComposePath != last.ComposePath;
+        var targetEnabled = target.DeploymentEnabled;
+        var lastServiceStatus = await targetServiceStatusTask;
+        var lastServiceRunning = lastServiceStatus != null && lastServiceStatus.IsRunning;
+        var lastServiceEnabled = lastServiceStatus != null && lastServiceStatus.IsEnabled;
+        var lastDockerRunning = await lastComposeStatusTask;
+        var redeploymentRequested = deployment.RedeploymentRequestedAt != null && deployment.RedeploymentRequestedAt > deployment.LastCheck;
+        var restartRequired = composeChanged || serviceChanged || redeploymentRequested;
+
+        activity?.AddTag("startStop.composeChanged", composeChanged);
+        activity?.AddTag("startStop.serviceChanged", serviceChanged);
+        activity?.AddTag("startStop.bothAreServices", bothAreServices);
+        activity?.AddTag("startStop.bothAreComposes", bothAreComposes);
+        activity?.AddTag("startStop.composePathChanged", composePathChanged);
+        activity?.AddTag("startStop.servicePathChanged", servicePathChanged);
+        activity?.AddTag("startStop.enabled", targetEnabled);
+        activity?.AddTag("startStop.lastServiceRunning", lastServiceRunning);
+        activity?.AddTag("startStop.lastServiceEnabled", lastServiceEnabled);
+        activity?.AddTag("startStop.lastDockerRunning", lastDockerRunning);
+        activity?.AddTag("startStop.redeploymentRequested", redeploymentRequested);
+
         activity?.AddEvent(new ActivityEvent("System status acquired, updating resource enablement state"));
         connectionLog.Info($"System status acquired, updating resource enablement state");
 
-        if (await targetSystemdUpdatedTask)
+        if (serviceChanged)
         {
           await proxyClient.SystemdReload(credentials, ct);
         }
@@ -278,7 +301,11 @@ namespace SuperCompose.Services
         {
           var pendingTasks = new List<Task>();
           
-          var shouldDisableOldService = last != null && ((last.UseService && !target.UseService) || (target.UseService && last.UseService && target.ServicePath != last.ServicePath));
+          var shouldDisableOldService = last != null && lastServiceEnabled && (
+            (last.UseService && !target.UseService) ||
+            (target.UseService && servicePathChanged) ||
+            (!targetEnabled)
+          );
           
           if (shouldDisableOldService)
           {
@@ -292,10 +319,11 @@ namespace SuperCompose.Services
             }
           }
 
-          var shouldEnableNewService =
+          var shouldEnableNewService = targetEnabled && (
             last != null
             ? (target.UseService && !last.UseService) || (target.UseService && last.UseService && target.ServicePath != last.ServicePath)
-            : target.UseService;
+            : target.UseService
+          );
           
           if (shouldEnableNewService)
           {
@@ -315,88 +343,78 @@ namespace SuperCompose.Services
         activity?.AddEvent(new ActivityEvent("Successfully changed resource enabled status, restarting resources"));
         connectionLog.Info($"Successfully changed resource enabled status, restarting resources");
 
-        using (var startStopActivity = Extensions.SuperComposeActivitySource.StartActivity("Stop old and start new"))
+        if (last != null && (lastServiceRunning || lastDockerRunning))
         {
-          var bothAreServices = last != null && target.UseService && last.UseService;
-          var bothAreComposes = last != null && !target.UseService && !last.UseService;
-          var composePathChanged = last == null || target.ComposePath != last.ComposePath;
-          var servicePathChanged = last == null || target.ComposePath != last.ComposePath;
+          using var stopActivity = Extensions.SuperComposeActivitySource.StartActivity("Stop old");
 
-          activity?.AddTag("startStop.bothAreServices", bothAreServices);
-          activity?.AddTag("startStop.bothAreComposes", bothAreComposes);
-          activity?.AddTag("startStop.composePathChanged", composePathChanged);
-          activity?.AddTag("startStop.servicePathChanged", servicePathChanged);
-
-          if (bothAreServices && !composePathChanged && !servicePathChanged)
+          activity?.AddEvent(new ActivityEvent("Stopping old resources"));
+          connectionLog.Info($"Stopping old resources");
+          
+          if (lastServiceRunning && !target.UseService)
           {
-            startStopActivity?.AddEvent(new ActivityEvent("bothAreServices && !composePathChanged && !servicePathChanged"));
-            await proxyClient.SystemdRestartService(credentials, target.ServiceId, ct);
-          }
-          else if (bothAreServices && composePathChanged && !servicePathChanged)
-          {
-            startStopActivity?.AddEvent(new ActivityEvent("bothAreServices && composePathChanged && !servicePathChanged"));
-            await StopDockerCompose(credentials, last!, ct);
-            await proxyClient.SystemdRestartService(credentials, target.ServiceId, ct);
-          }
-          else if (bothAreServices && servicePathChanged)
-          {
-            startStopActivity?.AddEvent(new ActivityEvent("bothAreServices && servicePathChanged"));
-            await proxyClient.SystemdStopService(credentials, last!.ServiceId, ct);
-            await proxyClient.SystemdRestartService(credentials, target.ServiceId, ct);
-          }
-          else if (last == null && !target.UseService)
-          {
-            startStopActivity?.AddEvent(new ActivityEvent("last == null && !target.UseService"));
-            await StartDockerCompose(credentials, target, ct);
-          }
-          else if (last == null && target.UseService)
-          {
-            startStopActivity?.AddEvent(new ActivityEvent("last == null && target.UseService"));
-            await proxyClient.SystemdStartService(credentials, target.ServiceId, ct);
-          }
-          else if (last != null && last.UseService && !target.UseService)
-          {
-            startStopActivity?.AddEvent(new ActivityEvent("last != null && last.UseService && !target.UseService"));
+            stopActivity?.AddEvent(new ActivityEvent("old service is running, but new is compose"));
             await proxyClient.SystemdStopService(credentials, last.ServiceId, ct);
-            await StartDockerCompose(credentials, target, ct);
           }
-          else if (last != null && !last.UseService && target.UseService)
+          else if (lastServiceRunning && servicePathChanged)
           {
-            startStopActivity?.AddEvent(new ActivityEvent("last != null && !last.UseService && target.UseService"));
+            stopActivity?.AddEvent(new ActivityEvent("old service is running, but service path has changed"));
+            await proxyClient.SystemdStopService(credentials, last.ServiceId, ct);
+          }
+          else if (!targetEnabled && lastServiceRunning)
+          {
+            stopActivity?.AddEvent(new ActivityEvent("old service should not be running, but is"));
+            await proxyClient.SystemdStopService(credentials, last.ServiceId, ct);
+          }
+          else if (lastDockerRunning && composePathChanged)
+          {
+            stopActivity?.AddEvent(new ActivityEvent("old docker is running, but compose path has changed"));
             await StopDockerCompose(credentials, last, ct);
-            await proxyClient.SystemdStartService(credentials, target.ServiceId, ct);
           }
-          else if (bothAreComposes && !composePathChanged)
+          else if (!targetEnabled && lastDockerRunning)
           {
-            startStopActivity?.AddEvent(new ActivityEvent("bothAreComposes && !composePathChanged"));
-            await RestartDockerCompose(credentials, target, ct);
-          }
-          else if (bothAreComposes && composePathChanged)
-          {
-            startStopActivity?.AddEvent(new ActivityEvent("bothAreComposes && composePathChanged"));
-
-            if (await lastComposeStatusTask && deployment.LastDeployedComposeVersion != null)
-            {
-              startStopActivity?.AddEvent(new ActivityEvent("Last compose running, stopping"));
-              await StopDockerCompose(credentials, last!, ct);
-            }
-            else
-            {
-              startStopActivity?.AddEvent(new ActivityEvent("Last compose not running"));
-            }
-
-            await StartDockerCompose(credentials, target, ct);
-          }
-          else
-          {
-            var err = new InvalidOperationException("Invalid state reached in ApplyDeployment");
-            startStopActivity?.AddEvent(new ActivityEvent("Invalid state"));
-            startStopActivity.RecordException(err);
-            throw err;
+            stopActivity?.AddEvent(new ActivityEvent("old docker should not be running, but is"));
+            await StopDockerCompose(credentials, last, ct);
           }
         }
 
-        if (last != null && (last.ComposePath != target.ComposePath || last.ServicePath != target.ServicePath))
+        if (targetEnabled && (!lastDockerRunning || composePathChanged || servicePathChanged || restartRequired || last.UseService != target.UseService))
+        {
+          using var startActivity = Extensions.SuperComposeActivitySource.StartActivity("Start new");
+
+          activity?.AddEvent(new ActivityEvent("Starting new resources"));
+          connectionLog.Info($"Starting new resources");
+          
+          if (bothAreServices && !composePathChanged && !servicePathChanged && restartRequired)
+          {
+            startActivity?.AddEvent(new ActivityEvent("restart unchanged service"));
+            await proxyClient.SystemdRestartService(credentials, target.ServiceId, ct);
+          }
+          else if (lastDockerRunning && bothAreServices && !composePathChanged && !servicePathChanged && !restartRequired)
+          {
+            startActivity?.AddEvent(new ActivityEvent("nothing changed, no restart required"));
+          }
+          else if (lastDockerRunning && bothAreComposes && !composePathChanged && !restartRequired)
+          {
+            startActivity?.AddEvent(new ActivityEvent("nothing changed, no restart required"));
+          }
+          else if (bothAreComposes && !composePathChanged && restartRequired)
+          {
+            startActivity?.AddEvent(new ActivityEvent("restart docker"));
+            await RestartDockerCompose(credentials, target, ct);
+          }
+          else if (target.UseService)
+          {
+            startActivity?.AddEvent(new ActivityEvent("starting service"));
+            await proxyClient.SystemdRestartService(credentials, target.ServiceId, ct);
+          }
+          else if (!target.UseService)
+          {
+            startActivity?.AddEvent(new ActivityEvent("starting compose"));
+            await StartDockerCompose(credentials, target, ct);
+          }
+        }
+
+        if (last != null && (composePathChanged || servicePathChanged || !targetEnabled))
         {
           connectionLog.Info($"Restart successful, removing outdated resources");
 
@@ -404,16 +422,13 @@ namespace SuperCompose.Services
           
           var pendingTasks = new List<Task>();
 
-          var shouldRemoveOldService =
-            (last.UseService && !target.UseService) || (target.UseService && last.UseService && target.ServicePath != last.ServicePath);
-          if (shouldRemoveOldService)
+          if (servicePathChanged || !targetEnabled)
           {
             removeActivity?.AddEvent(new ActivityEvent("shouldRemoveOldService"));
             pendingTasks.Add(RemoveService(credentials, last, ct));
           }
 
-          var shouldRemoveOldCompose = target.ComposePath != last.ComposePath;
-          if (shouldRemoveOldCompose)
+          if (composePathChanged || !targetEnabled)
           {
             removeActivity?.AddEvent(new ActivityEvent("shouldRemoveOldCompose"));
             pendingTasks.Add(RemoveCompose(credentials, last, ct));
@@ -464,18 +479,27 @@ namespace SuperCompose.Services
       }
     }
 
-    private async Task<bool> GetComposeIsRunning(NodeCredentials credentials, string composePath, CancellationToken ct = default)
+    private async Task<bool> GetComposeIsRunning(NodeCredentials credentials, ComposeVersion version, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("GetComposeNeedsToStop");
-      activity?.AddTag("supercompose.path", composePath);
+      activity?.AddTag("supercompose.path", version.Directory);
 
-      var executablePath = await GetDockerComposePath(credentials, ct);
-      var res = await proxyClient.RunCommand(credentials, $"{executablePath} --file '{composePath}' ps --quiet", ct);
+      var cmd = await ComposeCmdPrefix(credentials, version.Directory, version.ServiceName, ct) + " ps --quiet";
+      var res = await proxyClient.RunCommand(credentials, cmd, ct);
 
       return res.Code == 0 && res.Stdout != null && !string.IsNullOrEmpty(Encoding.UTF8.GetString(res.Stdout).Trim());
     }
 
-    private record DeploymentInfo(bool DeploymentEnabled, bool UseService, string? ComposePath, string? ComposeContent, string? ServicePath, string? ServiceId);
+    private record DeploymentInfo(
+      bool DeploymentEnabled,
+      bool UseService,
+      string? ComposeDirectory,
+      string? ComposePath,
+      string? ComposeContent,
+      string? ServicePath,
+      string? ServiceId,
+      string? ServiceName
+    );
 
     private (DeploymentInfo target, DeploymentInfo? lastApplied) CalculateDeploymentDiff(Deployment deployment)
     {
@@ -492,18 +516,22 @@ namespace SuperCompose.Services
         new DeploymentInfo(
           targetEnabled,
           targetService,
+          target?.Directory,
           target?.ComposePath,
           target?.Content,
           targetService ? target?.ServicePath : null,
-          targetService ? target?.ServiceName + ".service" : null
+          targetService ? target?.ServiceName + ".service" : null,
+          target?.ServiceName
           ),
         last != null && last.ComposePath != null ? new DeploymentInfo(
           lastEnabled,
           lastSvc,
+          last.Directory,
           last.ComposePath,
           last.Content,
           lastSvc ? last.ServicePath : null,
-          lastSvc ? last.ServiceName + ".service" : null
+          lastSvc ? last.ServiceName + ".service" : null,
+          last?.ServiceName
           ) : null
       );
     }
@@ -571,31 +599,29 @@ namespace SuperCompose.Services
     private async Task RestartDockerCompose(NodeCredentials credentials, DeploymentInfo composeVersion, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("RestartDockerCompose");
-      
-      var composePath = await GetDockerComposePath(credentials, ct);
-      await proxyClient.RunCommand(credentials, $"{composePath} --file '{composeVersion.ComposePath}' restart", ct);
+
+      var cmd = await ComposeCmdPrefix(credentials, composeVersion.ComposeDirectory, composeVersion.ServiceName, ct) + " restart";
+      await proxyClient.RunCommand(credentials, cmd, ct);
     }
 
     private async Task StopDockerCompose(NodeCredentials credentials, DeploymentInfo composeVersion, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("StopDockerCompose");
-      
-      var composePath = await GetDockerComposePath(credentials, ct);
-      await proxyClient.RunCommand(credentials, $"{composePath} --file '{composeVersion.ComposePath}' down", ct);
+
+      var cmd = await ComposeCmdPrefix(credentials, composeVersion.ComposeDirectory, composeVersion.ServiceName, ct) + " down";
+      await proxyClient.RunCommand(credentials, cmd, ct);
     }
 
     private async Task StartDockerCompose(NodeCredentials credentials, DeploymentInfo composeVersion, CancellationToken ct)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("StartDockerCompose");
       
-      var composePath = await GetDockerComposePath(credentials, ct);
-      await proxyClient.RunCommand(credentials, $"{composePath} --file '{composeVersion.ComposePath}'  up -d --remove-orphans", ct);
+      var cmd = await ComposeCmdPrefix(credentials, composeVersion.ComposeDirectory, composeVersion.ServiceName, ct) + " up -d --remove-orphans";
+      await proxyClient.RunCommand(credentials, cmd, ct);
     }
 
     private async Task<string> GenerateSystemdServiceFile(NodeCredentials credentials, ComposeVersion composeVersion, CancellationToken ct)
     {
-      var composePath = await GetDockerComposePath(credentials, ct);
-
       return $@"
 [Unit]
 Description={composeVersion} service with docker compose managed by supercompose
@@ -605,14 +631,18 @@ After=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=true
-Environment=""COMPOSE_PROJECT_NAME={composeVersion.ServiceName}""
-Environment=""COMPOSE_FILE={composeVersion.Directory}/docker-compose.yml""
 WorkingDirectory={composeVersion.Directory}
-ExecStart={composePath} --project-directory ""{composeVersion.Directory}"" --project-name ""{composeVersion.ServiceName}"" up -d --remove-orphans
-ExecStop={composePath} down
+ExecStart={await ComposeCmdPrefix(credentials, composeVersion.Directory, composeVersion.ServiceName, ct)} up -d --remove-orphans
+ExecStop={await ComposeCmdPrefix(credentials, composeVersion.Directory, composeVersion.ServiceName, ct)} down
 
 [Install]
 WantedBy=multi-user.target".Trim().Replace("\r\n", "\n");
+    }
+
+    private async Task<string> ComposeCmdPrefix(NodeCredentials credentials, string dir, string service, CancellationToken ct)
+    {
+      var composePath = await GetDockerComposePath(credentials, ct);
+      return $"{composePath} --project-directory '{dir}' --project-name '{service}' --file '{dir}/docker-compose.yml'";
     }
   }
 }

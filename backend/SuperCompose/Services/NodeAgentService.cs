@@ -119,7 +119,6 @@ namespace SuperCompose.Services
       var deployments = await ctx.Deployments
         .Where(x => x.NodeId == nodeId)
         .Where(x => x.LastDeployedComposeVersion != null)
-        .Where(x => x.Enabled)
         .Include(x => x.Containers)
         .Select(x => new { Deployment = x, x.LastDeployedComposeVersion!.ServiceName })
         .ToArrayAsync(ct);
