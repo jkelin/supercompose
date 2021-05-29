@@ -61,7 +61,7 @@ export const NodeList: React.FC<{}> = (props) => {
   return (
     <ul className="flex flex-col">
       <CreateCard key="create" href="/node/create">
-        Create node
+        Connect server
       </CreateCard>
       {nodeQuery && nodeQuery.loading && !nodes.length && <div>Loading</div>}
       {nodes?.map((node, i) => (

@@ -83,7 +83,9 @@ export const ComposeList: React.FC<{}> = (props) => {
   return (
     <ul className="flex flex-col">
       <CreateCard href="/compose/create">Create compose</CreateCard>
-      {composeQuery && composeQuery.loading && <div>Loading</div>}
+      {composeQuery && composeQuery.loading && !composes.length && (
+        <div>Loading</div>
+      )}
       {composes?.map((compose, i) => (
         <React.Fragment key={compose.id}>
           {i !== composes.length && <div className="h-4" />}

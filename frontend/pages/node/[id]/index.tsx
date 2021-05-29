@@ -91,7 +91,7 @@ const NodeDetail: NextPage<{}> = (props) => {
                 <Spinner className="inline-block ml-1 w-5 h-5" />
               )}
             </h1>
-            <div className="text-sm text-gray-600">Node</div>
+            <div className="text-sm text-gray-600">Server connection</div>
           </div>
 
           <div className="flex flex-row">

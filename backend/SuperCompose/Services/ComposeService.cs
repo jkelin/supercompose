@@ -94,21 +94,7 @@ namespace SuperCompose.Services
 
       if (compose == null) return;
 
-      var version = new ComposeVersion
-      {
-        Id = Guid.NewGuid(),
-        Content = compose.Current.Content,
-        Directory = compose.Current.Directory,
-        ServiceEnabled = compose.Current.ServiceEnabled,
-        ServiceName = compose.Current.ServiceName,
-        PendingDelete = true,
-        ComposeId = compose.Id
-      };
-
-      await ctx.ComposeVersions.AddAsync(version);
-      compose.CurrentId = version.Id;
-
-      foreach (var deployment in compose.Deployments) deployment.Enabled = false;
+      ctx.Composes.Remove(compose);
 
       await ctx.SaveChangesAsync();
 

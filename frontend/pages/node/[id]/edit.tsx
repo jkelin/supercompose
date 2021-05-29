@@ -161,19 +161,20 @@ const EditNodeForm: React.FC<{
             <div className="bg-white py-6 px-4 space-y-6 sm:p-6">
               <div>
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Update node
+                  Update server connection
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Supercompose uses <strong>SSH</strong> to connect to nodes.
-                  Please setup SSH credentials to access your node. Adding a new
-                  node will allow you to manage compose files on it.
+                  Supercompose uses <strong>SSH</strong> to connect to servers.
+                  Please setup SSH credentials to access your server. Adding a
+                  new server connection will allow you to manage compose files
+                  on it.
                 </p>
               </div>
 
               <FieldContainer
                 name="name"
                 label="Display name"
-                text="Node display name will be visible throughout supercompose to help you tell apart your nodes"
+                text="Server display name will be visible throughout SuperCompose to help you tell apart your servers"
               >
                 <TextField
                   name="name"
@@ -273,10 +274,11 @@ const EditNodeForm: React.FC<{
         kind="danger"
         onConfirm={onNodeDelete}
         confirm="Delete"
-        title="Confirm Node deletion"
+        title="Confirm server disconnect"
       >
-        Are you sure you wish to delete Node <strong>{node.name}</strong>? This
-        node will be permanently removed from Supercompose.
+        Are you sure you wish to delete server connection{' '}
+        <strong>{node.name}</strong>? This server will be permanently
+        disconnected from SuperCompose.
         <br />
         <br />
         This action cannot be undone.

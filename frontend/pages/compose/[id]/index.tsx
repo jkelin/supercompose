@@ -158,11 +158,11 @@ const ComposeDetail: NextPage<{}> = (props) => {
 
               return (
                 <React.Fragment key={x.id}>
-                  <li className="block flex items-stretch">
+                  <li className="flex items-stretch">
                     <IdentificationIcon name={x.name} id={x.id} />
                     <div className="ml-4 text-sm leading-none flex flex-col justify-center">
                       <div className="text-gray-900 font-medium">{x.name}</div>
-                      <div className="text-gray-500">Docker Compose</div>
+                      <div className="text-gray-500">Server</div>
                     </div>
                     <div className="flex-grow" />
                     {deployment ? (
