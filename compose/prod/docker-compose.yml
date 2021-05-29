@@ -44,7 +44,7 @@ services:
   proxy:
     build: ../../proxy
     environment:
-      - "JWT_KEY={$Proxy__JWT}"
+      - JWT_KEY=$Proxy__JWT
       - JAEGER_URL=http://jaeger:14268/api/traces
     logging:
       driver: json-file
