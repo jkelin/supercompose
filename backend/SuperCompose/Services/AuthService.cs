@@ -45,7 +45,6 @@ namespace SuperCompose.Services
       if (string.IsNullOrEmpty(userInfo.Email)) throw new InvalidOperationException("Email null in userInfo");
       if (!userInfo.EmailVerified.HasValue) throw new InvalidOperationException("EmailVerified null in userInfo");
 
-      await using var trx = await ctx.Database.BeginTransactionAsync(ct);
       var user = await ctx.Users.Include(x => x.Tenants).FirstOrDefaultAsync(x => x.IDPSubject == userInfo.Sub, ct);
       if (user == null)
       {
@@ -70,7 +69,6 @@ namespace SuperCompose.Services
       user.Picture = userInfo.Picture ?? userInfo.Email;
 
       await ctx.SaveChangesAsync(ct);
-      await trx.CommitAsync(ct);
 
       await CacheTenantsForSub(user.IDPSubject, user.Tenants.Select(x => x.Id), ct);
 
