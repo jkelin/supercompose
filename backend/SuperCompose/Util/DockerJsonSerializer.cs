@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -50,6 +51,20 @@ namespace SuperCompose.Util
       public T DeserializeObject<T>(string json)
       {
         return JsonConvert.DeserializeObject<T>(json, this._settings);
+      }
+
+      public bool TryDeserializeObject<T>(string json, out T item)
+      {
+        try
+        {
+          item = JsonConvert.DeserializeObject<T>(json, this._settings);
+          return true;
+        }
+        catch (Exception ex)
+        {
+          item = default;
+          return false;
+        }
       }
 
       public string SerializeObject<T>(T value)

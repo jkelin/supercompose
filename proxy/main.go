@@ -196,6 +196,7 @@ func main() {
 	app.UseRouter(crs)
 
 	containerStatsRoute(app)
+	dockerEventsRoute(app)
 
 	app.Use(iris.Compression)
 

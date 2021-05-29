@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -183,7 +185,19 @@ namespace SuperCompose
 
       // HTTP Clients
       services.AddHttpClient("OIDC", client => { client.BaseAddress = new Uri(configuration["Auth:Authority"]); });
-      services.AddHttpClient("proxy", client => { client.BaseAddress = new Uri(configuration["Proxy:Url"]); });
+      services
+        .AddHttpClient("proxy", client => { client.BaseAddress = new Uri(configuration["Proxy:Url"]); })
+        .ConfigurePrimaryHttpMessageHandler(messageHandler =>
+        {
+          var handler = new HttpClientHandler();
+
+          if (handler.SupportsAutomaticDecompression)
+          {
+            handler.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
+          }
+
+          return handler;
+        });
 
       // Auth
       services

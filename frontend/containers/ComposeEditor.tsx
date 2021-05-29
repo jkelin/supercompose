@@ -39,7 +39,8 @@ services:
 
 export function directoryFromName(name: string) {
   return (
-    '/opt/docker/' + name.replace(/[^a-z0-9_-]/gi, '-').replace(/-+/g, '-')
+    '/etc/docker/compose/' +
+    name.replace(/[^a-z0-9_-]/gi, '-').replace(/-+/g, '-')
   );
 }
 

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using SuperCompose.Context;
+using SuperCompose.Exceptions;
 using SuperCompose.HostedServices;
 using SuperCompose.Util;
 
@@ -52,6 +53,13 @@ namespace SuperCompose.Services
       {
         throw new InvalidOperationException("TenantId not set while creating connection log");
       }
+
+      var errorString = exception != null ? $"{exception.GetType().Name}: {exception.Message}" : null;
+
+      if (exception is ProxyClientException ex && ex.ErrorResponse != null)
+      {
+        errorString = $"{ex.ErrorResponse.Title}: {ex.ErrorResponse.Detail}";
+      }
       
       await mediator.Publish(new SaveConnectionLog
       {
@@ -64,7 +72,7 @@ namespace SuperCompose.Services
           ComposeId = composeId,
           TenantId = tenantId.Value,
           Time = DateTime.UtcNow,
-          Error = exception != null ? $"{exception.GetType().Name}: {exception.Message}" : null,
+          Error = errorString,
           Metadata = metadata
         }
       });

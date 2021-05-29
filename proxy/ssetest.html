@@ -8,20 +8,20 @@
     <script>
       var sse;
 
-      function go() {
+      function go(e) {
         var containerId = document
           .getElementById("container")
           .getAttribute("value");
-        var auth = document.getElementById("pkey").getAttribute("value");
+        var auth = document.getElementById("token").value;
 
         if (sse) {
           sse.close();
         }
 
         sse = new EventSource(
-          `http://localhost:8080/containers/${encodeURIComponent(
-            containerId
-          )}/stats?authorize=${encodeURIComponent(auth)}`
+          `http://localhost:8080/docker/events?authorize=${encodeURIComponent(
+            auth
+          )}`
         );
         sse.onmessage = function (event) {
           console.log(event.data);
@@ -35,8 +35,8 @@
       }
     </script>
 
-    <form action="#" onsubmit="go()">
-      <input type="text" placeholder="Private key" id="pkey" />
+    <form action="#" method="GET" onsubmit="go()">
+      <input type="text" placeholder="Token" id="token" />
       <br />
       <input type="text" placeholder="Container id" id="container" />
       <br />

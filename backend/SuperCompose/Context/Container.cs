@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Docker.DotNet.Models;
 using HotChocolate;
+using Microsoft.EntityFrameworkCore;
 
 namespace SuperCompose.Context
 {
@@ -20,6 +21,8 @@ namespace SuperCompose.Context
     Exited
   }
 
+  [Index(nameof(Id))]
+  [Index(nameof(DockerId))]
   public class Container
   {
     [Required] [Key] public Guid Id { get; set; }
@@ -29,6 +32,8 @@ namespace SuperCompose.Context
     [Required] public string ServiceName { get; set; }
 
     [Required] public int ContainerNumber { get; set; }
+
+    public string? DockerId { get; set; }
 
     public DateTime? StartedAt { get; set; }
 

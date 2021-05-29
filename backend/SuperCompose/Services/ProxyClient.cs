@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -125,21 +127,14 @@ namespace SuperCompose.Services
           ErrorResponse = errorResponse
         };
 
-        connectionLog.Error(
-          errorResponse.Title,
-          exp,
-          new Dictionary<string, dynamic>(
-            new []
-            {
-              new KeyValuePair<string, dynamic>("detail", errorResponse.Detail)
-            })
-          );
+        LogError(exp);
 
         throw exp;
       }
 
       return resp.Content;
     }
+    
 
     private async Task<TResp> Get<TResp>(string path, NodeCredentials credentials, CancellationToken ct = default)
     {
@@ -153,6 +148,65 @@ namespace SuperCompose.Services
       var str = await resp.ReadAsStringAsync(cancellationToken: ct) ?? throw new InvalidOperationException("Could not parse response from proxy call");
 
       return dockerSerializer.DeserializeObject<TResp>(str);
+    }
+
+    private void LogError(ProxyClientException ex)
+    {
+      var currentActivity = Activity.Current;
+      connectionLog.Error(
+        currentActivity != null && ex.ErrorResponse != null ? $"{currentActivity.DisplayName} failed" : ex.Message,
+        ex,
+        ex.ErrorResponse != null ? new Dictionary<string, dynamic>(
+          new[]
+          {
+            new KeyValuePair<string, dynamic>("detail", ex.ErrorResponse.Detail)
+          }) : null
+      );
+
+      currentActivity?.AddEvent(new ActivityEvent("Request failed", tags: new ActivityTagsCollection
+      {
+        ["detail"] = ex.ErrorResponse?.Detail,
+        ["title"] = ex.ErrorResponse?.Title,
+        ["type"] = ex.ErrorResponse?.Type
+      }));
+    }
+
+    private async IAsyncEnumerable<TResp> GetDockerSSE<TResp>(string path, NodeCredentials credentials, [EnumeratorCancellation] CancellationToken ct = 
+    default) where TResp : class
+    {
+      using var client = ClientFor(credentials);
+      using var reader = new StreamReader(await client.GetStreamAsync(path, ct));
+      
+      while (!ct.IsCancellationRequested)
+      {
+        var line = await reader.ReadLineAsync();
+
+        if (!string.IsNullOrEmpty(line) && line.StartsWith("data: "))
+        {
+          line = line[6..];
+        }
+        
+        switch (string.IsNullOrEmpty(line))
+        {
+          case false when dockerSerializer.TryDeserializeObject<TResp>(line, out var item):
+            yield return item;
+            break;
+          case false when dockerSerializer.TryDeserializeObject<ProxyClientErrorResponse>(line, out var err):
+          {
+            var exp = new ProxyClientException(err.Title)
+            {
+              ErrorResponse = err
+            };
+            
+            LogError(exp);
+
+            throw exp;
+          }
+          case false:
+            logger.LogDebug("{Line}", line);
+            throw new InvalidOperationException("Could not parse SSE line");
+        }
+      }
     }
 
 
@@ -323,7 +377,7 @@ namespace SuperCompose.Services
 
       connectionLog.Info($"Reading docker containers");
 
-      return await GetDocker<ContainerListResponse[]>($"/containers/json", credentials, ct);
+      return await GetDocker<ContainerListResponse[]>($"/docker/containers/json", credentials, ct);
     }
 
     public async Task<ContainerInspectResponse> InspectContainer(NodeCredentials credentials, string id, CancellationToken ct = default)
@@ -331,7 +385,33 @@ namespace SuperCompose.Services
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.InspectContainer");
       activity?.AddTag("supercompose.containerId", id);
 
-      return await GetDocker<ContainerInspectResponse>($"/containers/{id}/json", credentials, ct);
+      return await GetDocker<ContainerInspectResponse>($"/docker/containers/{id}/json", credentials, ct);
+    }
+
+    public async IAsyncEnumerable<Message> DockerEvents(NodeCredentials credentials, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ProxyClient.DockerEvents");
+
+      var sseEvents = GetDockerSSE<Message>($"/docker/events", credentials, ct);
+
+      await foreach (var item in sseEvents.WithCancellation(ct))
+      {
+        activity?.AddEvent(
+          new ActivityEvent(
+            "Received event",
+            tags: new ActivityTagsCollection(new[]
+            {
+              new KeyValuePair<string, object?>("action", item.Action),
+              new KeyValuePair<string, object?>("actor", item.Actor),
+              new KeyValuePair<string, object?>("id", item.ID),
+              new KeyValuePair<string, object?>("type", item.Type),
+              new KeyValuePair<string, object?>("status", item.Status),
+            })
+            )
+          );
+        
+        yield return item;
+      }
     }
   }
 }

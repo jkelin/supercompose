@@ -40,7 +40,7 @@ func createDockerClient(sshClient *ssh.Client) (*dockerClient.Client, error) {
 }
 
 func containerInspectRoute(app *iris.Application) {
-	app.Get("/containers/:id/json", func(ctx iris.Context) {
+	app.Get("/docker/containers/:id/json", func(ctx iris.Context) {
 		handle, err := GetConnection(ctx.Request().Context(), jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
@@ -66,7 +66,7 @@ func containerInspectRoute(app *iris.Application) {
 }
 
 func containersRoute(app *iris.Application) {
-	app.Get("/containers/json", func(ctx iris.Context) {
+	app.Get("/docker/containers/json", func(ctx iris.Context) {
 		handle, err := GetConnection(ctx.Request().Context(), jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
@@ -97,7 +97,7 @@ func containersRoute(app *iris.Application) {
 }
 
 func containerStatsRoute(app *iris.Application) {
-	app.Get("/containers/:id/stats", func(ctx iris.Context) {
+	app.Get("/docker/containers/:id/stats", func(ctx iris.Context) {
 		handle, err := GetConnection(ctx.Request().Context(), jwt.Get(ctx).(*SshConnectionCredentials))
 		if err != nil {
 			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
@@ -153,4 +153,51 @@ func containerStatsRoute(app *iris.Application) {
 
 		sse(ctx, lines)
 	}).SetName("Docker container stats")
+}
+
+func dockerEventsRoute(app *iris.Application) {
+	app.Get("/docker/events", func(ctx iris.Context) {
+		handle, err := GetConnection(ctx.Request().Context(), jwt.Get(ctx).(*SshConnectionCredentials))
+		if err != nil {
+			ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem().
+				Title("Connection to target host failed").
+				Type("connection_err").
+				DetailErr(err))
+			return
+		}
+		defer handle.Close()
+
+		log.Printf("Reading docker events")
+		eventStream, errStream := handle.conn.dockerClient.Events(
+			ctx.Request().Context(),
+			types.EventsOptions{
+				Filters: filters.NewArgs(
+					filters.Arg("label", "com.docker.compose.project"),
+					filters.Arg("type", "container"),
+				),
+			})
+
+		lines := make(chan string)
+		go (func() {
+			for {
+				select {
+				case event := <-eventStream:
+					lineOut, _ := json.Marshal(event)
+					lines <- string(lineOut)
+				case err := <-errStream:
+					log.Printf("Received error %v\n", err)
+					lineOut, _ := json.Marshal(iris.NewProblem().
+						Title("Error reading events").
+						Detail("Error reading events").
+						Type("stream_err").
+						DetailErr(err))
+					lines <- string(lineOut)
+					ctx.EndRequest()
+					return
+				}
+			}
+		})()
+
+		sse(ctx, lines)
+	}).SetName("Docker events")
 }

@@ -24,27 +24,29 @@ const ConnectionLogRow: React.FC<{
   const when = new Date(log.time);
 
   return (
-    <div className="flex flex-row items-center" role="row">
+    <div className="flex flex-row max-w-full  items-center" role="row">
       <div
         className={classNames(
-          'self-stretch w-2',
+          'flex-none self-stretch w-2',
           log.severity === ConnectionLogSeverity.Error && 'bg-red-400',
           log.severity === ConnectionLogSeverity.Warning && 'bg-yellow-400',
         )}
       />
       <time
-        className="w-24 py-2 ml-4 text-xs text-gray-500"
+        className="flex-none w-24 py-2 ml-4 text-xs text-gray-500"
         dateTime={when.toISOString()}
       >
         <div className="font-medium">{format(when, 'yyyy-MM-dd')}</div>
         {format(when, 'HH:mm:ss.SSS')}
       </time>
-      <span className="flex-grow py-2 pr-4 text-sm text-gray-900">
+      <span className="flex-shrink py-2 pr-4 text-sm text-gray-900">
         {log.message}
         {log.error && (
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-gray-500 break-all">
             <br />
             {log.error}
+            <br />
+            {(log.metadata?.find((x) => x.key == 'details') as any)?.value}
           </span>
         )}
       </span>
@@ -155,7 +157,7 @@ export const ConnectionLogs: React.FC<{
   return (
     <div className="flex flex-col">
       <div className="-my-2 overflow-x-auto sm:-ml-6 lg:-mx-8">
-        <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+        <div className="py-2 align-middle inline-block min-w-full max-w-full sm:px-6 lg:px-8">
           <div className="shadow overflow-hidden border-b border-gray-200">
             <div className="min-w-full divide-y divide-gray-200 ">
               <div className="bg-gray-50 sticky t-0 flex flex-row px-6 py-3">

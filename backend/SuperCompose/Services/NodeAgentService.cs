@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -26,7 +27,7 @@ namespace SuperCompose.Services
 {
   public class NodeAgentService
   {
-    private readonly SuperComposeContext ctx;
+    private readonly IDbContextFactory<SuperComposeContext> ctxFactory;
     private readonly ConnectionService connService;
     private readonly CryptoService cryptoService;
     private readonly ILogger<NodeAgentService> logger;
@@ -35,10 +36,18 @@ namespace SuperCompose.Services
     private readonly ProxyClient proxyClient;
     private readonly NodeService nodeService;
 
-    public NodeAgentService(SuperComposeContext ctx, ConnectionService connService, CryptoService cryptoService,
-      ILogger<NodeAgentService> logger, PubSubService pubSub, ConnectionLogService connectionLog, ProxyClient proxyClient, NodeService nodeService)
+    public NodeAgentService(
+      IDbContextFactory<SuperComposeContext> ctxFactory,
+      ConnectionService connService,
+      CryptoService cryptoService,
+      ILogger<NodeAgentService> logger,
+      PubSubService pubSub,
+      ConnectionLogService connectionLog,
+      ProxyClient proxyClient,
+      NodeService nodeService
+    )
     {
-      this.ctx = ctx;
+      this.ctxFactory = ctxFactory;
       this.connService = connService;
       this.cryptoService = cryptoService;
       this.logger = logger;
@@ -51,48 +60,34 @@ namespace SuperCompose.Services
     public async Task RunNodeAgent(Guid nodeId, CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("RunNodeAgent");
+      await using var ctx = ctxFactory.CreateDbContext();
+
+      var node = await ctx.Nodes.FirstOrDefaultAsync(x => x.Id == nodeId, ct);
 
       activity?.AddTag(Extensions.ActivityNodeIdName, nodeId.ToString());
       activity?.AddBaggage(Extensions.ActivityNodeIdName, nodeId.ToString());
       
-      var tenantId = await ctx.Nodes
-        .Where(x => x.Id == nodeId)
-        .Select(x => x.TenantId)
-        .FirstOrDefaultAsync(ct);
-
-      activity?.AddTag(Extensions.ActivityTenantIdName, tenantId.ToString());
-      activity?.AddBaggage(Extensions.ActivityTenantIdName, tenantId.ToString());
+      activity?.AddTag(Extensions.ActivityTenantIdName, node.TenantId.ToString());
+      activity?.AddBaggage(Extensions.ActivityTenantIdName, node.TenantId.ToString());
 
       using var _ = logger.BeginScope(new {nodeId});
 
       try
       {
-        var node = await ctx.Nodes
-          .FirstOrDefaultAsync(x => x.Id == nodeId, ct);
-
-        var client = await OpenSsh(node, ct);
-
         var credentials = await cryptoService.GetNodeCredentials(node);
 
-        await ReloadContainersFor(credentials, ctx.Deployments.Where(x => x.NodeId == nodeId && x.Enabled == true), ct);
-        var events = ListenForEvents(client, ct);
-
+        await ReloadContainersForNode(credentials, nodeId, ct);
+        
+        var events = ListenForEvents(credentials, ct);
         await foreach (var ee in events.WithCancellation(ct))
         {
-          logger.LogDebug("Received node event {type} {compose}", ee.msg.Type, ee
-          .compose);
-          var query = ctx.Deployments.Where(x =>
-            x.NodeId == nodeId && x.LastDeployedComposeVersion.ServiceName == ee.compose);
-          await ReloadContainersFor(credentials, query, ct);
+          logger.LogDebug("Received node event {type} {compose}", ee.Message.Type, ee.Compose);
+
+          await HandleDockerEvent(credentials, ee, nodeId, ct);
         }
       }
       catch (TaskCanceledException)
       {
-      }
-      catch (NodeConnectionFailedException ex)
-      {
-        logger.LogInformation("Node agent connection failed failed {why}", ex.Message);
-        connectionLog.Error($"Node connection failed", ex);
       }
       catch (ProxyClientException ex)
       {
@@ -105,11 +100,6 @@ namespace SuperCompose.Services
         logger.LogInformation("Failed to get container info {why}", ex.Message);
         connectionLog.Error($"Failed to get container info", ex);
       }
-      catch (SshException ex)
-      {
-        logger.LogInformation("Node agent had an SSHException {why}", ex.Message);
-        connectionLog.Error($"SSH error", ex);
-      }
       catch (Exception ex)
       {
         logger.LogWarning(ex, "Unknown error in node agent {nodeId}", nodeId);
@@ -118,211 +108,284 @@ namespace SuperCompose.Services
         throw;
       }
     }
-
-    private async Task<SshClient> OpenSsh(Node node, CancellationToken ct)
+    
+     private async Task ReloadContainersForNode(NodeCredentials credentials, Guid nodeId, CancellationToken ct = default)
     {
-      using var activity = Extensions.SuperComposeActivitySource.StartActivity("OpenSsh");
+      await using var ctx = ctxFactory.CreateDbContext();
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ReloadContainersForNode");
+      activity?.SetTag(Extensions.ActivityNodeIdName, nodeId);
+      activity?.AddBaggage(Extensions.ActivityNodeIdName, nodeId.ToString());
+
+      var deployments = await ctx.Deployments
+        .Where(x => x.NodeId == nodeId)
+        .Where(x => x.LastDeployedComposeVersion != null)
+        .Where(x => x.Enabled)
+        .Include(x => x.Containers)
+        .Select(x => new { Deployment = x, x.LastDeployedComposeVersion!.ServiceName })
+        .ToArrayAsync(ct);
       
-      logger.LogDebug("Pending changes detected, opening ssh connection");
+      var deploymentContainers = deployments.SelectMany(x => x.Deployment.Containers).ToArray();
 
-      var credentials = new NodeCredentials
-      (
-        node.Host,
-        node.Username,
-        node.Port,
-        node.Password == null ? null : await cryptoService.DecryptSecret(node.Password),
-        node.PrivateKey == null ? null : await cryptoService.DecryptSecret(node.PrivateKey)
-      );
+      activity?.AddEvent(new ActivityEvent("deployments", tags: new ActivityTagsCollection
+      {
+        ["deployments"] = string.Join(Environment.NewLine, deployments.Select(x => x.Deployment.Id)),
+        ["deploymentContainers"] = string.Join(Environment.NewLine, deploymentContainers.Select(x => x.Id)),
+      }));
 
-      connectionLog.Info($"Connecting SSH to {node.Username}@{node.Host}:{node.Port}");
-      var ssh = await connService.CreateSshConnection(credentials, TimeSpan.FromSeconds(10), ct);
+      var containerList = await proxyClient.ListContainers(credentials, ct);
 
-      ct.ThrowIfCancellationRequested();
+      activity?.AddEvent(new ActivityEvent("containerList", tags: new ActivityTagsCollection
+      {
+        ["containerList"] = string.Join(Environment.NewLine, containerList.Select(x => x.ID)),
+      }));
+      
+      var containersForRefresh = containerList
+        .Where(x => !string.IsNullOrEmpty(x.Labels["com.docker.compose.project"]))
+        .Select(x => new
+        {
+          Inspect = x,
+          deployments.FirstOrDefault(y => y.ServiceName == x.Labels["com.docker.compose.project"])?.Deployment
+        })
+        .Where(x => x.Deployment != null)
+        .ToArray();
 
-      return ssh;
+      activity?.AddEvent(new ActivityEvent("containersForRefresh", tags: new ActivityTagsCollection
+      {
+        ["containersForRefresh"] = string.Join(Environment.NewLine, containersForRefresh.Select(x => x.Inspect.ID)),
+      }));
+
+      await Task.WhenAll(containersForRefresh.Select(x => InspectContainer(credentials, x.Deployment!, x.Inspect.ID, ct)));
+
+      var outdatedContainers = deploymentContainers
+        .Select(x => x.DockerId)
+        .Except(containerList.Select(x => x.ID))
+        .Join(deploymentContainers, x => x, x => x.DockerId, (id, container) => container)
+        .ToArray();
+
+      activity?.AddEvent(new ActivityEvent("outdatedContainers", tags: new ActivityTagsCollection
+      {
+        ["outdatedContainers"] = string.Join(Environment.NewLine, outdatedContainers.Select(x => x.Id)),
+      }));
+
+      await ctx.Containers.BulkDeleteAsync(outdatedContainers, ct);
+      foreach (var container in outdatedContainers) {
+        await pubSub.ContainerChanged(
+          new ContainerChange(ContainerChangeKind.Removed, container.Id, container.DeploymentId),
+          ct
+        );
+      }
     }
 
-    private async IAsyncEnumerable<(DateTime time, string compose, string service, Message msg)> ListenForEvents(
-      SshClient ssh,
+    private record DockerEvent(DateTime Time, string Compose, string Service, Message Message);
+    private async IAsyncEnumerable<DockerEvent> ListenForEvents(
+      NodeCredentials credentials,
       [EnumeratorCancellation] CancellationToken ct = default)
     {
       using var activity = Extensions.SuperComposeActivitySource.StartActivity("ListenForEvents");
       
-      var args = new[]
-      {
-        "--filter='label=com.docker.compose.project'",
-        "--filter='type=container'",
-        "--format='{{json .}}'"
-        //"--since 10h"
-      };
-      var stream = connService.StreamLines(ssh, "docker events " + string.Join(" ", args), ct);
+      var stream = proxyClient.DockerEvents(credentials, ct);
       logger.LogDebug("Listening for events");
 
-      await foreach (var (result, error, status) in stream.WithCancellation(ct))
+      await foreach (var msg in stream.WithCancellation(ct))
       {
-        if (status != null)
+        if (string.IsNullOrEmpty(msg.Action) || msg.Actor == null ||
+            msg.Actor.Attributes == null)
         {
-          logger.LogWarning("Stream code: {Code}", status);
-          throw new Exception("Stream has ended"); // TODO;
+          logger.LogWarning("Deserialized message is invalid {@Message}", msg);
+          throw new InvalidOperationException("Invalid message received from stream");
         }
-        else if (error != null)
+
+        var isCriticalAction =
+          msg.Action is "create" or "destroy" or "die" or "kill" or "oom" or "pause" or "rename" or "resize" or "restart" or "start" or "stop" or "unpause" or "update";
+        if (isCriticalAction &&
+            msg.Actor.Attributes.TryGetValue("com.docker.compose.project", out var project) &&
+            msg.Actor.Attributes.TryGetValue("com.docker.compose.service", out var service))
         {
-          logger.LogWarning("Stream error: {Error}", error);
-          throw new Exception("Stream has had an error"); // TODO;
+          yield return new DockerEvent(
+            DateTime.UnixEpoch + TimeSpan.FromMilliseconds(msg.TimeNano / 1000000),
+            project,
+            service,
+            msg
+          );
         }
-        else if (result != null)
+      }
+
+      throw new Exception("Stream has ended"); // TODO;
+    }
+    
+    
+    private async Task HandleDockerEvent(NodeCredentials credentials, DockerEvent ee, Guid nodeId, CancellationToken ct = default)
+    {
+      await using var ctx = ctxFactory.CreateDbContext();
+      await using var trx = await ctx.Database.BeginTransactionAsync(ct);
+      
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("HandleDockerEvent");
+      
+      activity?.SetTag("event.type", ee.Message.Type);
+      activity?.SetTag("event.actor", ee.Message.Actor.ID);
+      activity?.SetTag("event.action", ee.Message.Action);
+      activity?.SetTag("event.compose", ee.Compose);
+      activity?.SetTag("event.service", ee.Service);
+      activity?.SetTag("event.status", ee.Message.Status);
+
+      try
+      {
+        var type = ee.Message.Type;
+        var action = ee.Message.Action;
+        var status = ee.Message.Status;
+        var composeName = ee.Compose;
+        var containerId = ee.Message.Actor.ID;
+
+        var changes = new Queue<ContainerChange>();
+        
+        if(type != "container") return;
+
+        var deployment = await ctx.Deployments
+          .Where(x => x.NodeId == nodeId)
+          .Where(x => x.LastDeployedComposeVersion != null && x.LastDeployedComposeVersion.ServiceName == composeName)
+          .Include(x => x.Containers.Where(y => y.DockerId == containerId))
+          .FirstOrDefaultAsync(ct);
+
+        if (deployment == null) return;
+
+        var container = deployment.Containers.FirstOrDefault(x => x.DockerId == containerId);
+
+        if (container == null && status is not "kill" and not "die" and not "stop" and not "destroy")
         {
-          logger.LogTrace("Event received {Result}", result);
+          container = await InspectContainer(credentials, deployment, containerId, ct);
+        }
+        else if (status is "rename" or "scale" or "update")
+        {
+          container = await InspectContainer(credentials, deployment, containerId, ct);
+        }
+
+        if (container != null)
+        {
+          logger.LogWarning("Container event {Compose} {Type} {Action} {Status} {Container}", composeName, type, action, status, containerId);
           
-          var msg = JsonConvert.DeserializeObject<Message>(result);
-
-          if (string.IsNullOrEmpty(msg.Action) || msg.Actor == null ||
-              msg.Actor.Attributes == null)
+          switch (status)
           {
-            logger.LogWarning("Deserialized message is invalid {@Message}", msg);
-            throw new InvalidOperationException("Invalid message received from stream");
+            case "kill" or "die":
+              container.State = ContainerState.Exited;
+              container.FinishedAt = DateTime.UtcNow;
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+              break;
+            case "stop":
+              container.State = ContainerState.Dead;
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+              break;
+            case "pause":
+              container.State = ContainerState.Paused;
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+              break;
+            case "unpause":
+              container.State = ContainerState.Running;
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+              break;
+            case "restart":
+              container.State = ContainerState.Running;
+              container.FinishedAt = DateTime.UtcNow;
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+              break;
+            case "start":
+              container.State = ContainerState.Running;
+              container.FinishedAt = DateTime.UtcNow;
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+              break;
+            case "create":
+              container.State = ContainerState.Created;
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
+              break;
+            case "destroy":
+              ctx.Containers.Remove(container);
+              changes.Enqueue(new ContainerChange(ContainerChangeKind.Removed, container.Id, container.DeploymentId));
+              break;
+            default:
+              logger.LogWarning("Unknown event type {Type} {Action} {Status}", type, action, status);
+              break;
           }
-
-          var isCriticalAction =
-            msg.Action is "create" or "destroy" or "die" or "kill" or "oom" or "pause" or "rename" or "resize" or "restart" or "start" or "stop" or "unpause" or "update";
-          if (isCriticalAction &&
-              msg.Actor.Attributes.TryGetValue("com.docker.compose.project",
-                out var project) &&
-              msg.Actor.Attributes.TryGetValue("com.docker.compose.service",
-                out var service))
-            yield return (
-              DateTime.UnixEpoch +
-              TimeSpan.FromMilliseconds(msg.TimeNano / 1000000), project,
-              service,
-              msg);
         }
+
+        await ctx.SaveChangesAsync(ct);
+        await trx.CommitAsync(ct);
+        foreach (var change in changes) await pubSub.ContainerChanged(change, ct);
+      }
+      catch (Exception ex)
+      {
+        logger.LogWarning(ex, "Unknown error in node {NodeId} while handling event {Event}", nodeId, ee);
+
+        await trx.RollbackAsync(ct);
+        activity.RecordException(ex);
+        throw;
       }
     }
 
-    private async Task ReloadContainersFor(NodeCredentials credentials, IQueryable<Deployment> query, CancellationToken ct = default)
+    private async Task<Container> InspectContainer(NodeCredentials credentials, Deployment deployment, string containerId, CancellationToken ct)
     {
-      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ReloadContainersFor");
-      
-      var deployments = await query.Include(x => x.LastDeployedComposeVersion)
-        .Include(x => x.Compose)
-        .Include(x => x.Containers)
-        .ToArrayAsync(ct);
+      using var activity = Extensions.SuperComposeActivitySource.StartActivity("InspectContainer");
+      activity?.SetTag(Extensions.ActivityNodeIdName, deployment.NodeId);
+      activity?.AddBaggage(Extensions.ActivityNodeIdName, deployment.NodeId.ToString());
 
-      logger.LogDebug("Reloading containers for {deployments}", string.Join(",", deployments.Select(x => x.Id)));
+      activity?.SetTag(Extensions.ActivityDeploymentIdName, deployment.Id);
+      activity?.AddBaggage(Extensions.ActivityDeploymentIdName, deployment.Id.ToString());
 
-      var list = await ListContainers(credentials, ct);
+      activity?.SetTag("containerId", containerId.ToString());
+
+      await using var ctx = ctxFactory.CreateDbContext();
       await using var trx = await ctx.Database.BeginTransactionAsync(ct);
-
-      var relevantContainers = FilterContainersForDeployments(list, deployments);
+      
       var changes = new Queue<ContainerChange>();
+      var inspect = await proxyClient.InspectContainer(credentials, containerId, ct);
 
-      if (relevantContainers.Any())
+      var labels = inspect.Config.Labels;
+      if (labels == null || !int.TryParse(labels["com.docker.compose.container-number"], out var containerNumber))
       {
-        var inspected = await InspectContainers(credentials, relevantContainers.Select(x => x.ID), ct);
+        throw new InvalidOperationException("Could not parse container-number label from container");
+      }
 
-        foreach (var deployment in deployments)
+      var container = await ctx.Containers.FirstOrDefaultAsync(x => x.DockerId == containerId, ct);
+      if (container == null)
+      {
+        container = new Container
         {
-          var relevantInspects = inspected
-            .Where(x =>
-              x.Config.Labels.ContainsKey("com.docker.compose.project") &&
-              x.Config.Labels["com.docker.compose.project"] == deployment.LastDeployedComposeVersion.ServiceName
-            );
+          Id = Guid.NewGuid(),
+          DeploymentId = deployment.Id,
+          TenantId = deployment.TenantId,
+          DockerId = inspect.ID,
+        };
 
-          var deploymentChanges = await UpdateContainersForDeployment(credentials, relevantInspects, deployment, ct);
-          foreach (var change in deploymentChanges) changes.Enqueue(change);
-        }
+        ctx.Containers.Add(container);
+        changes.Enqueue(new ContainerChange(ContainerChangeKind.Created, container.Id, container.DeploymentId));
       }
       else
       {
-        foreach (var deployment in deployments)
-        foreach (var container in deployment.Containers)
-        {
-          ctx.Containers.Remove(container);
-          changes.Enqueue(new ContainerChange(ContainerChangeKind.Removed, container.Id, container.DeploymentId));
-        }
+        changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
       }
 
+      container.ContainerNumber = containerNumber;
+      container.ServiceName = labels["com.docker.compose.service"];
+      container.State = DockerStateToContainerState(inspect.State.Status);
+      container.ContainerName = inspect.Name[0] == '/' ? inspect.Name.Substring(1) : inspect.Name;
+      container.LastInspectAt = DateTime.UtcNow;
+      container.LastInspect = inspect;
+
+      container.FinishedAt = DateTime.TryParse(inspect.State.FinishedAt, out var finishedAt) &&
+                             finishedAt > DateTime.UnixEpoch
+        ? finishedAt
+        : null;
+
+      container.StartedAt = DateTime.TryParse(inspect.State.StartedAt, out var startedAt) &&
+                            startedAt > DateTime.UnixEpoch
+        ? startedAt
+        : null;
+ 
       await ctx.SaveChangesAsync(ct);
       await trx.CommitAsync(ct);
       foreach (var change in changes) await pubSub.ContainerChanged(change, ct);
+      
+      return container;
     }
 
-    private async Task<IReadOnlyCollection<ContainerChange>> UpdateContainersForDeployment(
-      NodeCredentials credentials,
-      IEnumerable<ContainerInspectResponse> deploymentInspects,
-      Deployment deployment,
-      CancellationToken ct)
-    {
-      using var activity = Extensions.SuperComposeActivitySource.StartActivity("UpdateContainersForDeployment");
-      
-      activity?.AddTag(Extensions.ActivityDeploymentIdName, deployment.Id.ToString());
-      activity?.AddBaggage(Extensions.ActivityDeploymentIdName, deployment.Id.ToString());
-      
-      logger.LogTrace("Updating containers for deployment {Deployment}", deployment.Id);
-      
-      var processedContainers = new HashSet<Container>();
-      var changes = new Queue<ContainerChange>();
-
-      var inspects = await InspectContainers(credentials, deploymentInspects.Select(x => x.ID), ct);
-
-      foreach (var inspect in inspects)
-      {
-        var labels = inspect.Config.Labels;
-        var serviceName = labels["com.docker.compose.service"];
-        if (!string.IsNullOrEmpty(serviceName) &&
-            int.TryParse(labels["com.docker.compose.container-number"], out var containerNumber))
-        {
-          var container =
-            deployment.Containers.FirstOrDefault(
-              x => x.ServiceName == serviceName && x.ContainerNumber == containerNumber);
-
-          if (container == null)
-          {
-            container = new Container
-            {
-              Id = Guid.NewGuid(),
-              TenantId = deployment.TenantId,
-              DeploymentId = deployment.Id
-            };
-
-            await ctx.Containers.AddAsync(container, ct);
-            changes.Enqueue(new ContainerChange(ContainerChangeKind.Created, container.Id, container.DeploymentId));
-          }
-          else
-          {
-            changes.Enqueue(new ContainerChange(ContainerChangeKind.Changed, container.Id, container.DeploymentId));
-          }
-
-          container.ContainerNumber = containerNumber;
-          container.ServiceName = serviceName;
-          container.State = DockerStateToContainerState(inspect.State.Status);
-          container.ContainerName = inspect.Name[0] == '/' ? inspect.Name.Substring(1) : inspect.Name;
-          container.LastInspectAt = DateTime.UtcNow;
-          container.LastInspect = inspect;
-
-          container.FinishedAt = DateTime.TryParse(inspect.State.FinishedAt, out var finishedAt) &&
-                                 finishedAt > DateTime.UnixEpoch
-            ? finishedAt
-            : null;
-
-          container.StartedAt = DateTime.TryParse(inspect.State.StartedAt, out var startedAt) &&
-                                startedAt > DateTime.UnixEpoch
-            ? startedAt
-            : null;
-
-          processedContainers.Add(container);
-        }
-      }
-
-      var outdatedContainers = deployment.Containers.Except(processedContainers);
-      foreach (var container in outdatedContainers)
-      {
-        changes.Enqueue(new ContainerChange(ContainerChangeKind.Removed, container.Id, container.DeploymentId));
-        ctx.Containers.Remove(container);
-      }
-
-      return changes;
-    }
 
     private static ContainerState DockerStateToContainerState(string state)
     {
@@ -337,45 +400,6 @@ namespace SuperCompose.Services
         "dead" => ContainerState.Dead,
         _ => throw new IndexOutOfRangeException(nameof(state))
       };
-    }
-
-    private ContainerListResponse[] FilterContainersForDeployments(
-      ContainerListResponse[] listResult,
-      IEnumerable<Deployment> deployments)
-    {
-      // var matcher = new Regex(@"(?<name>[^=,]+)(=(?<value>[^=,]+))?");
-      var projects = deployments.Select(x => x.LastDeployedComposeVersion.ServiceName);
-
-      // var matched = listResult
-      //   .Select(x =>
-      //   {
-      //     var matches = matcher.Matches(x.Labels);
-      //     return x with
-      //     {
-      //       LabelsParsed = matches.ToDictionary(y => y.Groups["name"].Value, y => y.Groups["value"].Value)
-      //     };
-      //   });
-
-      return listResult
-        .Where(x => projects.Contains(x.Labels["com.docker.compose.project"]))
-        .ToArray();
-    }
-
-    private async Task<ContainerInspectResponse[]> InspectContainers(
-      NodeCredentials credentials,
-      IEnumerable<string> containers,
-      CancellationToken ct = default)
-    {
-      var promises = containers.Select(id => proxyClient.InspectContainer(credentials, id, ct)).ToArray();
-
-      return await Task.WhenAll(promises);
-    }
-
-    private async Task<ContainerListResponse[]> ListContainers(NodeCredentials credentials, CancellationToken ct = default)
-    {
-      using var activity = Extensions.SuperComposeActivitySource.StartActivity("ListContainers");
-
-      return await proxyClient.ListContainers(credentials, ct);
     }
   }
 }

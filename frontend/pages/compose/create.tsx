@@ -37,7 +37,7 @@ export default function CreateCompose() {
       name: '',
       serviceEnabled: true,
       compose: defaultComposeYaml,
-      directory: '/opt/docker/',
+      directory: '/etc/docker/compose/',
     },
   });
 

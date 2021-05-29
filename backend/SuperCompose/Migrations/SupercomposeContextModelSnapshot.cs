@@ -86,6 +86,8 @@ namespace SuperCompose.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ComposeId");
+
                     b.HasIndex("TenantId");
 
                     b.ToTable("ComposeVersions");
@@ -154,6 +156,9 @@ namespace SuperCompose.Migrations
                     b.Property<Guid>("DeploymentId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DockerId")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -179,6 +184,10 @@ namespace SuperCompose.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DeploymentId");
+
+                    b.HasIndex("DockerId");
+
+                    b.HasIndex("Id");
 
                     b.HasIndex("TenantId");
 
@@ -338,7 +347,7 @@ namespace SuperCompose.Migrations
             modelBuilder.Entity("SuperCompose.Context.Compose", b =>
                 {
                     b.HasOne("SuperCompose.Context.ComposeVersion", "Current")
-                        .WithOne("Compose")
+                        .WithOne("CurrentCompose")
                         .HasForeignKey("SuperCompose.Context.Compose", "CurrentId")
                         .IsRequired();
 
@@ -355,11 +364,19 @@ namespace SuperCompose.Migrations
 
             modelBuilder.Entity("SuperCompose.Context.ComposeVersion", b =>
                 {
+                    b.HasOne("SuperCompose.Context.Compose", "Compose")
+                        .WithMany("ComposeVersions")
+                        .HasForeignKey("ComposeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("SuperCompose.Context.Tenant", "Tenant")
                         .WithMany("ComposeVersions")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Compose");
 
                     b.Navigation("Tenant");
                 });
@@ -471,6 +488,8 @@ namespace SuperCompose.Migrations
 
             modelBuilder.Entity("SuperCompose.Context.Compose", b =>
                 {
+                    b.Navigation("ComposeVersions");
+
                     b.Navigation("ConnectionLogs");
 
                     b.Navigation("Deployments");
@@ -478,7 +497,7 @@ namespace SuperCompose.Migrations
 
             modelBuilder.Entity("SuperCompose.Context.ComposeVersion", b =>
                 {
-                    b.Navigation("Compose");
+                    b.Navigation("CurrentCompose");
 
                     b.Navigation("Deployments");
                 });
