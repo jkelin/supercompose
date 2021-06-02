@@ -12,3 +12,11 @@ body,
 button {
   user-select: none;
 }
+
+html {
+  background-color: #f9fafb;
+}
+
+#__next {
+  position: relative;
+}
