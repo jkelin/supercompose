@@ -28,4 +28,8 @@ module.exports = {
     BACKEND_URI: process.env.BACKEND_URI,
     PANELBEAR_SITE_ID: process.env.PANELBEAR_SITE_ID,
   },
+  i18n: {
+    locales: ['en-US'],
+    defaultLocale: 'en-US',
+  },
 };

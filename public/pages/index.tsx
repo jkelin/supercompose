@@ -4,8 +4,24 @@ import SpeechBubble from '../svg/speech-bubble.svg';
 import DotPattern from '../svg/dot-pattern.svg';
 import Link from 'next/link';
 import Image from 'next/image';
-import React, { ReactNode } from 'react';
+import React, { Fragment, ReactNode } from 'react';
 import classNames from 'classnames';
+import { Menu, Popover, Transition } from '@headlessui/react';
+import {
+  BookmarkAltIcon,
+  CalendarIcon,
+  ChartBarIcon,
+  CursorClickIcon,
+  MenuIcon,
+  PhoneIcon,
+  PlayIcon,
+  RefreshIcon,
+  ShieldCheckIcon,
+  SupportIcon,
+  ViewGridIcon,
+  XIcon,
+} from '@heroicons/react/outline';
+import { ChevronDownIcon } from '@heroicons/react/solid';
 
 function mailTo(email: string, name: string, subject?: string) {
   let link = `mailto:${encodeURIComponent(`"${name}"<${email}>`).replace(
@@ -40,9 +56,227 @@ const FeatureItem: React.FC<{
             <span className="text-gray-400"> {props.titleSuffix}</span>
           )}
         </div>
-        <div className="text-gray-500 mt-8">{props.children}</div>
+        <div className="text-sm md:text-base text-gray-500 mt-4 md:mt-8">
+          {props.children}
+        </div>
       </div>
     </div>
+  );
+};
+
+const NavbarMenuItem: React.FC<{
+  icon: React.ComponentType<any>;
+  title: string;
+  href?: string;
+  target?: string;
+}> = (props) => {
+  return (
+    <a
+      key={props.title}
+      href={props.href}
+      target={props.target}
+      className="-m-12 p-12 flex items-center rounded-md hover:bg-gray-50"
+    >
+      <props.icon
+        className="flex-shrink-0 h-24 w-24 text-indigo-600"
+        aria-hidden="true"
+      />
+      <span className="ml-12 text-base font-medium text-gray-900">
+        {props.title}
+      </span>
+    </a>
+  );
+};
+
+const Navbar: React.FC<{}> = (props) => {
+  return (
+    <Popover className="relative">
+      {({ open }) => (
+        <>
+          <div className="max-w-7xl mx-auto px-20 sm:px-24">
+            <div className="flex justify-between items-center py-24 md:justify-start md:space-x-10">
+              <div className="flex w-0 flex-1">
+                <Link href="/">
+                  <a>
+                    <span className="sr-only">SuperCompose</span>
+                    <Logo className="h-47 w-auto" />
+                  </a>
+                </Link>
+              </div>
+              <div className="-mr-8 -my-8 md:hidden">
+                <Popover.Button className="bg-white rounded-md p-8 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                  <span className="sr-only">Open menu</span>
+                  <MenuIcon className="h-24 w-24" aria-hidden="true" />
+                </Popover.Button>
+              </div>
+              <Popover.Group as="nav" className="hidden md:flex space-x-40">
+                <a
+                  className="text-base font-medium text-gray-500 hover:text-gray-900"
+                  href="https://github.com/jkelin/supercompose"
+                  target="_blank"
+                >
+                  GitHub
+                </a>
+                <a
+                  className="text-base font-medium text-gray-500 hover:text-gray-900"
+                  href="https://docs.supercompose.net"
+                >
+                  Documentation
+                </a>
+                <Link href="/rationale">
+                  <a className="text-base font-medium text-gray-500 hover:text-gray-900">
+                    But Why?
+                  </a>
+                </Link>
+              </Popover.Group>
+              <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
+                <a
+                  href="https://app.supercompose.net/api/login"
+                  className="inline-flex items-center px-20 py-8 border border-transparent text-md bg-white font-medium rounded shadow text-indigo-600 hover:bg-indigo-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Log in
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <Transition
+            show={open}
+            as={Fragment}
+            enter="duration-200 ease-out"
+            enterFrom="opacity-0 scale-95"
+            enterTo="opacity-100 scale-100"
+            leave="duration-100 ease-in"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-95"
+          >
+            <Popover.Panel
+              focus
+              static
+              className="absolute top-0 inset-x-0 z-10 p-8 transition transform origin-top-right md:hidden"
+            >
+              <div className="rounded-lg shadow-lg ring-1 ring-black ring-opacity-20 bg-white divide-y-2 divide-gray-50">
+                <div className="pt-20 pb-24 px-20">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Logo className="h-47 w-auto" />
+                    </div>
+                    <div className="-mr-8">
+                      <Popover.Button className="bg-white rounded-md p-8 inline-flex items-center justify-center text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                        <span className="sr-only">Close menu</span>
+                        <XIcon className="h-24 w-24" aria-hidden="true" />
+                      </Popover.Button>
+                    </div>
+                  </div>
+                  <div className="mt-24">
+                    <nav className="grid gap-y-32">
+                      <NavbarMenuItem
+                        icon={ChartBarIcon}
+                        href="https://github.com/jkelin/supercompose"
+                        target="_blank"
+                        title="GitHub"
+                      />
+                      <NavbarMenuItem
+                        icon={ChartBarIcon}
+                        href="https://docs.supercompose.net"
+                        title="Documentation"
+                      />
+                      <Link href="/rationale">
+                        <NavbarMenuItem icon={ChartBarIcon} title="But Why?" />
+                      </Link>
+                    </nav>
+                  </div>
+                </div>
+                <div className="py-24 px-20 space-y-24">
+                  {/* <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                    <a
+                      className="text-base font-medium text-gray-900 hover:text-gray-700"
+                      href="https://github.com/jkelin/supercompose"
+                      target="_blank"
+                    >
+                      GitHub
+                    </a>
+                    <a
+                      className="text-base font-medium text-gray-900 hover:text-gray-700"
+                      href="https://docs.supercompose.net"
+                    >
+                      Documentation
+                    </a>
+                    <Link href="/rationale">
+                      <a className="text-base font-medium text-gray-900 hover:text-gray-700">
+                        But Why?
+                      </a>
+                    </Link>
+                  </div> */}
+                  <div>
+                    <a
+                      href="https://app.supercompose.net/api/register"
+                      className="w-full flex items-center justify-center px-16 py-8 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      Sign up
+                    </a>
+                    <p className="mt-24 text-center text-base font-medium text-gray-500">
+                      Existing account?{' '}
+                      <a
+                        href="https://app.supercompose.net/api/login"
+                        className="text-indigo-600 hover:text-indigo-500"
+                      >
+                        Sign in
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Popover.Panel>
+          </Transition>
+        </>
+      )}
+    </Popover>
+  );
+};
+
+const NewsletterSection: React.FC<{}> = (props) => {
+  return (
+    <section className="bg-gray-800 mt-32">
+      <div className="max-w-7xl mx-auto py-48 px-16 sm:px-24 lg:py-64 lg:px-32 lg:flex lg:items-center">
+        <div className="lg:w-0 lg:flex-1">
+          <h2
+            className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl"
+            id="newsletter-headline"
+          >
+            Sign up for our newsletter
+          </h2>
+          <p className="mt-12 max-w-3xl text-lg leading-24 text-gray-300">
+            SuperCompose is still under heavy development but we will let you
+            know about any updates that we have
+          </p>
+        </div>
+        <div className="mt-32 lg:mt-0 lg:ml-32">
+          <form className="sm:flex">
+            <label htmlFor="emailAddress" className="sr-only">
+              Email address
+            </label>
+            <input
+              id="emailAddress"
+              name="emailAddress"
+              type="email"
+              autoComplete="email"
+              required
+              className="w-full px-20 py-12 border border-transparent placeholder-gray-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white focus:border-white sm:max-w-xs rounded-md"
+              placeholder="Enter your email"
+            />
+            <div className="mt-12 rounded-md shadow sm:mt-0 sm:ml-12 sm:flex-shrink-0">
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center px-20 py-12 border border-transparent text-base font-medium rounded-md text-white bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500"
+              >
+                Notify me
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
   );
 };
 
@@ -51,21 +285,41 @@ export default function Home() {
     <>
       <Head>
         <title>SuperCompose</title>
-        <meta name="description" content="Generated by create next app" />
+        <meta
+          name="description"
+          content="Manage docker-compose on your servers with a simple web UI"
+        />
         <link rel="icon" href="/favicon.ico" />
 
         <link rel="preconnect" href="https://fonts.gstatic.com" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800"
           rel="stylesheet"
         />
         {/* <link
           href="https://fonts.googleapis.com/css2?family=Inter"
           rel="stylesheet"
         /> */}
+
+        <meta property="og:title" content="SuperCompose" />
+        <meta property="og:site_name" content="SuperCompose" />
+        <meta
+          property="og:description"
+          content="Manage docker-compose on your servers with a simple web UI"
+        />
+        <meta property="og:url" content="https://supercompose.net/" />
+        <meta property="og:type" content="website" />
+        <meta
+          property="og:image"
+          content="https://supercompose.net/og_preview.png"
+        />
+        <meta property="og:image:width" content="1280" />
+        <meta property="og:image:height" content="640" />
+
+        <link rel="icon" href="/favicon.svg" />
       </Head>
       <div
-        className="absolute w-full h-full select-none pointer-events-none m-0 p-0 top-0"
+        className="absolute w-full h-full select-none pointer-events-none m-0 p-0 top-0 overflow-hidden"
         style={{ zIndex: -1 }}
       >
         <DotPattern className="absolute right-0 top-0" style={{ zIndex: -1 }} />
@@ -82,66 +336,39 @@ export default function Home() {
           style={{ zIndex: -1, top: 2100 }}
         />
       </div>
-      <nav className="grid grid-cols-3 items-center m-auto mt-9 max-w-[1200px]">
-        <div>
-          <Link href="/">
-            <a className="inline-block">
-              <Logo height={47} />
-            </a>
-          </Link>
-        </div>
-        <div className="flex justify-center items-center text-center">
-          <a
-            className="flex-1 font-medium text-md text-gray-500 p-10 mx-10"
-            href="https://github.com/jkelin/supercompose"
-            target="_blank"
-          >
-            GitHub
-          </a>
-          <a
-            className="flex-1 font-medium text-md text-gray-500 p-10 mx-10"
-            href="https://docs.supercompose.net"
-          >
-            Documentation
-          </a>
-          <Link href="/rationale">
-            <a className="flex-1 font-medium text-md text-gray-500 p-10 mx-10">
-              But Why?
-            </a>
-          </Link>
-        </div>
-        <div className="flex justify-end">
-          <a
-            href="https://app.supercompose.net/api/login"
-            className="inline-flex items-center px-20 py-8 border border-transparent text-md bg-white font-medium rounded shadow text-indigo-600 hover:bg-indigo-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Log in
-          </a>
-        </div>
-      </nav>
+      <Navbar />
+
       <main>
-        <section className="text-center max-w-[774px] m-auto mt-55">
-          <div className="font-extrabold text-[60px] leading-[60px]">
+        <section className="px-20 text-center mx-auto max-w-3xl w-full mt-25">
+          <h1 className="font-extrabold text-4xl md:text-[60px] md:leading-[60px]">
             <span className="text-gray-900">Manage your servers</span>
             <br />
             <span className="text-indigo-600">the easy way</span>
-          </div>
-          <div className="mt-20 text-xl text-gray-500">
-            Use docker-compose from a web UI to manage applications on your
-            servers. Choose simple tech that you already know instead of
-            complicating things.
-          </div>
+          </h1>
+          <h2 className="mt-20 text-lg md:text-xl text-gray-500">
+            <span className="md:block">
+              Use docker-compose from a web UI to manage applications on your
+              servers.
+            </span>
+            <span>
+              {' '}
+              Choose simple tech that you already know instead of complicating
+              things.
+            </span>
+          </h2>
           <a
             href="https://app.supercompose.net/api/register"
-            className="inline-flex items-center mt-20 px-20 py-16 border border-transparent text-md bg-indigo-600 font-medium rounded-lg shadow text-white hover:bg-indigo-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full sm:w-auto text-center inline-flex justify-center items-center mt-20 px-20 py-16 border border-transparent text-md bg-indigo-600 font-medium rounded-lg shadow text-white hover:bg-indigo-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Get started - it’s free
           </a>
-          <div className="mt-20 text-gray-500 text-sm">Currently in ALPHA</div>
+          <div className="mt-12 mb-28 md:mt-20 md:mb-20 text-gray-500 text-sm">
+            Currently in ALPHA
+          </div>
         </section>
 
-        <section className="relative mt-24">
-          <div className="flex justify-center z-20">
+        <section className="relative mt-24 overflow-hidden w-full">
+          <div className="flex justify-center z-20 mx-20">
             <div className="relative w-[777px] h-[475px]">
               <div className="hidden lg:block absolute bottom-[14px] lg:left-[-150px] xl:left-[-282px] rounded-lg shadow-landing h-[285px]">
                 <Image
@@ -191,38 +418,26 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div
-            className="w-full top-270 left-0 bg-gray-800 h-280 z-10"
-            style={{ marginTop: -200 }}
-          />
+          <div className="w-full mt-[-380px] xs:mt-[-280px] sm:mt-[-230px] md:mt-[-200px] left-0 bg-gray-800 h-200 sm:h-250 z-10" />
         </section>
 
-        <section className="text-center pt-60">
-          <div className="text-4xl text-gray-900 font-bold">
+        <section className="text-center pt-40 sm:pt-60 mx-20">
+          <h2 className="text-3xl sm:text-4xl text-gray-900 font-bold">
             A simpler way to deploy applications
-          </div>
-          <div className="text-lg font-normal mt-16 text-gray-500 max-w-[780px] m-auto">
+          </h2>
+          <h3 className="sm:text-lg font-normal mt-8 sm:mt-16 text-gray-500 max-w-[780px] m-auto">
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Possimus
             magnam voluptatum cupiditate veritatis in, accusamus quisquam.
-          </div>
+          </h3>
         </section>
 
-        <section className="mt-95 flex justify-center items-start max-w-[1173px] m-auto">
-          <div className="relative w-570 h-[512px] flex-shrink-0">
-            <Image
-              src="/img/features-resource-list.png"
-              alt="Picture of SuperCompose server and compose list"
-              className="rounded-lg"
-              layout="fill"
-              objectFit="contain"
-              quality={100}
-            />
-          </div>
-          <div className="w-32" />
+        <section className="mt-20 md:mt-95 grid gap-32 auto-rows-min grid-rows-2 md:grid-rows-1 md:grid-cols-2 md:max-w-5xl mx-20 lg:px-20 md:mx-auto">
           <div className="max-w-[570px]">
-            <div className="text-3xl text-gray-900 font-bold">Feature set</div>
+            <h3 className="text-3xl md:text-3xl text-gray-900 font-bold">
+              Feature set
+            </h3>
             <FeatureItem
-              className="mt-40"
+              className="mt-20 md:mt-40"
               icon={SpeechBubble}
               title="Deploy compose files to servers"
             >
@@ -231,7 +446,7 @@ export default function Home() {
               doing on the server so you can diagnose issues.
             </FeatureItem>
             <FeatureItem
-              className="mt-40"
+              className="mt-20 md:mt-40"
               icon={SpeechBubble}
               title="Monitor deployments"
               titleSuffix="- planned"
@@ -251,7 +466,7 @@ export default function Home() {
               </a>
             </FeatureItem>
             <FeatureItem
-              className="mt-40"
+              className="mt-20 md:mt-40"
               icon={SpeechBubble}
               title="Integrate with CI/CD"
               titleSuffix="- planned"
@@ -272,13 +487,23 @@ export default function Home() {
               </a>
             </FeatureItem>
           </div>
+          <div className="relative w-full max-w-570 md:h-[512px] md:order-first">
+            <Image
+              src="/img/features-resource-list.png"
+              alt="Picture of SuperCompose server and compose list"
+              className="rounded-lg"
+              width={1141 / 2}
+              height={512}
+              quality={100}
+            />
+          </div>
         </section>
 
-        <section className="mt-95 flex justify-center items-start max-w-[1173px] m-auto">
+        <section className="mt-20 md:mt-95 grid gap-32 auto-rows-min grid-rows-2 md:grid-rows-1 md:grid-cols-2 md:max-w-5xl mx-20 lg:px-20 lg:mx-auto">
           <div className="max-w-[570px]">
-            <div className="text-3xl text-gray-900 font-bold">
+            <h2 className="text-3xl md:text-3xl text-gray-900 font-bold">
               Is SuperCompose right for you?
-            </div>
+            </h2>
             <div className="text-gray-600 mt-12">
               Tech giants have datacentres full of servers with thousands of
               engineers writing and deploying applications so they need complex
@@ -286,7 +511,7 @@ export default function Home() {
               scale, you don’t need their complexity.
             </div>
             <FeatureItem
-              className="mt-40"
+              className="mt-20 md:mt-40"
               icon={SpeechBubble}
               title="One person team"
             >
@@ -296,7 +521,7 @@ export default function Home() {
               Just deploy docker-compose!
             </FeatureItem>
             <FeatureItem
-              className="mt-40"
+              className="mt-20 md:mt-40"
               icon={SpeechBubble}
               title="Small to medium enterprise"
             >
@@ -306,7 +531,7 @@ export default function Home() {
               SuperCompose saves costs and reduces operational complexity.
             </FeatureItem>
             <FeatureItem
-              className="mt-40"
+              className="mt-20 md:mt-40"
               icon={SpeechBubble}
               title="Homelab hobbyist"
             >
@@ -316,8 +541,7 @@ export default function Home() {
               to do is deploy it with a simple web GUI.
             </FeatureItem>
           </div>
-          <div className="w-32" />
-          <div className="w-570 flex-shrink-0">
+          <div className="relative w-full max-w-570 md:h-[512px]">
             <Image
               src="/img/features-compose-edit.png"
               alt="Picture of SuperCompose docker-compose edit"
@@ -329,60 +553,32 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-[#1F2937] py-65 mt-32">
-          <div className="flex justify-center items-center max-w-[1180px] m-auto">
-            <div>
-              <div className="text-white font-extrabold text-4xl">
-                Sign up for our newsletter
-              </div>
-              <div className="mt-12 text-gray-300 max-w-[639px] size-[18px]">
-                SuperCompose is still under heavy development but we will let
-                you know about any updates that we have
-              </div>
-            </div>
-            <div className="w-32 flex-shrink-0" />
-            <form action="/" className="flex flex-grow">
-              <input
-                type="email"
-                name="email"
-                id="email"
-                className="flex-grow shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                placeholder="Enter your email"
-              />
-              <div className="w-12 flex-shrink-0" />
-              <button
-                type="submit"
-                className="flex-shrink-0 inline-flex items-center px-25 py-13 border border-transparent text-md bg-indigo-600 font-medium rounded-lg shadow text-white hover:bg-indigo-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Notify me
-              </button>
-            </form>
-          </div>
-        </section>
+        <NewsletterSection />
 
-        <section className="flex flex-col items-center border-t border-gray-900 bg-[#1F2937] py-48">
-          <div>
+        <section className="flex flex-col items-center border-t border-gray-900 bg-gray-800 py-48">
+          <div className="flex flex-row flex-wrap items-center justify-center space-x-8">
             <a
-              className="text-gray-500 m-20"
+              className="block text-gray-500 p-4"
               href="https://github.com/jkelin/supercompose"
               target="_blank"
+              rel="noreferrer"
             >
               GitHub
             </a>
             <a
-              className="text-gray-500 m-20"
+              className="block text-gray-500 p-4"
               href="https://docs.supercompose.net"
             >
               Documentation
             </a>
             <a
-              className="text-gray-500 m-20"
+              className="block text-gray-500 p-4"
               href="https://status.supercompose.net"
             >
               Status
             </a>
             <Link href="/rationale">
-              <a className="text-gray-500 m-20">Why SuperCompose</a>
+              <a className="block text-gray-500 p-4">Why SuperCompose</a>
             </Link>
           </div>
 

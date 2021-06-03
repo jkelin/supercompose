@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^1.2.0",
+    "@heroicons/react": "^1.0.1",
     "@panelbear/panelbear-js": "^1.2.0",
     "@svgr/webpack": "^5.5.0",
     "@tailwindcss/forms": "^0.3.2",

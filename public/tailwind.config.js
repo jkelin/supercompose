@@ -9,6 +9,10 @@ module.exports = {
   ],
   darkMode: false, // or 'media' or 'class'
   theme: {
+    screens: {
+      xs: '475px',
+      ...defaultTheme.screens,
+    },
     spacing: {
       0: '0px',
       1: '1px',
