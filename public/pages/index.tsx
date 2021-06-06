@@ -97,7 +97,7 @@ const Navbar: React.FC<{}> = (props) => {
             <div className="flex justify-between items-center py-24 md:justify-start md:space-x-10">
               <div className="flex w-0 flex-1">
                 <Link href="/">
-                  <a>
+                  <a title="SuperCompose - Landing page">
                     <span className="sr-only">SuperCompose</span>
                     <Logo className="h-47 w-auto" />
                   </a>
@@ -123,11 +123,17 @@ const Navbar: React.FC<{}> = (props) => {
                 >
                   Documentation
                 </a>
-                <Link href="/rationale">
+                {/* <Link href="/rationale">
                   <a className="text-base font-medium text-gray-500 hover:text-gray-900">
                     But Why?
                   </a>
-                </Link>
+                </Link> */}
+                <a
+                  className="text-base font-medium text-gray-500 hover:text-gray-900"
+                  href="https://status.supercompose.net"
+                >
+                  Status
+                </a>
               </Popover.Group>
               <div className="hidden md:flex items-center justify-end md:flex-1 lg:w-0">
                 <a
@@ -322,16 +328,23 @@ export default function Home() {
         className="absolute w-full h-full select-none pointer-events-none m-0 p-0 top-0 overflow-hidden"
         style={{ zIndex: -1 }}
       >
-        <DotPattern className="absolute right-0 top-0" style={{ zIndex: -1 }} />
+        <DotPattern
+          className="absolute right-0 top-0"
+          style={{ zIndex: -1 }}
+          aria-hidden
+        />
         <DotPattern
           className="absolute left-0"
+          aria-hidden
           style={{ zIndex: -1, top: 500 }}
         />
         <DotPattern
+          aria-hidden
           className="absolute left-0"
           style={{ zIndex: -1, top: 1000 }}
         />
         <DotPattern
+          aria-hidden
           className="absolute right-0"
           style={{ zIndex: -1, top: 2100 }}
         />
@@ -369,34 +382,56 @@ export default function Home() {
 
         <section className="relative mt-24 overflow-hidden w-full">
           <div className="flex justify-center z-20 mx-20">
-            <div className="relative w-[777px] h-[475px]">
-              <div className="hidden lg:block absolute bottom-[14px] lg:left-[-150px] xl:left-[-282px] rounded-lg shadow-landing h-[285px]">
-                <Image
-                  src="/img/ss-node.png"
+            <div
+              className="relative w-[1024px] h-[612px]"
+              style={{ width: 1024, height: 612 }}
+            >
+              <div className="hidden lg:block absolute bottom-[14px] lg:left-[-150px] xl:left-[-282px] rounded-lg shadow-landing h-[442px]">
+                {/* <Image
+                  src="/img/landing/ss-node.png"
                   alt="Picture of SuperCompose node"
                   className="rounded-lg"
                   width={397}
                   height={285}
                   quality={95}
                   priority={true}
+                /> */}
+
+                <img
+                  src="/img/landing/ss-deployment.png"
+                  srcSet="/img/landing/ss-deployment.png, /img/landing/ss-deployment-2x.png 2x"
+                  alt="Screenshot of deployment"
+                  className="rounded-lg"
+                  width={1024 / 2}
+                  height={819 / 2}
+                  style={{ imageRendering: 'crisp-edges' }}
                 />
               </div>
 
-              <div className="hidden lg:block absolute bottom-[14px] lg:right-[-150px] xl:right-[-282px] rounded-lg shadow-landing h-[285px]">
-                <Image
-                  src="/img/ss-compose.png"
+              <div className="hidden lg:block absolute bottom-[14px] lg:right-[-150px] xl:right-[-282px] rounded-lg shadow-landing h-[442px]">
+                {/* <Image
+                  src="/img/landing/ss-compose.png"
                   alt="Picture of SuperCompose compose"
                   className="rounded-lg"
                   width={397}
                   height={285}
                   quality={95}
                   priority={true}
+                /> */}
+                <img
+                  src="/img/landing/ss-create-compose.png"
+                  srcSet="/img/landing/ss-create-compose.png, /img/landing/ss-create-compose-2x.png 2x"
+                  alt="Screenshot of compose creation"
+                  className="rounded-lg"
+                  width={1024 / 2}
+                  height={845 / 2}
+                  style={{ imageRendering: 'crisp-edges' }}
                 />
               </div>
 
               {/* <div className="absolute top-0 left-0 rounded-lg shadow-landing w-777 h-[475px]">
                 <Image
-                  src="/img/ss-deployment.png"
+                  src="/img/landing/ss-deployment.png"
                   alt="Picture of SuperCompose deployment"
                   className="rounded-lg"
                   width={777}
@@ -407,12 +442,12 @@ export default function Home() {
               </div> */}
               <div className="absolute top-0 left-0 rounded-lg shadow-landing">
                 <img
-                  src="/img/ss-deployment.png"
-                  srcSet="/img/ss-deployment.png, /img/ss-deployment-md.png 2x"
-                  alt="Picture of SuperCompose deployment"
+                  src="/img/landing/ss-create-node.png"
+                  srcSet="/img/landing/ss-create-node.png, /img/landing/ss-create-node-2x.png 2x"
+                  alt="Screenshot of node creation"
                   className="rounded-lg"
-                  width={777}
-                  height={475}
+                  width={1024}
+                  height={612}
                   style={{ imageRendering: 'crisp-edges' }}
                 />
               </div>
@@ -426,8 +461,9 @@ export default function Home() {
             A simpler way to deploy applications
           </h2>
           <h3 className="sm:text-lg font-normal mt-8 sm:mt-16 text-gray-500 max-w-[780px] m-auto">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Possimus
-            magnam voluptatum cupiditate veritatis in, accusamus quisquam.
+            Docker-compose is widely used while developing applications. So why
+            not use the same exact thing for production deployments? Save time
+            and money by avoiding complexity.
           </h3>
         </section>
 
@@ -487,14 +523,13 @@ export default function Home() {
               </a>
             </FeatureItem>
           </div>
-          <div className="relative w-full max-w-570 md:h-[512px] md:order-first">
+          <div className="relative w-full md:order-first">
             <Image
-              src="/img/features-resource-list.png"
+              src="/img/landing/features-resource-list.png"
               alt="Picture of SuperCompose server and compose list"
-              className="rounded-lg"
-              width={1141 / 2}
-              height={512}
-              quality={100}
+              width={476}
+              height={564}
+              quality={95}
             />
           </div>
         </section>
@@ -541,14 +576,23 @@ export default function Home() {
               to do is deploy it with a simple web GUI.
             </FeatureItem>
           </div>
-          <div className="relative w-full max-w-570 md:h-[512px]">
-            <Image
-              src="/img/features-compose-edit.png"
+          <div className="relative w-full">
+            {/* <Image
+              src="/img/landing/features-compose-edit.png"
               alt="Picture of SuperCompose docker-compose edit"
               className="rounded-lg"
               width={486}
               height={685}
               quality={95}
+            /> */}
+            <img
+              src="/img/landing/ss-compose-panel.png"
+              srcSet="/img/landing/ss-compose-panel.png, /img/landing/ss-compose-panel-2x.png 2x"
+              alt="Screenshot of node creation"
+              className="rounded-lg"
+              width={584}
+              height={629}
+              style={{ imageRendering: 'crisp-edges' }}
             />
           </div>
         </section>
@@ -577,9 +621,9 @@ export default function Home() {
             >
               Status
             </a>
-            <Link href="/rationale">
-              <a className="block text-gray-500 p-4">Why SuperCompose</a>
-            </Link>
+            {/* <Link href="/rationale">
+              <a className="block text-gray-500 p-4">Why SuperCompose?</a>
+            </Link> */}
           </div>
 
           <div className="mt-8 text-gray-400">

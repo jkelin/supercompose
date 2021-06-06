@@ -75,14 +75,14 @@ namespace SuperCompose
       {
         options.UseNpgsql(configuration.GetConnectionString("SuperComposeContext"), sqlOpts =>
         {
-          sqlOpts.EnableRetryOnFailure();
+          // sqlOpts.EnableRetryOnFailure();
         });
       });
       services.AddDbContext<SuperComposeContext>(options =>
       {
         options.UseNpgsql(configuration.GetConnectionString("SuperComposeContext"), sqlOpts =>
         {
-          sqlOpts.EnableRetryOnFailure();
+          // sqlOpts.EnableRetryOnFailure();
         });
       });
 
