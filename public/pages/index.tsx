@@ -383,9 +383,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="relative mt-24 overflow-hidden w-full">
+        <section
+          className="relative mt-24 overflow-hidden w-full"
+          style={{ minHeight: 300 }}
+        >
           <div className="flex justify-center z-20 mx-20">
-            <div className="relative ">
+            <div className="relative">
               <div className="hidden xl:block absolute bottom-[14px] xl:left-[-282px] rounded-lg shadow-landing">
                 <img
                   src="/img/landing/ss-deployment.png"
@@ -421,7 +424,7 @@ export default function Home() {
               />
             </div>
           </div>
-          <div className="w-full mt-[-380px] xs:mt-[-280px] sm:mt-[-230px] md:mt-[-200px] left-0 bg-gray-800 h-200 sm:h-250 z-10" />
+          <div className="w-full mt-[-100px] xs:mt-[-280px] sm:mt-[-230px] md:mt-[-200px] left-0 bg-gray-800 h-200 sm:h-250 z-10" />
         </section>
 
         <section className="text-center pt-40 sm:pt-60 mx-20">
