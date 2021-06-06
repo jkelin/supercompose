@@ -385,21 +385,8 @@ export default function Home() {
 
         <section className="relative mt-24 overflow-hidden w-full">
           <div className="flex justify-center z-20 mx-20">
-            <div
-              className="relative w-[1024px] h-[612px]"
-              style={{ width: 1024, height: 612 }}
-            >
-              <div className="hidden lg:block absolute bottom-[14px] lg:left-[-150px] xl:left-[-282px] rounded-lg shadow-landing h-[442px]">
-                {/* <Image
-                  src="/img/landing/ss-node.png"
-                  alt="Picture of SuperCompose node"
-                  className="rounded-lg"
-                  width={397}
-                  height={285}
-                  quality={95}
-                  priority={true}
-                /> */}
-
+            <div className="relative ">
+              <div className="hidden xl:block absolute bottom-[14px] xl:left-[-282px] rounded-lg shadow-landing">
                 <img
                   src="/img/landing/ss-deployment.png"
                   srcSet="/img/landing/ss-deployment.png, /img/landing/ss-deployment-2x.png 2x"
@@ -411,16 +398,7 @@ export default function Home() {
                 />
               </div>
 
-              <div className="hidden lg:block absolute bottom-[14px] lg:right-[-150px] xl:right-[-282px] rounded-lg shadow-landing h-[442px]">
-                {/* <Image
-                  src="/img/landing/ss-compose.png"
-                  alt="Picture of SuperCompose compose"
-                  className="rounded-lg"
-                  width={397}
-                  height={285}
-                  quality={95}
-                  priority={true}
-                /> */}
+              <div className="hidden xl:block absolute bottom-[14px] xl:right-[-282px] rounded-lg shadow-landing">
                 <img
                   src="/img/landing/ss-create-compose.png"
                   srcSet="/img/landing/ss-create-compose.png, /img/landing/ss-create-compose-2x.png 2x"
@@ -432,28 +410,15 @@ export default function Home() {
                 />
               </div>
 
-              {/* <div className="absolute top-0 left-0 rounded-lg shadow-landing w-777 h-[475px]">
-                <Image
-                  src="/img/landing/ss-deployment.png"
-                  alt="Picture of SuperCompose deployment"
-                  className="rounded-lg"
-                  width={777}
-                  height={475}
-                  priority={true}
-                  quality={100}
-                />
-              </div> */}
-              <div className="absolute top-0 left-0 rounded-lg shadow-landing">
-                <img
-                  src="/img/landing/ss-create-node.png"
-                  srcSet="/img/landing/ss-create-node.png, /img/landing/ss-create-node-2x.png 2x"
-                  alt="Screenshot of node creation"
-                  className="rounded-lg"
-                  width={1024}
-                  height={612}
-                  style={{ imageRendering: 'crisp-edges' }}
-                />
-              </div>
+              <img
+                src="/img/landing/ss-create-node.png"
+                srcSet="/img/landing/ss-create-node.png, /img/landing/ss-create-node-2x.png 2x"
+                alt="Screenshot of node creation"
+                className="relative rounded-lg shadow-landing"
+                width={1024}
+                height={612}
+                style={{ imageRendering: 'crisp-edges' }}
+              />
             </div>
           </div>
           <div className="w-full mt-[-380px] xs:mt-[-280px] sm:mt-[-230px] md:mt-[-200px] left-0 bg-gray-800 h-200 sm:h-250 z-10" />
@@ -591,11 +556,11 @@ export default function Home() {
             <img
               src="/img/landing/ss-compose-panel.png"
               srcSet="/img/landing/ss-compose-panel.png, /img/landing/ss-compose-panel-2x.png 2x"
-              alt="Screenshot of node creation"
+              alt="Screenshot of compose detail"
               className="rounded-lg"
-              width={584}
-              height={629}
               style={{ imageRendering: 'crisp-edges' }}
+              width={476}
+              height={513}
             />
           </div>
         </section>
