@@ -122,7 +122,7 @@ const NavbarDesktop: React.FC<{}> = (props) => {
       </a>
       {user && (
         <NavbarLinkDesktop
-          href="/dashboard"
+          href="/"
           active={/^\/(dashboard|node|compose|deployment)/.test(
             router.pathname,
           )}
@@ -154,7 +154,7 @@ const NavbarPhone: React.FC<{}> = (props) => {
         </NavbarLinkPhone>
         {user && (
           <NavbarLinkPhone
-            href="/dashboard"
+            href="/"
             active={/^\/(dashboard|node|compose|deployment)/.test(
               router.pathname,
             )}

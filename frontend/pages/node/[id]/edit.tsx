@@ -150,7 +150,7 @@ const EditNodeForm: React.FC<{
       kind: 'success',
       title: 'Node deleted',
     });
-    router.push(`/dashboard`);
+    router.push(`/`);
   }, [deleteNode, node.id, toast, router]);
 
   return (
@@ -247,7 +247,7 @@ const EditNodeForm: React.FC<{
               )}
             </div>
             <div className="px-4 py-3 bg-gray-50 flex flex-row justify-end sm:px-6">
-              <LinkButton href="/dashboard" kind="secondary">
+              <LinkButton href="/" kind="secondary">
                 Cancel
               </LinkButton>
               <div className="flex-grow"></div>

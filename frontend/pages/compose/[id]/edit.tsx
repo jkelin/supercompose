@@ -89,7 +89,7 @@ const EditComposeForm: React.FC<{
       kind: 'success',
       title: 'Compose deleted',
     });
-    router.push(`/dashboard`);
+    router.push(`/`);
   }, [deleteCompose, compose.id, toast, router]);
 
   return (

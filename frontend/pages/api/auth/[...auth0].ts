@@ -65,7 +65,7 @@ export default handleAuth({
   // },
   async login(req, res) {
     return handleLogin(req, res, {
-      returnTo: '/dashboard',
+      returnTo: '/',
     });
   },
 });

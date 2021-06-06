@@ -22,6 +22,7 @@ import {
   XIcon,
 } from '@heroicons/react/outline';
 import { ChevronDownIcon } from '@heroicons/react/solid';
+import { usePanelbear } from '../lib/usePanelbear';
 
 function mailTo(email: string, name: string, subject?: string) {
   let link = `mailto:${encodeURIComponent(`"${name}"<${email}>`).replace(
@@ -287,6 +288,8 @@ const NewsletterSection: React.FC<{}> = (props) => {
 };
 
 export default function Home() {
+  usePanelbear();
+
   return (
     <>
       <Head>

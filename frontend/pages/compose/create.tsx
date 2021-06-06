@@ -139,7 +139,7 @@ export default function CreateCompose() {
             </div>
 
             <div className="px-4 py-3 bg-gray-50 flex flex-row justify-end sm:px-6">
-              <LinkButton href="/dashboard" kind="secondary">
+              <LinkButton href="/" kind="secondary">
                 Cancel
               </LinkButton>
               <div className="flex-grow"></div>

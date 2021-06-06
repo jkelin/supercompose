@@ -1,5 +1,17 @@
 version: "3.0"
 services:
+  public:
+    build: ../../public
+    ports:
+      - 3102:3000
+    environment:
+      - PANELBEAR_SITE_ID
+    logging:
+      driver: json-file
+      options:
+        max-size: 100m
+    restart: always
+
   frontend:
     build: ../../frontend
     ports:
@@ -12,7 +24,6 @@ services:
       - AUTH0_CLIENT_ID
       - AUTH0_AUDIENCE
       - AUTH0_CLIENT_SECRET
-      - PANELBEAR_SITE_ID
     logging:
       driver: json-file
       options:
