@@ -46,8 +46,10 @@ using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Polly;
+using Quartz;
 using Serilog;
 using SuperCompose.Auth;
+using SuperCompose.Jobs;
 
 namespace SuperCompose
 {
@@ -256,7 +258,7 @@ namespace SuperCompose
         builder.SetResourceBuilder(ResourceBuilder
           .CreateDefault()
           .AddService(env.ApplicationName));
-        
+
         builder.AddAspNetCoreInstrumentation(opts => opts.RecordException = true);
         builder.AddHttpClientInstrumentation(opts => opts.RecordException = true);
         if (Uri.TryCreate(configuration.GetConnectionString("Jaeger"), UriKind.Absolute, out var uri))
@@ -267,6 +269,22 @@ namespace SuperCompose
             opts.AgentPort = uri.Port;
           });
         }
+      });
+      
+      // Add quartz
+      services.AddQuartz(q =>
+      {
+        q.UseMicrosoftDependencyInjectionJobFactory();
+        q.UseInMemoryStore();
+        q.ScheduleJob<CleanConnectionLogsJob>(trigger =>
+        {
+          trigger.WithSimpleSchedule(schedule => schedule.WithIntervalInHours(1));
+        });
+      });
+      services.AddQuartzServer(options =>
+      {
+        // when shutting down we want jobs to complete gracefully
+        options.WaitForJobsToComplete = true;
       });
     }
 
