@@ -312,7 +312,7 @@ namespace SuperCompose
           ResponseWriter = async (httpCtx, result) =>
           {
             httpCtx.Response.StatusCode = result.Status == HealthStatus.Healthy ? 200 : 500;
-            await httpCtx.Response.WriteAsJsonAsync(result.Entries
+            await httpCtx.Response.WriteAsJsonAsync(result.Entries.Where(x => x.Key != "quartz-scheduler")
             .ToDictionary(x => x.Key, x => new
             {
               Duration = x.Value.Duration.TotalMilliseconds,
