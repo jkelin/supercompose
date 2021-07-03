@@ -31,9 +31,36 @@ namespace SuperCompose.Jobs
           .Where(x => x.DeploymentId == deployment)
           .OrderByDescending(x => x.Time)
           .Select(x=> x.Id)
+          .Skip(200)
           .ToArrayAsync();
 
-        connectionLogsToDelete.AddRange(connectionLogs.Skip(200).ToArray());
+        connectionLogsToDelete.AddRange(connectionLogs);
+      }
+      
+      var nodes = await ctx.Nodes.Select(x => x.Id).ToArrayAsync();
+      foreach (var node in nodes)
+      {
+        var connectionLogs = await ctx.ConnectionLogs
+          .Where(x => x.NodeId == node && x.DeploymentId == null)
+          .OrderByDescending(x => x.Time)
+          .Select(x=> x.Id)
+          .Skip(200)
+          .ToArrayAsync();
+
+        connectionLogsToDelete.AddRange(connectionLogs);
+      }
+      
+      var tenants = await ctx.Tenants.Select(x => x.Id).ToArrayAsync();
+      foreach (var tenant in tenants)
+      {
+        var connectionLogs = await ctx.ConnectionLogs
+          .Where(x => x.TenantId == tenant && x.DeploymentId == null && x.NodeId == null)
+          .OrderByDescending(x => x.Time)
+          .Select(x=> x.Id)
+          .Skip(200)
+          .ToArrayAsync();
+
+        connectionLogsToDelete.AddRange(connectionLogs);
       }
       
       await ctx.ConnectionLogs.Where(x => connectionLogsToDelete.Contains(x.Id)).DeleteAsync();
