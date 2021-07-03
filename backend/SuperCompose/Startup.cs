@@ -272,20 +272,20 @@ namespace SuperCompose
       });
       
       // Add quartz
-      services.AddQuartz(q =>
-      {
-        q.UseMicrosoftDependencyInjectionJobFactory();
-        q.UseInMemoryStore();
-        q.ScheduleJob<CleanConnectionLogsJob>(trigger =>
-        {
-          trigger.WithSimpleSchedule(schedule => schedule.WithIntervalInHours(1));
-        });
-      });
-      services.AddQuartzServer(options =>
-      {
-        // when shutting down we want jobs to complete gracefully
-        options.WaitForJobsToComplete = true;
-      });
+      // services.AddQuartz(q =>
+      // {
+      //   q.UseMicrosoftDependencyInjectionJobFactory();
+      //   q.UseInMemoryStore();
+      //   q.ScheduleJob<CleanConnectionLogsJob>(trigger =>
+      //   {
+      //     trigger.WithSimpleSchedule(schedule => schedule.WithIntervalInHours(1));
+      //   });
+      // });
+      // services.AddQuartzServer(options =>
+      // {
+      //   // when shutting down we want jobs to complete gracefully
+      //   options.WaitForJobsToComplete = true;
+      // });
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -312,7 +312,7 @@ namespace SuperCompose
           ResponseWriter = async (httpCtx, result) =>
           {
             httpCtx.Response.StatusCode = result.Status == HealthStatus.Healthy ? 200 : 500;
-            await httpCtx.Response.WriteAsJsonAsync(result.Entries.Where(x => x.Key != "quartz-scheduler")
+            await httpCtx.Response.WriteAsJsonAsync(result.Entries
             .ToDictionary(x => x.Key, x => new
             {
               Duration = x.Value.Duration.TotalMilliseconds,
