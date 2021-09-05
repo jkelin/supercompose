@@ -64,6 +64,7 @@
     <PackageReference Include="StackExchange.Redis" Version="2.2.4" />
     <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="7.0.1" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="5.0.1" />
+    <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="5.2.2" />
     <PackageReference Include="Z.EntityFramework.Plus.EFCore" Version="5.1.39" />
   </ItemGroup>
 
