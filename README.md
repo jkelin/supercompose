@@ -9,7 +9,7 @@ SuperCompose manages docker-compose on your servers. It will automate Continuous
 - One man projects
   - SuperCompose lets you worry about development instead of deployment. It helps you save costs on expensive cloud configurations.
 - Small and medium enterprises
-  - SuperCompose will manage your small cluster of servers with ease and flexibility of docker-compose, but won't require you to invest into learning difficult solutions like Kubernetes
+  - SuperCompose will manage your small cluster of servers with ease and flexibility of docker-compose, but won't require you to invest into learning difficult solutions like Kubernetes.
 
 ## Features
 
