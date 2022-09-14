@@ -41,3 +41,8 @@ SuperCompose does something that does not make sense at a first glance - it take
 - Docker registry integration
 - Team management and shared resources
 - Generic deployment steps which should allow calling external APIs or running scripts before and after deployment
+
+
+### Infrastructure model
+
+![Infrastructure model](.infragenie/infrastructure_model.png)
